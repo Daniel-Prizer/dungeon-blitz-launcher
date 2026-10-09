@@ -8,7 +8,14 @@ const source = path.join(process.env.LOCALAPPDATA, 'Programs/Dungeon Blitz R');
 const target = path.join(root, 'runtime/game');
 (async () => {
   await require('./build-game-window.cjs')();
-  await require('./build-neural.cjs')();
+  // Remove only the retired enhancer's known generated resources. An unknown
+  // file prevents removing its directory rather than broadening this cleanup.
+  for (const relative of ['neural-window.node','neural/passes.json','neural/CuNNy-4x16-NVL.hlsl','neural/CuNNy-veryfast-NVL.hlsl','neural/NOTICE.txt','neural/COPYING.GPL3','neural/COPYING.LESSER']) {
+    const file=path.join(target,'resources',relative);
+    if(fs.existsSync(file))fs.unlinkSync(file);
+  }
+  const retired=path.join(target,'resources/neural');
+  if(fs.existsSync(retired))fs.rmdirSync(retired);
   if (!fs.existsSync(path.join(source, 'Dungeon Blitz R.exe'))) throw new Error('Install the official Dungeon Blitz R launcher before importing its Flash runtime.');
   fs.mkdirSync(path.join(target, 'resources'), { recursive: true });
   for (const name of fs.readdirSync(source)) {

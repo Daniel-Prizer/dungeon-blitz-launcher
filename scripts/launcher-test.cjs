@@ -31,6 +31,8 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     await wait(15000);assert.equal((await call('state')).error,'');assert.equal((await call('state')).gameURL,LIVE);
     assert.equal(app.context().pages().length,1,'There is only the local launcher renderer, no browser tabs');
     assert.equal(await page.locator('#address,#tabs,#back,#bookmark,#status').count(),0);
+    assert.equal(await page.locator('#upscaler,#neural-compare,#upscaler-status,#presentation-fps').count(),0,'Retired enhancement controls must be absent');
+    assert(!('presentation' in await call('state')),'Retired enhancement status must be absent');
     assert.deepEqual(await page.evaluate(()=>({require:typeof require,process:typeof process})),{require:'undefined',process:'undefined'});
     for(const action of ['new-tab','navigate','home','bookmark','download'])assert.equal((await call(action,LIVE)).ok,false);
     checks.push('Dedicated launcher autostarts live game, removes browser actions, sandboxed UI');

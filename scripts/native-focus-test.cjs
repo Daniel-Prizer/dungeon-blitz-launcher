@@ -21,7 +21,6 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       return JSON.parse(fs.readFileSync(file+'.json','utf8'));
     };
     await app.evaluate(()=>global.__blitzTest.runtime().focus());await wait(500);
-    if(process.env.BLITZ_NEURAL_INPUT_TEST==='1'){await call('save-settings',{upscaler:'neural'});await wait(2500);}
     const selected=await measure('focus-selected');console.log('Selected game focus',JSON.stringify(selected));
     await call('settings');await wait(200);
     assert.equal(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isFocused()),true,'Settings must return activation to the launcher window');
