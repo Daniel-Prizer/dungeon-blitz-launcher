@@ -73,6 +73,7 @@ class LegacyRuntime extends EventEmitter {
       } else {
         if(event.type==='client-integration')this.clientIntegration=event.value===true;
         if(event.type==='audio-integration')this.audioIntegration=event.value===true;
+        if(event.type==='neural-status'){this.presentation=event.value;this.emit('status');}
         if(event.type==='focused' && this.bounds?.[1] && this.bounds?.[2] && this.host?.stdin.writable){
           this.activationRechecks++;this.host.stdin.write('ACTIVATE\n');
         }
@@ -94,6 +95,7 @@ class LegacyRuntime extends EventEmitter {
     if(!previous || previous.gameZoom!==this.settings.gameZoom)this.send({type:'zoom',value:this.settings.gameZoom});
     if(!previous || previous.keepGameAwake!==this.settings.keepGameAwake)this.send({type:'background',value:this.settings.keepGameAwake});
     if(!previous||JSON.stringify(previous.audioMix)!==JSON.stringify(this.settings.audioMix))this.send({type:'audio-mix',value:this.settings.audioMix});
+    if(!previous||previous.upscaler!==this.settings.upscaler||previous.presentationFPS!==this.settings.presentationFPS)this.send({type:'neural',value:this.settings.upscaler==='neural',rate:this.settings.presentationFPS});
     if(this.host?.stdin.writable) {
       if(!previous || previous.volume!==this.settings.volume || !this.configuredHost){this.host.stdin.write(`VOLUME ${this.settings.volume}\n`);}
       if(!previous || previous.cursorLock!==this.settings.cursorLock || previous.unlockKey!==this.settings.unlockKey || !this.configuredHost)

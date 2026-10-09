@@ -8,6 +8,7 @@ const source = path.join(process.env.LOCALAPPDATA, 'Programs/Dungeon Blitz R');
 const target = path.join(root, 'runtime/game');
 (async () => {
   await require('./build-game-window.cjs')();
+  await require('./build-neural.cjs')();
   if (!fs.existsSync(path.join(source, 'Dungeon Blitz R.exe'))) throw new Error('Install the official Dungeon Blitz R launcher before importing its Flash runtime.');
   fs.mkdirSync(path.join(target, 'resources'), { recursive: true });
   for (const name of fs.readdirSync(source)) {

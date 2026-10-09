@@ -1,7 +1,7 @@
 # Dungeon Blitz Launcher maintenance
 
 - This is a dedicated game launcher. Do not reintroduce tabs, address/search UI, history, bookmarks, downloads, homepage or general browser APIs.
-- Keep the latest runnable Dungeon Blitz Launcher.exe at the root. Packaging refreshes it and its matching versioned build; keep source here in Downloads/BlitzBrowser. Keep root, lockfile, legacy package and root launcher versions aligned. Use semantic versioning; 0.4.0 is a minor release for independent sound categories, including link routing and titlebar cleanup.
+- Keep the latest runnable Dungeon Blitz Launcher.exe at the root. Packaging refreshes it and its matching versioned build; keep source here in Downloads/BlitzBrowser. Keep root, lockfile, legacy package and root launcher versions aligned. Use semantic versioning; 0.5.0 is a minor release for experimental GPU neural upscaling.
 - Never operate Daniel's desktop/mouse, raise test windows on his input desktop, send OS keyboard/pointer input, capture the desktop, use his clipboard or restart his running game session. Hidden Playwright tests and the guarded inactive Windows desktop are allowed. Never switch to that desktop. No subagents unless Daniel asks.
 - Cursor tests MUST NOT call ClipCursor, even on the inactive desktop: the cursor is shared. Test native policy and key routing in dry-run mode and state this limit. Production confinement is opt-in, releases on blur/settings/hide/minimise/close, and must preserve Alt+Tab/Alt+F4. Never hide or reposition the pointer.
 - Volume must change only the game's process-tree audio sessions, never endpoint master volume or other applications. Test with a silent fixture and read back real session levels. Audio COM work must not block the cursor/shortcut UI thread.
@@ -17,3 +17,4 @@
 
 - Cursor lock keeps a 12-DIP inset, clamped for tiny windows. Key capture accepts one validated physical key, keeps F11/Escape reserved, and never records gameplay keys outside the local capture dialog. Modifier bindings preserve chords.
 - Public commits exclude runtime imports, test profiles, captures, diagnostics and local executable releases. Never publish account/session data or imported Adobe/game binaries.
+- Neural mode is opt-in presentation only. Never modify game frameRate, timers, simulation, animations or packet cadence to advertise 60/120 FPS. Processed captures can repeat source images and are not distinct game frames. Preserve bounded capture/GPU queues, original-rendering fallback, own-thread transparent HWND/input ownership, model pins and notices. GPU timestamps are not end-to-end input latency. RIFE is an optional offline experiment, not a bundled live feature.
