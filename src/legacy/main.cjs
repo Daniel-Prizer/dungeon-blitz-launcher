@@ -7,6 +7,7 @@ const {editingCommand,pasteIntoFlash}=require('./editing.cjs');
 const {patchClient}=require('./client-patch.cjs');
 const {classifyLink}=require('./links.cjs');
 const {patchAudio}=require('./audio-patch.cjs');
+const {rasterPlan}=require('./rendering.cjs');
 let audioDelta=null;try{audioDelta=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'audio-delta.json'),'utf8'));}catch(_){}
 const LIVE = process.env.BLITZ_GAME_URL;
 function validGameAddress(value) {
@@ -17,6 +18,7 @@ const ORIGIN = new URL(LIVE).origin;
 let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false;
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
+let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false;
 async function applyAudioMix(){
  if(!win||win.isDestroyed()||!audioIntegration)return;
  const key=JSON.stringify(audioMix);if(key===appliedAudioMix)return;
@@ -49,14 +51,41 @@ if (process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP) {
 }
 function emit(data) { const message = JSON.stringify(data) + '\n'; if (connected) pipe.write(message); else queued.push(message); }
 function gameURL(url) { try { const u = new URL(url); return u.origin === ORIGIN && !u.username && !u.password; } catch (_) { return false; } }
+function sizeGameWindow(width,height){
+  if(!win||win.isDestroyed())return;
+  const size=win.getContentSize();if(size[0]===width&&size[1]===height)return;
+  // Update Electron's fixed-size constraints on its own window thread. The
+  // persistent native subclass blocks interactive movement/resizing throughout.
+  win.setResizable(true);
+  try{win.setContentSize(width,height);}finally{win.setResizable(false);}
+}
 async function applyZoom() {
   if (!win || win.isDestroyed()) return;
-  // Reviewed clients retain the fixed picture layout inside a full-window
-  // Flash stage, so letterbox margins receive ordinary native Flash input.
-  const factor = Math.max(.1,Math.min(10,Math.min(viewport.width/1152,viewport.height/768)*zoom));
-  win.webContents.setZoomFactor(factor);
+  const revision=++zoomRevision,currentZoom=zoom,currentViewport={...viewport};
+  const before=win.webContents.getZoomFactor();
+  const probe=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return {native:typeof e?.BlitzSetPictureZoom==='function',density:devicePixelRatio/${before}};})()`).catch(()=>null);
+  if(revision!==zoomRevision||win.isDestroyed())return;
+  const native=clientIntegration&&audioIntegration&&probe?.native&&!oldRenderingTest;
+  const density=probe&&Number.isFinite(probe.density)&&probe.density>=.5&&probe.density<=8?probe.density:1;
+  // Let Flash allocate its own bitmap at device-pixel resolution. Browser zoom
+  // compensates Windows DPI, not game magnification. Only exceptionally large
+  // views use a bounded raster plus residual scaling to avoid unsafe allocations.
+  const plan=rasterPlan(currentViewport.width,currentViewport.height,currentZoom,density);
+  const factor=native?plan.browserZoom:Math.max(.1,Math.min(10,Math.min(currentViewport.width/1152,currentViewport.height/768)*currentZoom));
+  // Reapplying an identical page zoom in this legacy Chromium can restore its
+  // cached pre-attachment window bounds. Picture zoom belongs inside Flash.
+  if(Math.abs(before-factor)>.00001)win.webContents.setZoomFactor(factor);
+  sizeGameWindow(currentViewport.width,currentViewport.height);
   const applied = await win.webContents.executeJavaScript(`(() => { const e = document.getElementById('game-container'); if (!e) return false; e.style.cssText = ${JSON.stringify(clientIntegration?'width:100vw;height:100vh;min-width:0;min-height:0;flex:0 0 auto':'width:1152px;height:768px;min-width:1152px;min-height:768px;flex:0 0 auto')}; return true; })()`).catch(() => false);
-  if(applied)emit({type:'zoom-applied',value:zoom,scale:factor});
+  if(revision!==zoomRevision)return;
+  if(native&&applied){
+   const key=JSON.stringify([currentZoom,currentViewport,density,factor]);
+   if(key!==appliedDisplayKey){
+    const changed=await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzSetPictureZoom(${currentZoom})`).catch(()=>false);
+    if(changed===true&&revision===zoomRevision)appliedDisplayKey=key;
+   }
+  }
+  if(applied)emit({type:'zoom-applied',value:currentZoom,scale:factor});
 }
 app.whenReady().then(async () => {
   const ses = session.defaultSession;
@@ -71,8 +100,8 @@ app.whenReady().then(async () => {
   // This is an input surface positioned by the launcher, not an independently
   // draggable/resizable window. Removing Win32 styles alone leaves Chromium's
   // frameless hit-test resize borders active.
-  win.on('will-move',event=>event.preventDefault());
-  win.on('will-resize',event=>event.preventDefault());
+  // The own-process subclass blocks interactive move/resize. Do not cancel
+  // native placement events: our owner uses SetWindowPos to synchronize position.
   require(path.join(process.resourcesPath,'game-window.node')).attach(win.getNativeWindowHandle());
   win.setMenuBarVisibility(false);
   win.on('focus',()=>emit({type:'focused'}));
@@ -147,7 +176,7 @@ app.whenReady().then(async () => {
   wc.on('will-redirect', (event,url) => { if (!gameURL(url)) event.preventDefault(); });
   wc.on('new-window', (event,url) => { event.preventDefault(); void routeLink(url); });
   if (wc.setWindowOpenHandler) wc.setWindowOpenHandler(({url}) => { void routeLink(url); return { action: 'deny' }; });
-  wc.on('did-start-loading', () => {clientIntegration=false;appliedAudioMix='';emit({ type: 'loading', value: true });});
+  wc.on('did-start-loading', () => {clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';emit({ type: 'loading', value: true });});
   wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
   wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
   wc.on('dom-ready', applyZoom);
@@ -155,7 +184,7 @@ app.whenReady().then(async () => {
   // initial blank renderer. Enable after it has a real document instead.
   wc.on('did-navigate',()=>{linkContext=null;});
   wc.on('did-finish-load',watchHTMLLinks);
-  const audioTimer=setInterval(applyAudioMix,1000);win.on('closed',()=>clearInterval(audioTimer));
+  const audioTimer=setInterval(()=>{void applyAudioMix();if(!appliedDisplayKey)void applyZoom();},1000);win.on('closed',()=>clearInterval(audioTimer));
   wc.on('did-fail-load', (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) emit({ type: 'error', message: description }); });
   wc.on('render-process-gone', () => emit({ type: 'error', message: 'The game process stopped. Reload to reconnect.' }));
   wc.on('enter-html-full-screen', () => { win.setFullScreen(false); emit({ type: 'fullscreen' }); });
@@ -185,11 +214,11 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     const cmd = JSON.parse(line);
     if (!win || win.isDestroyed()) return;
     if (cmd.type === 'zoom') { zoom = Math.max(.5, Math.min(3, Number(cmd.value) || 1)); await applyZoom(); }
+    if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
     if (['viewport','test-viewport'].includes(cmd.type) && Number.isInteger(cmd.width) && Number.isInteger(cmd.height)) {
       viewport={width:Math.max(1,Math.min(8000,cmd.width)),height:Math.max(1,Math.min(8000,cmd.height))};
-      // Let Electron update its non-resizable size constraints as well as the
-      // renderer. The native owner then positions this same-sized surface.
-      win.setContentSize(viewport.width,viewport.height);
+      // Chromium sizes its own window; NativeHost positions it without resizing.
+      sizeGameWindow(viewport.width,viewport.height);
       await applyZoom();
     }
     if (cmd.type === 'mute') win.webContents.setAudioMuted(!!cmd.value);
@@ -205,7 +234,8 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     if (['capture','test-geometry'].includes(cmd.type) && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.path === 'string') {
       const geometry=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`);
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`);
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,geometry,testEdits,testLinks}));
+      const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`);
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,renderProbe,geometry,testEdits,testLinks}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);

@@ -41,34 +41,40 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       console.log('Capture',name,fs.statSync(file).size);
       return file;
     };
-    const compareField=async(actual,expected,rect)=>{
+    const compareField=async(actual,expected,rect,matching=true)=>{
       const difference=await app.evaluate(({nativeImage},v)=>{
         const a=nativeImage.createFromPath(v.actual).crop(v.rect).toBitmap(),b=nativeImage.createFromPath(v.expected).crop(v.rect).toBitmap();let changed=0;
         for(let i=0;i<a.length;i+=4)if(Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2])>25)changed++;
         return changed/(a.length/4);
       },{actual,expected,rect});
-      assert(difference<.01,`Pasted field must visually match typed reference (${difference})`);console.log('PASS Pasted field matches typed reference pixels',difference);
+      if(matching){assert(difference<.01,`Pasted field must visually match typed reference (${difference})`);console.log('PASS Pasted field matches typed reference pixels',difference);}
+      else {assert(difference>.001,`Input must visibly change the empty field (${difference})`);console.log('PASS Field contains visible dummy input',difference);}
     };
-    const width=selected.size[0],height=selected.size[1],scale=selected.scale;
+    const width=selected.size[0],height=selected.size[1];
+    const scale=selected.scale*(selected.renderProbe?.nativeScale||1);
+    const originY=(height-768*scale)/2,emailY=originY+334*scale,passwordY=originY+403*scale;
     await command({type:'test-paste-source',text:'-pasted'});await wait(200);
-    await click((width-1152*scale)/2+120*scale,(height-768*scale)/2+710*scale);
-    await click(width/2,height/2-(.065*height));
+    await click((width-1152*scale)/2+120*scale,originY+735*scale);
+    const emptyLogin=await capture('native-login-empty.png');
+    await click(width/2,emailY);
     await type('typed-test');
     await key('V',['control']);await key('Insert',['shift']);
     await capture('native-login-input.png');
-    await click(width/2,height/2+(.025*height));
+    await click(width/2,passwordY);
     const pastedEmail=await capture('native-email-paste.png');
-    await click(width/2,height/2-(.065*height));await key('A',['control']);await type('typed-test-pasted-pasted');await click(width/2,height/2+(.025*height));
+    await compareField(pastedEmail,emptyLogin,{x:Math.round(width/2-160*scale),y:Math.round(originY+321*scale),width:Math.round(320*scale),height:Math.round(28*scale)},false);
+    await click(width/2,emailY);await key('A',['control']);await type('typed-test-pasted-pasted');await click(width/2,passwordY);
     const typedEmail=await capture('native-email-reference.png');
-    await compareField(pastedEmail,typedEmail,{x:Math.round(width/2-160*scale),y:Math.round(height/2-63*scale),width:Math.round(320*scale),height:Math.round(28*scale)});
+    await compareField(pastedEmail,typedEmail,{x:Math.round(width/2-160*scale),y:Math.round(originY+321*scale),width:Math.round(320*scale),height:Math.round(28*scale)});
     await type('dummy-only');
     await capture('native-password-input.png');
     await key('A',['control']);await command({type:'test-paste-source',text:'dummy-paste-only'});await key('V',['control']);
     await capture('native-password-paste.png');
-    await click(width/2,height/2-(.065*height));const pastedPassword=await capture('native-password-paste-unfocused.png');
-    await click(width/2,height/2+(.025*height));await key('A',['control']);await type('dummy-paste-only');await click(width/2,height/2-(.065*height));
+    await click(width/2,emailY);const pastedPassword=await capture('native-password-paste-unfocused.png');
+    await click(width/2,passwordY);await key('A',['control']);await type('dummy-paste-only');await click(width/2,emailY);
     const typedPassword=await capture('native-password-reference.png');
-    await compareField(pastedPassword,typedPassword,{x:Math.round(width/2-160*scale),y:Math.round(height/2+3*scale),width:Math.round(320*scale),height:Math.round(28*scale)});
+    await compareField(pastedPassword,emptyLogin,{x:Math.round(width/2-160*scale),y:Math.round(originY+387*scale),width:Math.round(320*scale),height:Math.round(28*scale)},false);
+    await compareField(pastedPassword,typedPassword,{x:Math.round(width/2-160*scale),y:Math.round(originY+387*scale),width:Math.round(320*scale),height:Math.round(28*scale)});
     await key('A',['control']);await type('retyped-check');
     await capture('native-replaced-input.png');
     const inputState=await measure('focus-input');assert.deepEqual(inputState.testEdits,['paste','paste','paste'],'Both paste shortcuts must use the real Flash insertion handler');

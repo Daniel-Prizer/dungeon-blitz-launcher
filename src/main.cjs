@@ -79,6 +79,7 @@ function startGame() {
     instance.on('event', event => {
       if (!current()) return;
       if (event.type === 'loading') loading = !!event.value;
+      if (event.type === 'zoom-applied') layout();
       if (event.type === 'error') { error = String(event.message).slice(0, 300); modal = 'error'; layout(); win.webContents.focus(); }
       if (event.type === 'fullscreen') setFullscreen(!win.isFullScreen());
       if (event.type === 'settings') openSettings();

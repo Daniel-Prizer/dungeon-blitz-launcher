@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.6.2** (patch: removes experimental neural enhancement and its runtime overhead; excludes stale build artifacts and local diagnostic paths).
+Version **0.6.3** (patch: fixes blurry enlargement with native Flash raster sizing).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 
@@ -18,10 +18,10 @@ Game links on the selected game origin reload the configured game page. User-act
 - Player, Music, Environment and Creatures: independent 0–100 sliders in steps of 1, all defaulting to 100. Player covers player characters/abilities and menu sounds; Creatures covers non-player entity sounds; Environment covers ambient streams and room/world sounds. Classification uses the emitting entity, not guessed sound names. Category gain multiplies the game's own volume and Master. Existing channels and loops update without reconnecting; music/ambient fade timing remains unchanged. Separate categories require the reviewed Minesa client; unsupported revisions disable those sliders while Master still works. Flash can quantize a composed channel gain to a 1% step.
 - Lock cursor inside game: off by default. When enabled, confines the visible foreground game surface. Settings, minimisation, focus loss and close release confinement. Left Alt by itself toggles between unlocked and locked; Alt+Tab and Alt+F4 remain normal Windows shortcuts. Click the shortcut button and press a single key to record it; Escape cancels, and F11 remains reserved for fullscreen. Modifier keys toggle on release so normal keyboard chords remain available. Cursor confinement stays 12 logical pixels inside the game edges, scaled for DPI. The settings button can also suspend/re-enable locking. An unlocked session stays unlocked until toggled again.
 - Game URL: defaults to https://dungeonblitzr.theminesa.studio/. Accepts HTTPS pages and HTTP on localhost/127.0.0.1/[::1]. Credentials and privileged URL schemes are rejected. Save the URL, then use Apply URL & reconnect. An address edit never silently interrupts gameplay. The isolated runtime's HTTP access is restricted to that selected origin; pages requiring resources on another origin may not work.
-- Game scale: Fit entire game, or 50–300%. Larger-than-Fit views crop edges. The reviewed Minesa client uses a fixed logical picture inside a full-window Flash stage: changing scale enlarges the picture while the side margins remain part of Flash. Margin clicks preserve focus and pass native aiming and attack events to the game. The Lost Focus splash is removed; normal focus and key cleanup remain.
+- Game scale: Fit entire game, or 50–300%. Larger-than-Fit views crop edges. The reviewed Minesa client redraws its own game bitmap at the requested size inside a full-window Flash stage. Normal 1080p/1440p rendering does not enlarge a fixed low-resolution bitmap in Chromium. Windows DPI is compensated in the host; exceptionally large zooms use a bounded 4096×2730 layout budget with residual browser scaling. Margin clicks preserve focus and pass native aiming and attack events to the game. The Lost Focus splash is removed; normal focus and key cleanup remain.
 - Graphics acceleration requires a launcher restart. Background activity can be disabled.
 
-The game uses original native Flash rendering. Neural enhancement, comparison and FPS controls are removed; saved experimental graphics preferences are discarded. Game scale remains available and animation timing is unchanged.
+The game uses original native Flash rendering. Neural enhancement, comparison and FPS controls are removed; saved experimental graphics preferences are discarded. Game scale remains available and animation timing is unchanged. The display adapter reuses the original cache-invalidation/resize path; it changes neither game clocks nor multiplayer state.
 
 F11 toggles fullscreen. Escape exits fullscreen. Ctrl+, opens settings even while the game has focus. Fullscreen has no title/exit strip. Closing and reconnecting do not show leave-game confirmations.
 
@@ -35,6 +35,7 @@ npm test: URL/link validation, settings migration, audio delta validation, paste
 npm run test:launcher: hidden launcher UI and live Flash rendering.
 npm run test:native: same user-flow checks on a guarded inactive Windows desktop, native layout/focus, fullscreen, cursor configuration and real Windows audio-session attenuation using a silent fixture.
 npm run test:input: live Flash email/password typing and paste compared with typed-reference pixels.
+npm run test:render: real game captures and native bitmap dimensions at 1080p/1440p, bounded 50–300% zoom, animation-rate equality, fullscreen and focus.
 npm run test:margins: live full-window Flash bounds, side-click focus and rendered magnification; a separate Flash fixture verifies actual stage MouseDown/MouseUp and aim coordinates.
 npm run test:window: real Windows hit-test queries at every game edge/corner and exact native placement after launcher move/resize/maximize/fullscreen/settings. No OS pointer input is sent.
 

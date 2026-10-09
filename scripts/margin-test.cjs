@@ -24,6 +24,7 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
   const input=data=>command({type:'test-input',input:data});
   async function measure(name,capture=false){
    const file=path.join(out,name+(capture?'.png':''));if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');
+   if(capture&&fs.existsSync(file))fs.unlinkSync(file);
    await command({type:capture?'capture':'test-geometry',path:file});await until(()=>fs.existsSync(file+'.json'));
    if(capture)await until(()=>fs.existsSync(file));return {file,...JSON.parse(fs.readFileSync(file+'.json','utf8'))};
   }
@@ -32,6 +33,10 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
   for(const factor of [.5,.75,1,1.5]) {
    await call('save-settings',{gameZoom:factor});await wait(1300);
    const frame=await measure('scale-'+factor,true);assert(frame.clientIntegration);assert(frame.focused&&frame.contentFocused);
+   await app.evaluate(()=>{const g=global.__blitzTest.runtime();g.windowTest=null;g.testHost('TESTWINDOW');});
+   const nativeWindow=await until(()=>app.evaluate(()=>global.__blitzTest.runtime().windowTest));
+   assert.deepEqual(nativeWindow.actual,nativeWindow.expected,'Actual game HWND must match the viewport at every picture scale');
+   assert.deepEqual(frame.size,[frame.viewport.width,frame.viewport.height],'Renderer must track the native viewport after resizing');
    assert(Math.abs(frame.geometry.rect.width*frame.scale-frame.size[0])<2);assert(Math.abs(frame.geometry.rect.height*frame.scale-frame.size[1])<2);
    const span=await app.evaluate(({nativeImage},file)=>{
     const image=nativeImage.createFromPath(file),{width,height}=image.getSize(),pixels=image.toBitmap();let first=width,last=-1;
@@ -46,7 +51,11 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
     assert(m.focused&&m.contentFocused&&m.geometry.focused);assert.equal(m.geometry.active,'DungeonBlitz','Margin click stays inside the Flash plugin');clicks.push({factor,edge,focused:m.focused,active:m.geometry.active});
    }
   }
-  const base=spans.find(x=>x.factor===1).span;for(const item of spans)assert(Math.abs(item.span/base-item.factor)<.035,'Rendered picture scale must change without the responsive Flash stage cancelling it: '+JSON.stringify(spans));
+  const base=spans.find(x=>x.factor===1).span;for(const item of spans){
+   // Native zoom intentionally crops an enlarged picture at the viewport.
+   const expected=Math.min(base*item.factor,frames[0].size[0]);
+   assert(Math.abs(item.span-expected)/base<.035,'Rendered picture must scale or reach the viewport crop: '+JSON.stringify(spans));
+  }
   console.log('PASS Live full-window Flash surface, left/right clicks and rendered picture scale',JSON.stringify(spans));
   await call('save-settings',{gameURL:`http://127.0.0.1:${server.address().port}/`,gameZoom:1});await call('restart-game');
   let initial;await until(async()=>{try{initial=await measure('probe-ready');return initial.geometry.inputProbe;}catch{return false;}});
@@ -57,7 +66,9 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
    for(const [edge,x] of [['left',2],['right',m.size[0]-3]]){
     const y=Math.floor(m.size[1]/2);await click(x,y);const after=await measure('probe-'+factor+'-'+edge);count++;
     const probe=after.geometry.inputProbe;assert.equal(probe.downs,count);assert.equal(probe.ups,count);
-    assert(Math.abs(probe.lastX-x/after.scale)<2,'Flash receives native unclamped horizontal aiming coordinate');assert(Math.abs(probe.lastY-y/after.scale)<2);
+    // Chromium quantizes injected mouse positions to CSS pixels before Flash
+    // receives them. Compare in physical pixels, including at page zoom <1.
+    assert(Math.abs(probe.lastX*after.scale-x)<1.1,'Flash receives native unclamped horizontal aiming coordinate');assert(Math.abs(probe.lastY*after.scale-y)<1.1);
     assert(after.focused&&after.geometry.active==='DungeonBlitz');probeClicks.push({factor,edge,probe});
    }
   }
