@@ -6,7 +6,6 @@ const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 (async () => {
   execFileSync(process.execPath, [path.join(__dirname, 'prepare-legacy.cjs')], { stdio: 'inherit' });
-  const diagnostics=path.join(root,'runtime/host-diagnostics.log');if(fs.existsSync(diagnostics))fs.unlinkSync(diagnostics);
   const paths = await packager({
     dir: root, name: 'Dungeon Blitz Launcher', executableName: 'Dungeon Blitz Launcher', platform: 'win32', arch: 'x64',
     electronVersion: require('../package.json').devDependencies.electron,
@@ -17,6 +16,13 @@ const root = path.resolve(__dirname, '..');
     win32metadata: { CompanyName: 'Dungeon Blitz Launcher', FileDescription: 'Dungeon Blitz Launcher for Dungeon Blitz', ProductName: 'Dungeon Blitz Launcher' },
   });
   const output = paths[0], executable = path.join(output, 'Dungeon Blitz Launcher.exe');
+  // A running source session can recreate its log while resources are copied.
+  // Clean the copied output, leaving the active session's diagnostics alone.
+  const diagnostics=path.join(output,'resources/runtime/host-diagnostics.log');if(fs.existsSync(diagnostics))fs.unlinkSync(diagnostics);
+  const provenanceFile=path.join(output,'resources/runtime/provenance.json');
+  const provenance=JSON.parse(fs.readFileSync(provenanceFile,'utf8'));
+  provenance.importedFrom='Official Dungeon Blitz R installation (local path omitted)';
+  fs.writeFileSync(provenanceFile,JSON.stringify(provenance,null,2));
   await flipFuses(executable, { version: FuseVersion.V1,
     [FuseV1Options.RunAsNode]: false,
     [FuseV1Options.EnableCookieEncryption]: true,

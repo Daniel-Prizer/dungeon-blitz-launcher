@@ -32,7 +32,9 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   const files = asar.listPackage(archive);
   assert(!files.some(file=>/neural|cunny|upscaler/i.test(file)),'Retired enhancement source/model must not ship');
   assert(!asar.listPackage(legacy).some(file=>/neural/i.test(file)),'Retired game-host enhancer must not ship');
-  for(const file of ['game/resources/neural-window.node','game/resources/neural'])assert(!fs.existsSync(path.join(output,'resources/runtime',file)),'Retired native enhancer/model must not ship: '+file);
+  for(const file of ['game/resources/neural-window.node','game/resources/NeuralWindow.lib','game/resources/NeuralWindow.exp','game/resources/neural','host-diagnostics.log'])assert(!fs.existsSync(path.join(output,'resources/runtime',file)),'Retired enhancer or diagnostic must not ship: '+file);
+  const provenance=JSON.parse(fs.readFileSync(path.join(output,'resources/runtime/provenance.json'),'utf8'));
+  assert.equal(provenance.importedFrom,'Official Dungeon Blitz R installation (local path omitted)','Personal installation path must not ship');
   for(const obsolete of ['home.html','home.css','game.cjs','socket-bridge.cjs'])assert(!files.includes('/src/'+obsolete),'Removed browser component must not ship: '+obsolete);
   assert(!files.some(file=>file.includes('node_modules/@ruffle-rs')||file.startsWith('/node_modules/ws/')),'Removed runtime alternatives and socket bridge dependencies must not ship');
   assert(!files.some(f=>/[/\\](?:\.test-profile|\.probe-profile|\.test-tools|scripts|docs)(?:[/\\]|$)/.test(f)),'Test data and tools must be excluded');

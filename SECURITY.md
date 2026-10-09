@@ -34,7 +34,7 @@ Settings are saved atomically in a local profile. A URL change is staged until e
 
 ## Packaging and limits
 
-The experimental neural enhancer was removed in 0.6.1. Production rendering no longer captures game frames, uploads them to a learned model or creates a second graphics surface. Its native module, model, shaders, command/status handlers and preferences are removed. Build preparation cleans only known retired resources; package verification rejects leftover enhancer files. Original Flash owns the game rendering and input. Test-only game captures remain guarded and never acquire the desktop. The optional offline RIFE research CLI/model stay in ignored .test-tools and never ship.
+The experimental neural enhancer was removed in 0.6.2. Production rendering no longer captures game frames, uploads them to a learned model or creates a second graphics surface. Its native module, model, shaders, command/status handlers and preferences are removed. Build preparation cleans only known retired resources; package verification rejects leftover enhancer files. Original Flash owns the game rendering and input. Test-only game captures remain guarded and never acquire the desktop. The optional offline RIFE research CLI/model stay in ignored .test-tools and never ship.
 
 Modern executable fuses disable RunAsNode, NODE_OPTIONS, command-line inspection and extra file privileges; enable cookie encryption, ASAR integrity and ASAR-only loading. Imported Flash/legacy executable hashes are recorded in runtime/provenance.json. The root launcher verifies the matching versioned executable before starting it. There is no auto-update feed or code-signing certificate.
 
