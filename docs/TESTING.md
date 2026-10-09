@@ -1,0 +1,136 @@
+# Dungeon Blitz Launcher test record — 9 October 2026
+
+Version 0.3.0, minor release for recorded shortcuts and the compact branded UI. Source stays in Downloads/BlitzBrowser. Current product has one original Flash game session and no browser interface or browser action API. Historical records below describe older releases, not present features.
+
+## Current checks
+
+- Current UI regression checks assert a 32px titlebar and a successfully loaded real wordmark; record F8, G and Left Alt by actual key presses; reject F11 during capture without entering fullscreen; cancel with Escape while preserving the previous binding. Native cursor tests check the 12px inset, 18px at 150% DPI and nonempty tiny-window bounds. Ctrl-key bindings preserve Ctrl+A and toggle only on a solo release. Physical clipping remains deliberately disabled in tests.
+
+- `npm run test:window`: reproduced the old bug with an actual WM_NCHITTEST result of HTTOPLEFT (13) on the game corner. Merely disabling resizing left HTBORDER (18), which still stole edge input. The own-process window subclass now reports HTCLIENT (1) at all 24 sampled edges/corners/center points, in each of seven states: windowed, resized, owner moved, maximized, fullscreen, fullscreen exited and settings returned. GetWindowRect matches the expected launcher viewport exactly in every state. Only bounded read-only hit-test messages are sent to test-owned HWNDs on the guarded inactive desktop; no interactive system move loop or OS pointer input is used. Before-fix evidence and final results are in window-tests.
+
+- `npm test`: nine groups passed. Includes every integer volume 0–100, invalid settings and URL schemes, migration that drops browser state, paste behavior, and the actual C# cursor state machine (foreground/hidden/blur, Alt+Tab preservation, repeat suppression, re-lock and custom shortcut). Client compatibility rejects malformed, oversized and unreviewed bytes; the reviewed fixture reconstructs every unchanged byte outside the two presentation methods and their length fields. The compiled game-window module rejects malformed/nonexistent handles without querying another application's window.
+- `npm run test:margins`: current live client integration enabled; Flash covers the native viewport and remains the focused plugin after left/right margin clicks at 50%, 75%, 100% and 150%. Captured picture widths are 527, 790, 1054 and 1580 pixels respectively. The original game registers mouse handling on the Flash stage. A separate AS3 stage fixture confirms each side click generates exactly one MouseDown and one MouseUp, with native, unclamped stage coordinates, at 50%, 100%, 150% and 300%. Only renderer events inside the guarded inactive desktop are used.
+- Reviewed client SHA-256: `7f3f40180f5d00f528c99ef7603eebdb89000dbef6ce154e2fb6695deb7c78ae`. FFDec decompilation verifies Main.method_561 fixes picture scale while restoring actual dimensions for centering/clipping, and class_71.method_1156 is now empty. The latter only creates/animates the Lost Focus splash. Actual focus flags and key cleanup are untouched; no authenticated scene or combat was used to establish these results. Unknown revisions are deliberately not patched.
+- `npm run test:launcher`: hidden UI autostarts the live game, renders detailed Flash frames, changes scale, clicks actual settings and fullscreen controls, verifies volume defaults/one-step increments, and stages game URL until explicit reconnect.
+- `npm run test:native`: all launcher UI checks passed on an inactive desktop. Real game HWND and renderer focus, settings hide/restore, full viewport fullscreen through button and F11/Escape, native cursor settings and shortcut routing. Cursor dry-run never calls ClipCursor, even there. Native process count confirms popup attempts cannot create another game window; Electron 11's returned WindowProxy alone does not establish whether a window exists.
+- A local selected-origin fixture confirms no Node/process/launcher API in game content and rejects a cross-origin fetch before it reaches the server. Its silent WebAudio stream creates a real game-process Windows audio session. Read-back levels match 0.00, 0.01, 0.37 and 1.00 when selecting 0, 1, 37 and 100. The initial test caught an incorrect CoreAudio collection GUID; it was corrected against Microsoft's SDK declaration before these checks passed. Audio COM enumeration is on a separate MTA thread so device delays cannot freeze pointer release.
+- `npm run test:input`: live email and password fields accept typed dummy text, Ctrl+V and Shift+Insert, and selection replacement. Paste/reference image comparisons have zero differing field pixels. Native and renderer focus survive settings and fullscreen. Clipboard reads are replaced with a dummy source; real insertion code runs. No login is submitted.
+- Packaging compares every source file with the generated ASAR, legacy host content and executable/DLL/helper hashes; checks removal of browser components/dependencies, security fuses, excluded test profiles, and root executable's matching version target. This does not start a production-profile window or interfere with the user's running session.
+
+Current native results: window-tests/results.json, launcher-tests/native-results.json, launcher-tests/audio-results.json, margin-tests/results.json, private-native/native-focus-results.json and package-test-results.json. launcher-tests/hidden-results.json retains the earlier hidden UI run. Renderer PNGs are captured from test windows only, never the user's desktop.
+
+## Limits
+
+Actual ClipCursor confinement is deliberately not exercised because Windows shares the pointer; the native policy, UI configuration and shortcut routing are tested without moving/locking Daniel's mouse. The inactive desktop has no Explorer, so visible taskbar ordering is unverified. No authenticated dungeon play, audio listening test or long-session stability check was performed. Legacy Flash/Chromium vulnerabilities remain; npm's zero reported dependency findings are not a binary security audit.
+
+---
+
+# Historical browser release records
+
+# Test record — updated 8 October 2026
+
+## Versions and environment
+
+Windows x64. Blitz Browser 0.1.6; Electron 44.7.0; Chromium 152.0.7977.130 (read from the running test process); original game host Electron 11.5.0 / Chromium 87.0.4280.141 and Flash 32.0.0.363. Ruffle 0.7.1 was also tested previously.
+
+## 0.1.6 toolbar fullscreen sequencing
+
+Daniel reported F11 hid the taskbar while the toolbar fullscreen button did not. Both already invoked the same fullscreen function, but keyboard and toolbar entry started with different foreground windows. Focus commands to the legacy game pipe and placement/Shell commands to the native helper were independent and had no ordering guarantee. The timing explanation is an inference from the implementation and the report; the isolated desktop cannot reproduce visible Explorer taskbar ordering.
+
+Both entries now activate the browser owner first, defer final layout until the window-state update has completed, and wait for the native helper's numbered `PLACED` acknowledgement before focusing Flash. Stale placement replies cannot release pending focus; hiding the game cancels it. On game activation, the helper receives an additional fullscreen recheck, guarded to run only while that game HWND is actually foreground. This reasserts the Shell notification after activation. No persistent topmost or global taskbar changes are used.
+
+The native test now uses an **actual Playwright click on the toolbar fullscreen button** and a separate F11 renderer input event in the game. Both preserve game focus, span the complete viewport, restore the original window size, and show that the final focus request followed the fullscreen placement/property acknowledgement. Their entry records and post-activation recheck counts are saved in private-native/native-layout-results.json. Game renderer input is not OS keyboard injection; the user's desktop is never switched to or captured. As before, the inactive desktop has no Explorer taskbar and visible hiding is unverified there.
+
+Login-input and browser regression checks are run before packaging patch 0.1.6 at the permanent root executable.
+
+## Historical 0.1.5 Windows taskbar correction
+
+Daniel reported the taskbar remained visible in fullscreen. The modern browser owner entered fullscreen, but the focused original Flash surface is a separate top-level HWND. The native helper now uses `ITaskbarList2::MarkFullscreenWindow` for that game HWND whenever it is visible in fullscreen, removes its `NonRudeHWND` exclusion in that state, and sets the exclusion when it is hidden/windowed. Exiting fullscreen, opening Settings or switching to a web tab clears the game marking; returning to the fullscreen game reapplies it. This does not hide Explorer globally or force persistent topmost behavior.
+
+This follows [Microsoft's fullscreen Shell API](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-itaskbarlist2-markfullscreenwindow), which documents taskbar ordering for the active fullscreen window and the `NonRudeHWND` detection exclusion. Treat the separate focused HWND as the explanation inferred from the current window architecture and the user's report, not as a desktop capture.
+
+The guarded native integration test measures the actual window property and requested Shell state through fullscreen, exit, Settings and tab changes, while retaining full viewport dimensions, zoom and keyboard focus. It logs HRESULTs rather than claiming success from the requested boolean alone. The inactive test desktop has no Explorer taskbar: `HrInit` returns `E_NOTIMPL` (0x80004001) there. Actual `MarkFullscreenWindow` success and visible taskbar hiding are consequently **not established by this test**. A separate read-only capability probe in the normal Windows environment returns `S_OK` (0) from `HrInit`; it creates no window, never calls `MarkFullscreenWindow`, and changes no window/taskbar properties. This establishes that Shell initialization is supported there, without verifying visible taskbar ordering. Production attempts the Shell API on the normal Windows desktop. No user desktop, pointer or clipboard is inspected or operated during testing.
+
+Native integration, login-input, unit and browser regression checks are run before rebuilding the permanent root executable as patch 0.1.5. Evidence: private-native/native-layout-results.json, private-native/native-focus-results.json and package-test-results.json.
+
+## Historical 0.1.4 homepage launch and fullscreen
+
+Patch release removes the browser's fullscreen title/exit strip and the reserved 36-pixel top gap. Both the native game viewport and ordinary web content use the entire browser content area in fullscreen. F11 and Escape remain the exit shortcuts.
+
+The big homepage link exposed a navigation-handler bug: `will-frame-navigate` supplies its URL on the first event object, but the handler read a nonexistent second argument. API-driven `loadURL` tests bypassed this event and missed the failure. The handler now validates `event.url` and preserves the protocol restrictions.
+
+`npm run test:homepage` uses an actual Playwright click on the big homepage link, checks that it starts the original Flash host, and captures a detailed live-game frame. A second homepage click reuses the existing game session. Main-process navigation exceptions are checked explicitly. Evidence: homepage-test-results.json and homepage-launch.png.
+
+`npm run test:native` also starts the actual native host by clicking the homepage link on the guarded inactive desktop. Its fullscreen checks compare the game HWND's content size with the entire browser content size, assert that the fullscreen bar is absent, and verify the UI surface starts at y=0 and spans the full height. Zoom, resize, fullscreen/exit restoration and return from Settings remain covered. Unit, UI and browser regression suites are run before packaging. Test windows never appear on the user's desktop.
+
+The root executable is rebuilt as 0.1.4 and verified against its matching packaged source/runtime and executable fuses. No authenticated gameplay claim is added by these checks.
+
+## Historical 0.1.3 login input verification
+
+Patch release fixes the native activation mismatch reported after 0.1.2: the Flash renderer reported focus while its Windows BrowserWindow remained unfocused. The game now remains a top-level Chromium popup owned by the browser and positioned over its viewport, rather than being reparented under a foreign STATIC window. Windows activation reaches Chromium normally. Focus transfers between the game, Settings and web tabs, and restores through fullscreen/exit. Alt+F4 on the game requests normal browser closure.
+
+Ctrl+V and Shift+Insert paste through the game's character-input path. Clipboard text stays inside the legacy game process and is read only for the paste gesture. Native Flash selection keys remain untouched. Page-level editing commands were observed to leave the login field unchanged; merely checking command dispatch missed this, so the final test verifies rendered insertion. Inserted characters use complete key sequences after the shortcut event is cancelled; char-only events immediately after the cancelled shortcut were suppressed. Pasted control characters are removed and input length is bounded.
+
+`npm test`: eight groups passed, covering paste shortcuts, preservation of ordinary typing and Flash selection commands, Unicode event construction, control-character filtering, and the existing security/profile checks.
+
+`npm run test:input`: passed on the guarded inactive Windows desktop with the **actual native host attached**. Native BrowserWindow focus, WebContents focus and document focus all agree after selecting the game and returning from Settings. Focus transfers to web tabs and back and survives fullscreen/exit. Renderer clicks open the live login form and focus its email/password fields. Typing, Ctrl+V, Shift+Insert, password masking and Ctrl+A replacement are exercised without submitting Login. The pasted email and masked password are compared with independently typed reference captures; both cropped field comparisons report **zero differing pixels**. Visually inspected native-login-input.png (typed-test-pasted-pasted), native-password-paste.png (masked dummy text) and native-replaced-input.png (retyped-check). Evidence: private-native/native-focus-results.json and the named PNGs.
+
+Only the clipboard reader is substituted with dummy text during this test; the real paste insertion handler runs. The user's system clipboard is never read or written. Test inputs are renderer events, not physical Windows keyboard or pointer input. The inactive desktop is never switched to and the user's desktop is never captured. Unlike the previous foreign child-window arrangement, the owned game popup provides detailed Flash renderer captures on the inactive desktop.
+
+`npm run test:native` and `npm run test:regression` also passed during this patch's development, covering native zoom/fit/resize and browser navigation, sandbox boundaries, downloads, persistence and fullscreen. The package step verifies tested source and runtime hashes, version alignment, executable fuses and the root launcher target. Authenticated login and dungeon gameplay remain outside this test's evidence.
+
+## Historical 0.1.2 verification
+
+Patch release: removed the leave/reload/close confirmations, replaced responsive container zoom with a fixed 1152 × 768 logical Flash stage and Chromium surface scaling, and added a permanent versioned launcher at the project root. Old `confirmGameClose: true` settings no longer restore the removed prompt.
+
+The following checks passed on the final application source:
+
+- `npm test`: all six groups, including migration of the removed prompt preference.
+- `npm run test:native`: actual native HWND attachment on a disposable, separate **inactive** Windows desktop. The desktop is never switched to; a guard verifies the process desktop before a test window can show. No OS mouse/keyboard input or desktop capture is used. The stage remains 1152 × 768 at 50%, 75%, 100%, 150% and 300%; renderer device-pixel scaling follows the requested zoom. Resizing to a 1000 × 578 game viewport and clicking **Fit game** produces scale 0.752604, with the complete logical stage retained. Two fullscreen/exit cycles restore fit and dimensions. Opening settings, changing zoom while the game is hidden, and returning restores the correct scale. See private-native/native-layout-results.json.
+- `npm run test:zoom`: hidden live Flash renderer, fixed 1380 × 818 viewport. Measured pictures are 614 × 409 at 50%, 920 × 614 at 75%, and 1227 × 818 at 100%. Width ratios match requested magnification. Detailed frames also render at 125%, 150% and 300% with cropped edges. Visually inspected zoom-input-075.png and zoom-fit-input.png: scaled login-button and email-field clicks work; the test text remains after **Fit game**, without reloading. No login was submitted. A dialog spy also verifies reload, home and closing the native game tab produce zero confirmation dialogs.
+- `npm run test:ui`: all seven control groups pass with actual renderer clicks. Screenshots settings-012.png and settings-small-012.png retain separate evidence from 0.1.1.
+- `npm run test:regression`: all fourteen groups pass, including sandbox boundaries, real download bytes, navigation, persistence and five fullscreen cycles.
+
+The 0.1.2 native test measured actual renderer geometry and scale, but its reparented window on the inactive desktop could not provide Flash pixel captures. Pixel checks were performed separately with the hidden Flash renderer. Initially the completely hidden native window retained stale layout measurements after resizing even though its zoom value was correct; using a visible HWND confined to the guarded inactive desktop resolved the test artifact. These checks missed the native activation failure later reported by Daniel. They do not establish authenticated dungeon gameplay or visible composition on the user's active desktop.
+
+`npm run package` verifies that packaged application source and legacy host source match the tested files, imported runtime hashes match, test profiles/tools are excluded, and modern executable fuses retain their intended values. The root launcher checks the target executable's version with `--verify` without launching a browser window. See package-test-results.json after packaging. No existing user session is restarted.
+
+## Historical 0.1.1 zoom and settings verification
+
+After Daniel requested no desktop interaction, testing switched entirely to hidden windows with separate test profiles. Tests neither raise/focus windows nor send OS input. The native game test bypasses the Windows window host; it captures only its own hidden Flash renderer. Visible desktop composition of the updated build is therefore not claimed.
+
+`npm run test:ui`: seven groups passed using actual renderer controls: toolbar zoom, immediately saved toggles, homepage Save/preset/invalid-address feedback, startup dropdown, collapsed advanced settings, returning from settings and persistence, compact menu construction, minimum-width layout, and absence of UI exceptions. The OS menu popup is suppressed in this hidden test. Screenshots: settings-011.png and settings-small-011.png.
+
+`npm run test:zoom`: verified **actual rendered picture size**, not just a percentage or larger container. On a fixed 1380 × 786 renderer, the game picture measured 589 × 393 at 50%, 885 × 590 at 75%, and 1179 × 786 at 100%. The measured width ratios agree with the requested zoom. Detailed game frames also rendered at 125%, 150%, and 300%; these magnify around the center and crop the edges. These title-screen checks missed the subsequently reported gameplay zoom problem. The current zoom-test-results.json and zoom captures now record 0.1.2.
+
+Visually inspected zoom-input-075.png: clicking the scaled Login Existing Account button opens the login form, and the scaled email field accepts `zoom-input-check`. Inspected zoom-fit-input.png: **Fit game** restores 100% and preserves the open form and test text, without a reload. No password or login submission was used. This does not establish authenticated gameplay.
+
+The user confirmed the 0.1.0 game was displaying. A previous desktop capture (desktop-browser.png) also showed the live title screen inside the browser. That evidence predates the 0.1.1 zoom/UI changes.
+
+## Passed automated checks
+
+`npm test`: six groups covering URL/credential/protocol restrictions, strict game-origin matching, settings validation and zoom bounds, private-IP rejection, live socket-bridge rejection of wrong tokens/origins/ports, atomic preference reload and corrupt-profile recovery. Includes upgrading the exact legacy HTTP game address to HTTPS.
+
+`npm run test:regression`: browser integration checks cover actual renderer sandbox/context-isolation/no-Node settings; absence of the browser command API in remote content; file-navigation rejection; back/forward; per-origin zoom/reset; bookmarks; tab creation/reordering/closing/reopening; mute; text search results; an actual downloaded fixture with exact-byte comparison; homepage URL rejection and persistence; settings panel; five fullscreen cycles with restored bounds; history; and persistence after restarting Electron. See browser-test-results.json.
+
+`npm run test:browser`: starts the live Minesa client in the original Flash host using a separate test profile. Checks startup errors, captures the rendered game, checks that zoom retains a detailed frame without changing viewport dimensions, cycles fullscreen, verifies restored dimensions, injects renderer mouse events into the existing-account button, types a non-credential test string into the email field without submitting, and checks rendering after switching tabs. Captures are in this folder. The dedicated zoom test above is the stronger check of magnification.
+
+Inspected native-game.png: all six class characters load. Inspected native-input.png: the live login UI accepts `blitz-input-test` in the email field. No password was supplied and no test login was submitted. The PNG captures are from the game WebContents; on their own they do not establish successful desktop composition.
+
+`npm audit`: zero reported npm dependency vulnerabilities. This is **not** a security audit of legacy Chromium or the Flash DLL.
+
+Packaged executable fuse inspection: RunAsNode OFF, NODE_OPTIONS OFF, CLI inspect OFF, cookie encryption ON, ASAR integrity ON, ASAR-only loading ON, extra file-protocol privileges OFF. The real portable executable starts and authenticates its local game-host pipe.
+
+## Failures found and corrected during development
+
+- Ruffle displayed the background/login form but did not load the class characters. It is experimental; original Flash is the default.
+- Legacy Electron's stdin closed immediately in a GUI launch. Replaced stdin IPC with an authenticated, randomly named Windows pipe.
+- Applying CSS transforms to Flash caused blank rendering. Resizing the native window did not reliably magnify the game either, and Minesa's responsive stage cancels ordinary Chromium page zoom. Version 0.1.1 changed the plugin element's layout size but did not resolve Daniel's report. Version 0.1.2 instead fixes the logical stage and scales the complete Flash surface; both native scale and rendered pixels are now checked. Hidden PPAPI captures need several frames to settle after a size change; tests wait for those frames before measuring.
+- A manually entered HTTP game address took the modern-browser path and displayed “Adobe Flash Player Required.” Exact Minesa HTTP addresses now upgrade to HTTPS and route to the game host.
+- Renderer captures missed a Windows integration issue reported in the user's screenshot. The game viewport now uses an owned native tool window and explicitly synchronizes Electron visibility after the native attachment is ready. A real desktop capture and the user's subsequent report confirmed that the game displayed. Visible-desktop validation remains separate from hidden renderer testing.
+
+## Not yet established
+
+Authenticated dungeon movement, combat, inventory, region transfer, audio quality and long-session stability have not been independently established. No saved credentials were extracted, no account was created, and no progress was modified. The current automated checks must not be described as a completed live dungeon test. No additional desktop testing or player retry was requested after the user asked us to leave the desktop alone.
+
+Additional display scales, multi-monitor transitions, GPU vendors, accessibility auditing and an independent security review are still outstanding. No benchmark demonstrates a performance improvement.

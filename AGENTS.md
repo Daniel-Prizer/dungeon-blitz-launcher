@@ -1,0 +1,19 @@
+# Dungeon Blitz Launcher maintenance
+
+- This is a dedicated game launcher. Do not reintroduce tabs, address/search UI, history, bookmarks, downloads, homepage or general browser APIs.
+- Keep the latest runnable Dungeon Blitz Launcher.exe at the root. Packaging refreshes it and its matching versioned build; keep source here in Downloads/BlitzBrowser. Keep root, lockfile, legacy package and root launcher versions aligned. Use semantic versioning; 0.3.0 is a minor release for key capture and the compact branded interface.
+- Never operate Daniel's desktop/mouse, raise test windows on his input desktop, send OS keyboard/pointer input, capture the desktop, use his clipboard or restart his running game session. Hidden Playwright tests and the guarded inactive Windows desktop are allowed. Never switch to that desktop. No subagents unless Daniel asks.
+- Cursor tests MUST NOT call ClipCursor, even on the inactive desktop: the cursor is shared. Test native policy and key routing in dry-run mode and state this limit. Production confinement is opt-in, releases on blur/settings/hide/minimise/close, and must preserve Alt+Tab/Alt+F4. Never hide or reposition the pointer.
+- Volume must change only the game's process-tree audio sessions, never endpoint master volume or other applications. Test with a silent fixture and read back real session levels. Audio COM work must not block the cursor/shortcut UI thread.
+- The game origin is configured per runtime launch, independently validated, and used for parsed-origin HTTP restrictions. New URLs take effect only through explicit reconnect. No certificate bypasses, remote Node APIs or additional external launch surfaces.
+- Game leaving/reloading/closing has no confirmation, including migrated profiles.
+- Verify actual rendered game scaling, full-window Flash input stage, fixed logical picture, native attachment, resize synchronization and scaled input separately. A changed percentage alone is not proof.
+- Client presentation edits require an exact reviewed SHA-256 and matching method hashes. Unknown revisions run unchanged with a compatibility note. Never reuse offsets on different bytes or change gameplay, authentication, packets or normal focus/key cleanup. Keep response interception in-process with no external debugging port or proxy.
+- Input tests verify native BrowserWindow focus and renderer focus. Dummy clipboard reader only; compare both live login fields with typed-reference pixels and selection replacement. Never log in or reuse credentials during tests.
+- Fullscreen uses all content with no strip/top gap, F11/Escape work, and Shell notification targets the focused game HWND. No global taskbar hiding or persistent topmost. The inactive desktop lacks Explorer: do not claim visually verified taskbar behavior.
+- Exercise real settings/fullscreen UI clicks as well as game shortcuts. Focus must wait for native placement acknowledgement.
+- The game is not independently movable/resizable. Keep Electron's window policy disabled and the own-process GameWindow.c subclass returning HTCLIENT throughout the game rectangle. Verify real native WM_NCHITTEST queries and exact HWND placement after launcher movement/resize/fullscreen, not just renderer click injection. Never subclass another process/window thread or send OS pointer events during tests.
+- State verification limits accurately and do not repeatedly ask Daniel to retry/tests/login.
+
+- Cursor lock keeps a 12-DIP inset, clamped for tiny windows. Key capture accepts one validated physical key, keeps F11/Escape reserved, and never records gameplay keys outside the local capture dialog. Modifier bindings preserve chords.
+- Public commits exclude runtime imports, test profiles, captures, diagnostics and local executable releases. Never publish account/session data or imported Adobe/game binaries.

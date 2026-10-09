@@ -1,0 +1,33 @@
+# Launcher security model
+
+The modern local shell uses Electron 44.7.0 / Chromium 152. The separate original Flash host uses Adobe Flash 32.0.0.363 and Electron 11.5.0 / Chromium 87. Flash and that legacy Chromium remain unsupported with unresolved vulnerabilities. This launcher cannot claim to fix all vulnerabilities in those binary runtimes. npm audit covers npm dependencies only.
+
+## Trust boundaries
+
+- The shell loads only six allowlisted local UI/code/brand assets under blitz://app/. It has a strict content-security policy, Chromium sandbox, context isolation, no remote Node integration, no webviews and no downloads or external navigation. No general browsing view, listener/socket bridge or remote tabs remain.
+- IPC accepts launcher actions only from the exact shell WebContents/main frame at blitz://app/index.html. Browser actions are gone. Settings fields are independently validated in the main process; DOM fields are not a trust boundary.
+- One separate sandboxed Flash session receives its selected game URL through its launch environment. The URL is validated again there. Its HTTP requests and navigation stay within the parsed selected origin; cross-origin redirects, external windows and downloads are denied. HTTPS is required except explicitly local HTTP addresses. No certificate overrides or insecure-content switches are enabled.
+- Raw Flash TCP sockets are NOT filtered by HTTP origin restrictions. A selected server can run untrusted Flash content inside an obsolete runtime. Use a trusted game server; URL validation is not proof of trust. No credentials are extracted and no game content gets a preload or Node/Electron remote API.
+- Runtime command transport is a random named pipe with a per-launch random authentication token. Environment tokens are not written to diagnostics. Tests using injected input/captures and dummy paste are enabled only in unpackaged test launches, not through the production shell IPC.
+- A native helper owns and positions only the provided game HWND. The game keeps its native Chromium activation/input queue. Fullscreen marks the game HWND through the Windows Shell API; there is no global taskbar hiding or persistent topmost mode.
+- A small Node-API module loaded only by the trusted legacy main process subclasses that process's game HWND on its owning thread. It accepts only a native handle buffer for a window in the current process/current thread; it never injects into another process. Inside the game rectangle it returns HTCLIENT and denies move/size system commands, removing Chromium's stale frameless border. Normal Flash input remains native. Subclass removal occurs on window destruction and environment cleanup. No new game-page API, pointer hook or cursor operation is exposed. Electron's own movable/resizable policy is also disabled; launcher-directed size changes update Electron's constraints before native placement.
+
+## Client presentation compatibility
+
+The legacy main process uses its in-process DevTools Fetch response interception for DungeonBlitz.swf on the selected origin. It opens no debugging port, proxy or new listener. HTTPS navigation, certificates, cookies and the SWF's original security origin remain in use. Response bytes must match a reviewed SHA-256 before decompression or editing; decompressed length and the two method hashes are checked again. Unknown revisions continue unchanged and the local settings panel reports the compatibility limit.
+
+Only Main.method_561 picture layout/centering/clipping and class_71.method_1156 Lost Focus splash presentation are changed. Original input listeners, actual focus state and key cleanup, authentication, packets, assets and game data remain intact. Flash covers the whole viewport so its own native mouse handling receives side-margin clicks and coordinates; there is no global mouse hook or synthetic gameplay click forwarding. No SWF is included in the distribution. Tests reconstruct the original bytes outside those two methods and their length fields, inspect decompiled output, and exercise the live client and an isolated Flash stage fixture.
+
+## Native settings
+
+Cursor confinement is opt-in and runs on the native helper's UI thread. It requires a visible foreground game HWND, updates with viewport/DPI/movement, releases for settings/blur/hide/minimise/close, and exits if either window is destroyed or the command pipe closes. The clipping rectangle has a 12-DIP inset, clamped to keep tiny windows valid. Recorded modifier keys toggle on release without swallowing normal chords; F11 and Escape cannot be assigned. Key capture runs only in the local settings dialog and stops on completion/cancel/dismiss/reconnect. Shortcut repeats do not oscillate the setting. Only the shortcut's transient key state is tracked; no text/keystroke history is recorded. The helper does not call SetCursorPos or hide the cursor. Audio COM work runs on a separate MTA thread so slow devices cannot block shortcut processing or cursor release. If another application replaces the clipping rectangle, cleanup does not remove its newer rectangle. Automated tests never call ClipCursor, including on inactive desktops.
+
+Audio attenuation enumerates active Windows render endpoints and applies ISimpleAudioVolume only to sessions whose process IDs belong to the game process tree. It does not modify device master volume, system sounds or another application's session. Actual session levels are read back and exposed as numeric diagnostics; no account data is included. Audio devices and newly created sessions are revisited every second. A game or another mixer can still change its own audio between polls.
+
+Settings are saved atomically in a local profile. A URL change is staged until explicit reconnect. Browser history, tabs and bookmarks are discarded by migration. Existing Flash profile data is retained to preserve sign-in. Paste reads the clipboard only on an explicit game paste; pasted text never crosses the launcher pipe or enters diagnostic logs.
+
+## Packaging and limits
+
+Modern executable fuses disable RunAsNode, NODE_OPTIONS, command-line inspection and extra file privileges; enable cookie encryption, ASAR integrity and ASAR-only loading. Imported Flash/legacy executable hashes are recorded in runtime/provenance.json. The root launcher verifies the matching versioned executable before starting it. There is no auto-update feed or code-signing certificate.
+
+The imported Adobe runtime is from the user's existing official Dungeon Blitz R installation for local use. Review third-party distribution rights before sharing. An obsolete Flash engine remains a material security limit despite process separation and reduced surface area.
