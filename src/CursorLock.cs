@@ -1,5 +1,5 @@
 using System;
-// Pure policy: confinement is permitted only for the visible, foreground game.
+// Pure policy: confinement is permitted only for the visible, foreground launcher.
 // The emergency shortcut suspension survives focus changes until toggled again.
 public sealed class CursorLockState {
   public bool Enabled { get; private set; }
@@ -11,6 +11,11 @@ public sealed class CursorLockState {
   public void Toggle() { if(Enabled)Suspended=!Suspended; }
   public bool ShouldConfine(bool visible,bool focused) { return Enabled&&!Suspended&&visible&&focused; }
   public static int Inset(int width,int height,double scale) { return Math.Min((int)Math.Round(12*scale),Math.Max(0,(Math.Min(width,height)-1)/2)); }
+  public struct Area { public int left,top,right,bottom; }
+  public static Area Bounds(int width,int height,double scale,bool menuVisible) {
+    int inset=Inset(width,height,scale);
+    return new Area{left=inset,top=menuVisible?0:inset,right=width-inset,bottom=height-inset};
+  }
   public static bool ValidShortcut(int key) {
     return (key>=0xA0&&key<=0xA5)||(key>=0x30&&key<=0x39)||(key>=0x41&&key<=0x5A)||
       (key>=0x60&&key<=0x6F)||(key>=0x70&&key<=0x87&&key!=0x7A)||

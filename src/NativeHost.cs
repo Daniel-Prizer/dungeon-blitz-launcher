@@ -34,6 +34,7 @@ public static class NativeHost {
   [DllImport("user32.dll",EntryPoint="ClipCursor")] static extern bool Unclip(IntPtr rect);
   [DllImport("user32.dll")] static extern bool GetClipCursor(out Rect rect);
   [DllImport("user32.dll")] static extern bool IsWindow(IntPtr hwnd);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern bool SetProp(IntPtr hwnd,string name,IntPtr data);
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr RemoveProp(IntPtr hwnd,string name);
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr GetProp(IntPtr hwnd,string name);
@@ -64,22 +65,39 @@ public static class NativeHost {
         bool ok=SendMessageTimeout(child,0x84,IntPtr.Zero,new IntPtr(point),2,500,out result)!=IntPtr.Zero;
         hits.Add(new{x=x,y=y,ok=ok,hit=result.ToInt64()});
       }
-    Emit("WINDOWTEST "+new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(new{actual=actual,expected=expected,hits=hits}));
+    Rect cursorArea;bool cursorAreaValid=ConfinementRectangle(out cursorArea);
+    Rect launcherClient;GetClientRect(parent,out launcherClient);Point launcherOrigin=new Point();ClientToScreen(parent,ref launcherOrigin);
+    launcherClient.left+=launcherOrigin.x;launcherClient.right+=launcherOrigin.x;launcherClient.top+=launcherOrigin.y;launcherClient.bottom+=launcherOrigin.y;
+    bool cursorAllowed=cursor.ShouldConfine(visible,IsWindow(parent)&&IsWindow(child)&&LauncherForeground());
+    bool menuAllowed=cursor.ShouldConfine(visible,LauncherForeground(parent));
+    bool gameAllowed=cursor.ShouldConfine(visible,LauncherForeground(child));
+    bool externalAllowed=cursor.ShouldConfine(visible,LauncherForeground(IntPtr.Zero));
+    uint cursorDpi=GetDpiForWindow(fullscreen?child:parent);
+    bool nonRude=GetProp(child,"NonRudeHWND")!=IntPtr.Zero;
+    Emit("WINDOWTEST "+new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(new{actual=actual,expected=expected,hits=hits,cursorArea=cursorArea,cursorAreaValid=cursorAreaValid,launcherClient=launcherClient,cursorAllowed=cursorAllowed,menuAllowed=menuAllowed,gameAllowed=gameAllowed,externalAllowed=externalAllowed,cursorDpi=cursorDpi,fullscreen=fullscreen,dryRun=dryRun,nonRude=nonRude,visibilityTransitions=visibilityTransitions}));
   }
   static readonly CursorLockState cursor=new CursorLockState();
   static bool clipped,dryRun;static Rect ownClip;static string lastCursor;
+  static int visibilityTransitions;
   static readonly ConcurrentQueue<string> commands=new ConcurrentQueue<string>();
   static volatile int volume=100;
   static volatile bool audioRunning=true;
   static readonly AutoResetEvent audioChanged=new AutoResetEvent(false);
-  static bool GameForeground() { IntPtr fg=GetForegroundWindow();return fg==child||IsChild(child,fg); }
+  static bool LauncherForeground(IntPtr fg) { return fg!=IntPtr.Zero&&(fg==child||IsChild(child,fg)||fg==parent||IsChild(parent,fg)); }
+  static bool LauncherForeground() { return LauncherForeground(GetForegroundWindow()); }
+  static bool ConfinementRectangle(out Rect area) {
+    // In windowed mode include the launcher's menu, preserving the side/bottom
+    // inset. Fullscreen has no menu and retains the game inset on every edge.
+    IntPtr target=fullscreen?child:parent;area=new Rect();Rect client;Point origin=new Point();
+    if(!GetClientRect(target,out client)||!ClientToScreen(target,ref origin)||client.right<=0||client.bottom<=0)return false;
+    var bounds=CursorLockState.Bounds(client.right,client.bottom,GetDpiForWindow(target)/96.0,!fullscreen);
+    area=new Rect{left=origin.x+bounds.left,top=origin.y+bounds.top,right=origin.x+bounds.right,bottom=origin.y+bounds.bottom};return true;
+  }
   static void UpdateCursor() {
-    bool active=cursor.ShouldConfine(visible,IsWindow(parent)&&IsWindow(child)&&GameForeground());
+    bool active=cursor.ShouldConfine(visible,IsWindow(parent)&&IsWindow(child)&&LauncherForeground());
     if(active) {
-      Rect rect;Point origin=new Point();
-      if(GetClientRect(child,out rect)&&ClientToScreen(child,ref origin)&&rect.right>0&&rect.bottom>0) {
-        int inset=CursorLockState.Inset(rect.right,rect.bottom,GetDpiForWindow(child)/96.0);
-        rect.right+=origin.x-inset;rect.bottom+=origin.y-inset;rect.left=origin.x+inset;rect.top=origin.y+inset;
+      Rect rect;
+      if(ConfinementRectangle(out rect)) {
         // Test windows run on another desktop, but the user's cursor is shared.
         // Never call ClipCursor in test mode, even on the inactive desktop.
         if(!dryRun) { clipped=Clip(ref rect);ownClip=rect;active=clipped; }
@@ -111,7 +129,7 @@ public static class NativeHost {
     if(code>=0) {
       int message=w.ToInt32();bool down=message==0x100||message==0x104;
       if(down||message==0x101||message==0x105) {
-        bool handled=cursor.Key(Marshal.ReadInt32(l),down,visible&&GameForeground());UpdateCursor();
+        bool handled=cursor.Key(Marshal.ReadInt32(l),down,visible&&LauncherForeground());UpdateCursor();
         if(handled)return new IntPtr(1);
       }
     }
@@ -151,7 +169,7 @@ public static class NativeHost {
     Emit("READY");
     var input = new Thread(() => {string line;while((line=Console.ReadLine())!=null)commands.Enqueue(line);commands.Enqueue("QUIT");});
     input.IsBackground=true;input.Start();
-    ITaskbarList2 taskbar=null;int initResult=unchecked((int)0x80004005);bool? marked=null;
+    ITaskbarList2 taskbar=null;int initResult=unchecked((int)0x80004005);bool? marked=null;bool wasGameForeground=false;
     try{taskbar=(ITaskbarList2)new TaskbarList();initResult=taskbar.HrInit();}catch(COMException e){initResult=e.ErrorCode;}
     // Audio COM work runs on its own MTA thread so device stalls cannot block
     // cursor release or the low-level keyboard hook's message pump.
@@ -180,8 +198,11 @@ public static class NativeHost {
             // renderer size during zoom. This helper owns position only.
             SetWindowPos(child, IntPtr.Zero, origin.x, origin.y, width, height, 0x0010 | 0x0004 | 0x0200 | 0x0001);
             bool shellFullscreen=fullscreen && visible;
-            if(marked!=shellFullscreen){MarkGameFullscreen(taskbar,shellFullscreen,initResult);marked=shellFullscreen;}
-            ShowWindow(child, visible ? 4 : 0);
+            // Avoid redundant show operations around Shell classification.
+            // Show only on an actual visibility transition, and
+            // notify after showing/placing the focused game's own HWND.
+            if(IsWindowVisible(child)!=visible){ShowWindow(child, visible ? 4 : 0);visibilityTransitions++;}
+            if(marked!=shellFullscreen||shellFullscreen){MarkGameFullscreen(taskbar,shellFullscreen,initResult);marked=shellFullscreen;}
             Emit("PLACED "+p[8]);
           } else if (p[0] == "ACTIVATE" && visible && fullscreen) {
             IntPtr foreground=GetForegroundWindow();
@@ -197,6 +218,10 @@ public static class NativeHost {
         } catch { Emit("ERROR Invalid host command."); }
       }
       if(!IsWindow(parent)||!IsWindow(child)){visible=false;UpdateCursor();Application.Exit();return;}
+      IntPtr currentForeground=GetForegroundWindow();
+      bool gameForeground=visible&&(currentForeground==child||IsChild(child,currentForeground));
+      if(gameForeground&&!wasGameForeground&&fullscreen)MarkGameFullscreen(taskbar,true,initResult);
+      wasGameForeground=gameForeground;
       UpdateCursor();
     };
     timer.Start();
