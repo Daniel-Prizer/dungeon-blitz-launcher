@@ -13,7 +13,10 @@ test('launcher defaults and validation discard obsolete browser settings', () =>
   for (let i=0;i<=100;i++)assert.equal(validSettings({volume:i}).volume,i);
   assert.equal(validSettings({unlockKey:'F11'}).unlockKey,'AltLeft');assert.equal(validSettings({unlockKey:'F8'}).unlockKey,'F8');
   assert.equal(validSettings({unlockKey:'KeyG'}).unlockKey,'KeyG');assert.equal(validSettings({unlockKey:'ControlLeft'}).unlockKey,'ControlLeft');assert.equal(validSettings({unlockKey:'Escape'}).unlockKey,'AltLeft');
-  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true})),['gameURL','volume','audioMix','cursorLock','unlockKey','gameZoom','keepGameAwake','hardwareAcceleration']);
+  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true})),['gameURL','volume','audioMix','cursorLock','unlockKey','gameZoom','upscaler','presentationFPS','keepGameAwake','hardwareAcceleration']);
+  assert.equal(defaults.upscaler,'off');assert.equal(defaults.presentationFPS,60);
+  assert.equal(validSettings({upscaler:'neural',presentationFPS:120}).upscaler,'neural');assert.equal(validSettings({upscaler:'neural',presentationFPS:120}).presentationFPS,120);
+  for(const invalid of [null,'120',144,60.5,0])assert.equal(validSettings({presentationFPS:invalid}).presentationFPS,60);
   assert.deepEqual(defaults.audioMix,{player:100,music:100,environment:100,creatures:100});
   for(let i=0;i<=100;i++)assert.equal(validSettings({audioMix:{creatures:i}}).audioMix.creatures,i);
   assert.deepEqual(validSettings({audioMix:{player:-1,music:101,environment:0.5,creatures:'50'}}).audioMix,defaults.audioMix);

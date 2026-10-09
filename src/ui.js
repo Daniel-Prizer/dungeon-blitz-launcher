@@ -24,6 +24,7 @@ function render(next) {
     $('volume').value = $('volume-number').value = s.volume; $('cursor-lock').checked = s.cursorLock;
     for(const bus of audioBuses){$('audio-'+bus).value=s.audioMix[bus];$('audio-value-'+bus).textContent=s.audioMix[bus]+'%';}
     $('game-zoom').value = s.gameZoom; $('hardware-acceleration').checked = s.hardwareAcceleration; $('keep-awake').checked = s.keepGameAwake;
+    $('upscaler').value=s.upscaler;$('presentation-fps').value=s.presentationFPS;
     $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
     $('dismiss').focus();
   }
@@ -36,6 +37,10 @@ function render(next) {
   $('audio-status').textContent = state.audio?.error ? 'Audio control unavailable. Reconnect to retry.' : "Controls this game's sound only.";
   $('audio-mix-status').textContent=state.audioIntegration===false?'Separate sound controls need an update for this client version. Master volume still works.':'Player includes characters, abilities and menu sounds. Environment includes ambient loops and world sounds.';
   for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
+  $('upscaler').disabled=state.clientIntegration===false;
+  $('presentation-fps').disabled=s.upscaler==='off';
+  const graphics=state.presentation;
+  $('upscaler-status').textContent=graphics?.error|| (graphics?.mode==='neural'?`Neural upscaling · ${graphics.capturedFPS||0} processed frames/s${graphics.native?.gpuMs>=0?' · GPU '+graphics.native.gpuMs.toFixed(2)+' ms':''}`:'Experimental. Game speed and animation timing stay unchanged.');
   $('url-status').textContent = state.pendingURL ? 'Saved. Reconnect to use the new game URL.' : '';
   $('reconnect').textContent = state.pendingURL ? 'Apply URL & reconnect' : 'Reconnect game';
 }
@@ -66,6 +71,8 @@ document.addEventListener('keydown',async e=>{
 },true);
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#unlock-key'))return;if(recording){recording=false;call('capture-shortcut',false);$('unlock-key').setAttribute('aria-pressed','false');$('unlock-key').textContent=window.blitzShortcuts.label(state.settings.unlockKey);}},true);
 $('game-zoom').onchange = () => save({ gameZoom: Number($('game-zoom').value) });
+$('upscaler').onchange=()=>save({upscaler:$('upscaler').value});
+$('presentation-fps').onchange=()=>save({presentationFPS:Number($('presentation-fps').value)});
 $('hardware-acceleration').onchange = () => save({ hardwareAcceleration: $('hardware-acceleration').checked });
 $('keep-awake').onchange = () => save({ keepGameAwake: $('keep-awake').checked });
 function volumeInput(source) {

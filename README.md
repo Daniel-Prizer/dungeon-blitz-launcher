@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.4.0** (minor: independent sound categories; also fixes in-game links and removes the ready label).
+Version **0.5.0** (minor: experimental GPU neural upscaling).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 
@@ -20,6 +20,8 @@ Game links on the selected game origin reload the configured game page. User-act
 - Game URL: defaults to https://dungeonblitzr.theminesa.studio/. Accepts HTTPS pages and HTTP on localhost/127.0.0.1/[::1]. Credentials and privileged URL schemes are rejected. Save the URL, then use Apply URL & reconnect. An address edit never silently interrupts gameplay. The isolated runtime's HTTP access is restricted to that selected origin; pages requiring resources on another origin may not work.
 - Game scale: Fit entire game, or 50–300%. Larger-than-Fit views crop edges. The reviewed Minesa client uses a fixed logical picture inside a full-window Flash stage: changing scale enlarges the picture while the side margins remain part of Flash. Margin clicks preserve focus and pass native aiming and attack events to the game. The Lost Focus splash is removed; normal focus and key cleanup remain.
 - Graphics acceleration requires a launcher restart. Background activity can be disabled.
+- Upscaling: Original (default), or Neural 2× (experimental). A real four-pass CuNNy network reconstructs the game image at twice its captured resolution and fits that result to the same game window. Native Flash raster resolution and game/input coordinates stay unchanged. This is image enhancement, not an FPS boost. Original instantly removes the presentation surface. Capture/device failures automatically restore original rendering, with a note in Settings and no popup. Large viewports above 3840×2160 are unsupported in this experiment.
+- Presentation limit: 60 or 120 processed captures per second when neural mode is enabled. This is an upper limit, not a promised frame rate and not frame generation. Game animation/simulation timing is untouched. On the guarded inactive desktop the live public client supplied about 30 processed captures/s at either limit; captures can repeat the same game frame. End-to-end input latency and physical display cadence have not been measured. Leave Original selected for the lowest overhead.
 
 F11 toggles fullscreen. Escape exits fullscreen. Ctrl+, opens settings even while the game has focus. Fullscreen has no title/exit strip. Closing and reconnecting do not show leave-game confirmations.
 
@@ -36,6 +38,10 @@ npm run test:input: live Flash email/password typing and paste compared with typ
 npm run test:margins: live full-window Flash bounds, side-click focus and rendered magnification; a separate Flash fixture verifies actual stage MouseDown/MouseUp and aim coordinates.
 npm run test:window: real Windows hit-test queries at every game edge/corner and exact native placement after launcher move/resize/maximize/fullscreen/settings. No OS pointer input is sent.
 
+npm run test:neural: actual D3D11 learned-network output, RGB color preservation, bounded argument validation, sustained frame delivery, transparent native hit testing, overlay placement after move/resize/fullscreen, real settings controls and original-rendering fallback on the guarded inactive desktop.
+
+npm run test:input:neural: the real live login typing/paste regression with neural mode enabled. Dummy strings only; no login or system clipboard.
+
 The presentation changes and audio adapter apply only to an exact, reviewed client revision. Unknown SWF revisions run unchanged and show a compatibility note in Settings. The client is fetched from the selected game origin normally; no game executable, credentials or gameplay data are bundled or replaced.
 
 No test switches desktops, moves your mouse, sends OS keyboard input, uses your clipboard or logs into your account. Cursor ClipCursor calls are deliberately disabled in automated integration tests; state/shortcut routing is tested without physically confining your pointer. The inactive desktop has no Explorer, so taskbar visibility cannot be visually verified there. Login-screen tests do not prove authenticated dungeon combat, audio quality or long-session stability.
@@ -46,7 +52,9 @@ See SECURITY.md for the remaining Flash and legacy Chromium risks. No claim of z
 
 The build downloads checksum-verified JPEXS 26.3.0 and the publicly served reviewed Minesa client into .test-tools. Only a bounded, hash-validated audio delta and the launcher-owned adapter are shipped; the complete game SWF and compiler are excluded. Building verifies that 3,746 original method bodies outside the reviewed audio hooks remain byte-identical.
 
-See docs/CLIENT-FEATURES.md for the upscaling investigation. FSR 1 is a possible future GPU presentation path; this release does not include an upscaler or claim an FPS increase.
+See docs/CLIENT-FEATURES.md for measured neural and frame-interpolation experiments. RIFE frame generation was tried offline at 720p and 360p, with equal-duration motion checks. Live frame generation is not shipped; 60/120 distinct game frames have not been established.
+
+The CuNNy shader is pinned, checked at build time and shipped as replaceable source with upstream notices and GPL/LGPL license texts in src/neural and the game runtime resources. Launcher-owned code remains MIT; the upstream shader retains its own license. Neural mode uses a local D3D11 module built from src/NeuralWindow.c; models are never fetched while playing.
 
 ## Public source repository
 
