@@ -175,7 +175,10 @@ public static class NativeHost {
             int width = (int)(int.Parse(p[3])*scale), height = (int)(int.Parse(p[4])*scale);
             Point origin = new Point { x = (int)(int.Parse(p[1])*scale), y = (int)(int.Parse(p[2])*scale) };
             ClientToScreen(parent, ref origin);
-            SetWindowPos(child, IntPtr.Zero, origin.x, origin.y, width, height, 0x0010 | 0x0004 | 0x0200 | 0x0020);
+            // Chromium owns sizing on its own window thread. Cross-process
+            // sizing races its cached widget bounds and can restore an old
+            // renderer size during zoom. This helper owns position only.
+            SetWindowPos(child, IntPtr.Zero, origin.x, origin.y, width, height, 0x0010 | 0x0004 | 0x0200 | 0x0001);
             bool shellFullscreen=fullscreen && visible;
             if(marked!=shellFullscreen){MarkGameFullscreen(taskbar,shellFullscreen,initResult);marked=shellFullscreen;}
             ShowWindow(child, visible ? 4 : 0);

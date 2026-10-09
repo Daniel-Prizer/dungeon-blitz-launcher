@@ -39,6 +39,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     const command=cmd=>app.evaluate(({},cmd)=>global.__blitzTest.nativeCommand(null,cmd),cmd);
     async function measure(name,capture=false){
       const file=path.join(out,name+(capture?'.png':''));if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');
+      if(capture&&fs.existsSync(file))fs.unlinkSync(file);
       await command({type:capture?'capture':'test-geometry',path:file});await until(()=>fs.existsSync(file+'.json'),'Game geometry missing');return {file,...JSON.parse(fs.readFileSync(file+'.json','utf8'))};
     }
     if(privateDesktop){await app.evaluate(()=>global.__blitzTest.runtime().focus());await wait(600)}
@@ -89,7 +90,11 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     }
     checks.push('Actual settings controls, 0/1/37 volume, checkbox, shortcut selection and release button');
     await page.screenshot({path:path.join(out,privateDesktop?'settings-native.png':'settings.png')});
-    await page.locator('#game-zoom').selectOption('1.5');await wait(400);const enlarged=await measure('scale-150');assert(enlarged.scale>live.scale*1.45);
+    await page.locator('#game-zoom').selectOption('1.5');await wait(400);const enlarged=await measure('scale-150');
+    assert(enlarged.renderProbe&&live.renderProbe,'Reviewed native raster adapter must be active');
+    assert.equal(enlarged.renderProbe.zoom,1.5);
+    assert(enlarged.renderProbe.nativeScale*enlarged.scale>live.renderProbe.nativeScale*live.scale*1.45,'Game magnification must increase inside Flash');
+    assert(enlarged.renderProbe.bitmapWidth>live.renderProbe.bitmapWidth*1.45,'Magnification must allocate real game pixels');
     await page.locator('#game-zoom').selectOption('1');await page.getByRole('button',{name:'Back to game'}).click();await wait(600);
     if(privateDesktop){const restored=await measure('focus-restored');assert(restored.focused&&restored.contentFocused&&restored.geometry.focused);}
     await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await wait(600);assert.equal((await call('state')).fullscreen,true);
