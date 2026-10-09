@@ -1,6 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 let state, settingsOpen = false, pending = Promise.resolve(), volumeTimer, recording=false;
+const audioBuses=['player','music','environment','creatures'];
 async function call(name, value) {
   const result = await window.blitz.action(name, value);
   if (result?.error) $('feedback').textContent = result.error;
@@ -13,7 +14,6 @@ function save(patch) {
 function render(next) {
   state = next; const s = state.settings;
   document.body.classList.toggle('fullscreen', state.fullscreen);
-  $('status').textContent = state.error ? 'Connection problem' : state.loading ? 'Connecting…' : 'Game ready';
   $('waiting-text').textContent = state.error || 'Starting your game…';
   $('overlay').hidden = !state.modal;
   $('settings-content').hidden = state.modal !== 'settings'; $('error-content').hidden = state.modal !== 'error';
@@ -22,6 +22,7 @@ function render(next) {
   $('compatibility').hidden = state.clientIntegration !== false;
   if (state.modal === 'settings' && !settingsOpen) {
     $('volume').value = $('volume-number').value = s.volume; $('cursor-lock').checked = s.cursorLock;
+    for(const bus of audioBuses){$('audio-'+bus).value=s.audioMix[bus];$('audio-value-'+bus).textContent=s.audioMix[bus]+'%';}
     $('game-zoom').value = s.gameZoom; $('hardware-acceleration').checked = s.hardwareAcceleration; $('keep-awake').checked = s.keepGameAwake;
     $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
     $('dismiss').focus();
@@ -33,6 +34,8 @@ function render(next) {
   $('toggle-cursor').textContent = state.cursor.suspended ? 'Lock cursor when back in game' : 'Unlock cursor';
   $('cursor-status').textContent = !s.cursorLock ? 'Cursor lock is off.' : state.cursor.suspended ? 'Cursor is unlocked until you toggle it again.' : 'Cursor locks when you return to the game.';
   $('audio-status').textContent = state.audio?.error ? 'Audio control unavailable. Reconnect to retry.' : "Controls this game's sound only.";
+  $('audio-mix-status').textContent=state.audioIntegration===false?'Separate sound controls need an update for this client version. Master volume still works.':'Player includes characters, abilities and menu sounds. Environment includes ambient loops and world sounds.';
+  for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
   $('url-status').textContent = state.pendingURL ? 'Saved. Reconnect to use the new game URL.' : '';
   $('reconnect').textContent = state.pendingURL ? 'Apply URL & reconnect' : 'Reconnect game';
 }
@@ -71,6 +74,10 @@ function volumeInput(source) {
   $('volume').value = $('volume-number').value = v; clearTimeout(volumeTimer); volumeTimer = setTimeout(() => save({ volume: v }), 70);
 }
 $('volume').oninput = () => volumeInput($('volume')); $('volume-number').oninput = () => volumeInput($('volume-number'));
+for(const bus of audioBuses)$('audio-'+bus).oninput=()=>{
+  $('audio-value-'+bus).textContent=$('audio-'+bus).value+'%';
+  const mix=Object.fromEntries(audioBuses.map(key=>[key,Number($('audio-'+key).value)]));save({audioMix:mix});
+};
 $('volume-number').onblur = () => {
   const value = Number($('volume-number').value);
   if ($('volume-number').value === '' || !Number.isInteger(value) || value < 0 || value > 100) $('volume-number').value = $('volume').value;

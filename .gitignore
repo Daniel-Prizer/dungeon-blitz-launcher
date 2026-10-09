@@ -9,3 +9,4 @@ Blitz Browser.exe
 Dungeon Blitz Launcher.exe
 docs/*
 !docs/TESTING.md
+!docs/CLIENT-FEATURES.md

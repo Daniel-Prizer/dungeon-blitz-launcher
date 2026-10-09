@@ -13,7 +13,10 @@ test('launcher defaults and validation discard obsolete browser settings', () =>
   for (let i=0;i<=100;i++)assert.equal(validSettings({volume:i}).volume,i);
   assert.equal(validSettings({unlockKey:'F11'}).unlockKey,'AltLeft');assert.equal(validSettings({unlockKey:'F8'}).unlockKey,'F8');
   assert.equal(validSettings({unlockKey:'KeyG'}).unlockKey,'KeyG');assert.equal(validSettings({unlockKey:'ControlLeft'}).unlockKey,'ControlLeft');assert.equal(validSettings({unlockKey:'Escape'}).unlockKey,'AltLeft');
-  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true})),['gameURL','volume','cursorLock','unlockKey','gameZoom','keepGameAwake','hardwareAcceleration']);
+  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true})),['gameURL','volume','audioMix','cursorLock','unlockKey','gameZoom','keepGameAwake','hardwareAcceleration']);
+  assert.deepEqual(defaults.audioMix,{player:100,music:100,environment:100,creatures:100});
+  for(let i=0;i<=100;i++)assert.equal(validSettings({audioMix:{creatures:i}}).audioMix.creatures,i);
+  assert.deepEqual(validSettings({audioMix:{player:-1,music:101,environment:0.5,creatures:'50'}}).audioMix,defaults.audioMix);
 });
 test('migration and atomic persistence retain game preferences without browser data', () => {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'blitz-launcher-'));
@@ -21,6 +24,7 @@ test('migration and atomic persistence retain game preferences without browser d
     fs.writeFileSync(path.join(dir,'preferences.json'),JSON.stringify({settings:{homepage:'https://example.com',defaultZoom:1.5},tabs:[LIVE],history:[{url:LIVE}],bookmarks:[{url:LIVE}]}));
     const old=loadStore(dir);assert.equal(old.data.settings.gameURL,LIVE);assert.equal(old.data.settings.gameZoom,1.5);assert(!('tabs'in old.data));assert(!('history'in old.data));
     old.data.settings.volume=37;old.data.settings.cursorLock=true;old.data.settings.unlockKey='F8';old.data.settings.gameURL='http://localhost:8080/';old.save();
+    old.data.settings.audioMix={player:23,music:0,environment:44,creatures:100};old.save();
     assert.deepEqual(loadStore(dir).data.settings,old.data.settings);
     assert(!fs.readFileSync(path.join(dir,'preferences.json'),'utf8').includes('history'));
     fs.writeFileSync(path.join(dir,'preferences.json'),'{broken');assert.equal(loadStore(dir).data.settings.volume,100);

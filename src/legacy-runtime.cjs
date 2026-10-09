@@ -10,6 +10,7 @@ class LegacyRuntime extends EventEmitter {
   constructor(root, parentHandle, test = false, privateDesktop = false, gameURL) {
     super();
     this.closed = false; this.bounds = null; this.host = null; this.pending = []; this.zoom = 1; this.test = test; this.privateDesktop = privateDesktop;
+    this.audioIntegration=false;
     this.layoutRevision=0;this.appliedLayoutRevision=0;this.focusPending=false;this.activationRechecks=0;
     const executable = path.join(root, 'game/BlitzGame.exe');
     const log = message => { try { const file=path.join(root,'host-diagnostics.log'); if(fs.existsSync(file)&&fs.statSync(file).size>65536)fs.writeFileSync(file,'');fs.appendFileSync(file,`${new Date().toISOString()} ${message}\n`); } catch {} };
@@ -71,6 +72,7 @@ class LegacyRuntime extends EventEmitter {
         });
       } else {
         if(event.type==='client-integration')this.clientIntegration=event.value===true;
+        if(event.type==='audio-integration')this.audioIntegration=event.value===true;
         if(event.type==='focused' && this.bounds?.[1] && this.bounds?.[2] && this.host?.stdin.writable){
           this.activationRechecks++;this.host.stdin.write('ACTIVATE\n');
         }
@@ -91,6 +93,7 @@ class LegacyRuntime extends EventEmitter {
     const previous=this.settings;this.settings=validSettings(settings);
     if(!previous || previous.gameZoom!==this.settings.gameZoom)this.send({type:'zoom',value:this.settings.gameZoom});
     if(!previous || previous.keepGameAwake!==this.settings.keepGameAwake)this.send({type:'background',value:this.settings.keepGameAwake});
+    if(!previous||JSON.stringify(previous.audioMix)!==JSON.stringify(this.settings.audioMix))this.send({type:'audio-mix',value:this.settings.audioMix});
     if(this.host?.stdin.writable) {
       if(!previous || previous.volume!==this.settings.volume || !this.configuredHost){this.host.stdin.write(`VOLUME ${this.settings.volume}\n`);}
       if(!previous || previous.cursorLock!==this.settings.cursorLock || previous.unlockKey!==this.settings.unlockKey || !this.configuredHost)
