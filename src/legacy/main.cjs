@@ -49,7 +49,7 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // game compositor must keep painting; background throttling remains configurable.
 app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
 if (process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP) {
-  app.disableHardwareAcceleration();
+  if(process.env.BLITZ_HOST_GPU_TEST!=='1')app.disableHardwareAcceleration();
   app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
   app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
 }
@@ -204,7 +204,7 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     if(cmd.type==='audio-mix'&&cmd.value&&['player','music','environment','creatures'].every(key=>Number.isInteger(cmd.value[key])&&cmd.value[key]>=0&&cmd.value[key]<=100)){audioMix=cmd.value;await applyAudioMix();}
     if(cmd.type==='test-audio-fixture'&&process.env.BLITZ_HOST_TEST==='1'){audioIntegration=true;emit({type:'audio-integration',value:true});await applyAudioMix();}
     if (cmd.type === 'background') win.webContents.setBackgroundThrottling(!cmd.value);
-    if(cmd.type==='neural'&&typeof cmd.value==='boolean'){neuralRequested=cmd.value;if([60,120].includes(cmd.rate))neural.setRate(cmd.rate);await applyPresentation();}
+    if(cmd.type==='neural'&&typeof cmd.value==='boolean'){neuralRequested=cmd.value;neural.setCompare(cmd.compare===true);await applyPresentation();}
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();
     if (cmd.type === 'focus' && win.isVisible()) { win.focus(); win.webContents.focus(); }
@@ -220,6 +220,8 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);
     if(cmd.type==='test-neural-readback'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string'){neural.testReadback(cmd.path);emit({type:'neural-readback',path:cmd.path});}
     if(cmd.type==='test-neural-fixture'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string')await neural.testFixture(cmd.path);
+    if(cmd.type==='test-neural-comparison'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string')await neural.testComparison(cmd.path);
+    if(cmd.type==='test-neural-subscription'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string')neural.testSubscription(cmd.path);
     if (cmd.type === 'test-paste-source' && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.text==='string') {
       // Exercise real insertion with dummy data without touching the clipboard.
       readPasteText=()=>cmd.text;

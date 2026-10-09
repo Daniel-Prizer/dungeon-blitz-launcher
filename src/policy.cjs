@@ -22,7 +22,7 @@ function validSettings(input = {}) {
     unlockKey: Object.hasOwn(UNLOCK_KEYS, input.unlockKey) ? input.unlockKey : 'AltLeft',
     gameZoom: zoom(input.gameZoom ?? input.defaultZoom),
     upscaler:input.upscaler==='neural'?'neural':'off',
-    presentationFPS:input.presentationFPS===120?120:60,
+    neuralCompare:input.neuralCompare===true,
     keepGameAwake: input.keepGameAwake !== false, hardwareAcceleration: input.hardwareAcceleration !== false };
 }
 module.exports = { LIVE, UNLOCK_KEYS, gameURL, zoom, validSettings, validAudioMix, AUDIO_BUSES };
