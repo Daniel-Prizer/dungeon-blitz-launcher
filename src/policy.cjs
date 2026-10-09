@@ -21,6 +21,7 @@ function validSettings(input = {}) {
     cursorLock: input.cursorLock === true,
     unlockKey: Object.hasOwn(UNLOCK_KEYS, input.unlockKey) ? input.unlockKey : 'AltLeft',
     gameZoom: zoom(input.gameZoom ?? input.defaultZoom),
+    renderResolution: [.5,.75,1].includes(input.renderResolution)?input.renderResolution:1,
     keepGameAwake: input.keepGameAwake !== false, hardwareAcceleration: input.hardwareAcceleration !== false };
 }
 module.exports = { LIVE, UNLOCK_KEYS, gameURL, zoom, validSettings, validAudioMix, AUDIO_BUSES };

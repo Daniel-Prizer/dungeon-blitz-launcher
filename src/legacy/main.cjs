@@ -18,7 +18,7 @@ const ORIGIN = new URL(LIVE).origin;
 let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false;
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
-let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false;
+let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false,renderResolution=1;
 async function applyAudioMix(){
  if(!win||win.isDestroyed()||!audioIntegration)return;
  const key=JSON.stringify(audioMix);if(key===appliedAudioMix)return;
@@ -49,7 +49,7 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // hide/background settings still control activity. No clocks or input are changed.
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
-if (process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP) {
+if (process.env.BLITZ_GAME_ACCELERATION==='0'||(process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP)) {
   app.disableHardwareAcceleration();
 }
 function emit(data) { const message = JSON.stringify(data) + '\n'; if (connected) pipe.write(message); else queued.push(message); }
@@ -64,7 +64,7 @@ function sizeGameWindow(width,height){
 }
 async function applyZoom() {
   if (!win || win.isDestroyed()) return;
-  const revision=++zoomRevision,currentZoom=zoom,currentViewport={...viewport};
+  const revision=++zoomRevision,currentZoom=zoom,currentViewport={...viewport},currentResolution=renderResolution;
   const before=win.webContents.getZoomFactor();
   const probe=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return {native:typeof e?.BlitzSetPictureZoom==='function',density:devicePixelRatio/${before}};})()`).catch(()=>null);
   if(revision!==zoomRevision||win.isDestroyed())return;
@@ -73,7 +73,7 @@ async function applyZoom() {
   // Let Flash allocate its own bitmap at device-pixel resolution. Browser zoom
   // compensates Windows DPI, not game magnification. Only exceptionally large
   // views use a bounded raster plus residual scaling to avoid unsafe allocations.
-  const plan=rasterPlan(currentViewport.width,currentViewport.height,currentZoom,density);
+  const plan=rasterPlan(currentViewport.width,currentViewport.height,currentZoom,density,currentResolution);
   const factor=native?plan.browserZoom:Math.max(.1,Math.min(10,Math.min(currentViewport.width/1152,currentViewport.height/768)*currentZoom));
   // Reapplying an identical page zoom in this legacy Chromium can restore its
   // cached pre-attachment window bounds. Picture zoom belongs inside Flash.
@@ -84,7 +84,7 @@ async function applyZoom() {
   if(native&&applied){
    const key=JSON.stringify([currentZoom,currentViewport,density,factor]);
    if(key!==appliedDisplayKey){
-    const changed=await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzSetPictureZoom(${currentZoom})`).catch(()=>false);
+    const changed=await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzSetPictureZoom(${currentZoom},${factor})`).catch(()=>false);
     if(changed===true&&revision===zoomRevision)appliedDisplayKey=key;
    }
   }
@@ -217,6 +217,7 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     const cmd = JSON.parse(line);
     if (!win || win.isDestroyed()) return;
     if (cmd.type === 'zoom') { zoom = Math.max(.5, Math.min(3, Number(cmd.value) || 1)); await applyZoom(); }
+    if(cmd.type==='render-resolution'&&[.5,.75,1].includes(cmd.value)){renderResolution=cmd.value;await applyZoom();}
     if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
     if (['viewport','test-viewport'].includes(cmd.type) && Number.isInteger(cmd.width) && Number.isInteger(cmd.height)) {
       viewport={width:Math.max(1,Math.min(8000,cmd.width)),height:Math.max(1,Math.min(8000,cmd.height))};
@@ -240,10 +241,11 @@ readline.createInterface({ input: pipe }).on('line', async line => {
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`);
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`);
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);
+    if(cmd.type==='test-fps-control'&&process.env.BLITZ_HOST_TEST==='1'&&[30,60,100].includes(cmd.rate)&&Number.isInteger(cmd.busy)&&cmd.busy>=0&&cmd.busy<=100&&typeof cmd.margins==='boolean')await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').FPSFixtureControl(${cmd.rate},${cmd.busy},${cmd.margins})`);
     if (cmd.type === 'test-paste-source' && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.text==='string') {
       // Exercise real insertion with dummy data without touching the clipboard.
       readPasteText=()=>cmd.text;

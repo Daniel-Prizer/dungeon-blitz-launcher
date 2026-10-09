@@ -12,5 +12,7 @@ test('reviewed audio delta matches the independently compiled client',{skip:![li
  const presentation=patchClient(fs.readFileSync(live));assert(presentation);
  const audio=patchAudio(presentation,JSON.parse(fs.readFileSync(delta)));assert(audio);
  assert.deepEqual(zlib.inflateSync(audio.subarray(8)),zlib.inflateSync(fs.readFileSync(compiled).subarray(8)));
+ const body=zlib.inflateSync(audio.subarray(8));assert(body.includes(Buffer.from('BlitzFrameCounter')),'Production counter must be in the reviewed adapter');
+ assert(!body.includes(Buffer.from('FPSFixtureControl')),'Test clock/stall controls must not enter the production client delta');
  const changed=Buffer.from(presentation);changed[changed.length-1]^=1;assert.equal(patchAudio(changed,JSON.parse(fs.readFileSync(delta))),null);
 });

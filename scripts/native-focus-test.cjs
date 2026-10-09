@@ -12,7 +12,8 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const page=await app.firstWindow();await page.waitForFunction(()=>window.blitz);
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].showInactive());
     const call=(n,v)=>page.evaluate(([n,v])=>window.blitz.action(n,v),[n,v]);
-    await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',volume:100,cursorLock:false,gameZoom:1});await call('restart-game');await wait(15000);
+    const renderResolution=Number(process.env.BLITZ_TEST_RENDER_RESOLUTION||1);assert([.5,.75,1].includes(renderResolution));
+    await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',volume:100,cursorLock:false,gameZoom:1,renderResolution});await call('restart-game');await wait(15000);
     const game={id:1};assert.equal((await call('state')).error,'');
     const measure=async name=>{
       const file=path.join(out,name);if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');

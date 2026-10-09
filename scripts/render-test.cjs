@@ -13,7 +13,7 @@ async function until(fn){for(let i=0;i<150;i++){const v=await fn();if(v)return v
   const call=(n,v)=>page.evaluate(([n,v])=>window.blitz.action(n,v),[n,v]);
   const cmd=value=>app.evaluate(({},value)=>global.__blitzTest.nativeCommand(null,value),value);
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.showInactive();w.focus();});
-  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false});await call('restart-game');
+  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false,renderResolution:1});await call('restart-game');
   await until(async()=>!(await call('state')).loading&&(await call('state')).clientIntegration);await wait(5000);
   async function capture(name){
    const file=path.join(out,name+'.png');if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');
@@ -44,6 +44,21 @@ async function until(fn){for(let i=0;i<150;i++){const v=await fn();if(v)return v
    assert(native.focused&&native.contentFocused);records.push({width,height,old,native});
    console.log('Native raster',JSON.stringify({width,height,old:old.renderProbe,native:native.renderProbe}));
    console.log('Title-screen diagnostic timings',JSON.stringify({width,old:old.responsiveness,native:native.responsiveness}));
+   for(const resolution of [.75,.5,1]){
+    await call('settings');await page.locator('#render-resolution').selectOption(String(resolution));
+    await until(async()=>(await call('state')).settings.renderResolution===resolution);await call('dismiss');await wait(2400);
+    const reduced=await capture(width+'-detail-'+resolution),probe=reduced.renderProbe;
+    assert.equal(reduced.renderResolution,resolution);assert.equal(probe.animationRate,100);
+    assert(Math.abs(probe.nativeScale*reduced.scale-native.renderProbe.nativeScale)<.025,'Picture size must remain constant when raster resolution changes');
+    assert(Math.abs(probe.bitmapWidth/native.renderProbe.bitmapWidth-resolution)<.015);
+    assert(Math.abs(probe.bitmapHeight/native.renderProbe.bitmapHeight-resolution)<.015);
+    assert.equal(probe.frameCounter.visible,true,'FPS counter must still fit in the physical gray margin');
+    assert(Math.abs(probe.frameCounter.width*reduced.scale-native.renderProbe.frameCounter.width)<.01,'Counter keeps its physical size');
+    assert(reduced.focused&&reduced.contentFocused);const samples=[];
+    for(let repeat=0;repeat<3;repeat++){await wait(1100);const p=await capture(width+'-detail-'+resolution+'-fps-'+repeat);samples.push(p.renderProbe.frameCounter.fps);}
+    records.push({width,height,resolution,record:reduced,titleFrameSamples:samples});
+    console.log('Render resolution',JSON.stringify({width,resolution,bitmapWidth:probe.bitmapWidth,bitmapHeight:probe.bitmapHeight,displayedScale:probe.nativeScale*reduced.scale,measuredTitleFPS:samples}));
+   }
   }
   for(const zoom of [.5,.75,1,1.5,3]){
    await call('save-settings',{gameZoom:zoom});await wait(1500);const r=await capture('zoom-'+zoom);

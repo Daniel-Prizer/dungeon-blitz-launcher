@@ -71,7 +71,7 @@ function startGame() {
   game?.close(); game = null; error = ''; loading = true; gameAddress = store.data.settings.gameURL;
   try {
     const root = app.isPackaged ? path.join(process.resourcesPath, 'runtime') : path.join(__dirname, '../runtime');
-    const instance = new LegacyRuntime(root, win.getNativeWindowHandle(), smoke, privateDesktop, gameAddress); game = instance;
+    const instance = new LegacyRuntime(root, win.getNativeWindowHandle(), smoke, privateDesktop, gameAddress,store.data.settings.hardwareAcceleration); game = instance;
     const current = () => game === instance && !closing;
     instance.on('ready', () => { if (!current()) return; instance.configure(store.data.settings); layout(); if (win.isFocused()) focusGame(); });
     instance.on('failure', message => { if (!current()) return; error = String(message).slice(0, 300); loading = false; modal = 'error'; layout(); win.webContents.focus(); });
@@ -110,6 +110,7 @@ async function action(name, value) {
       if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid settings.');
       if ('gameURL' in value && !gameURL(value.gameURL)) throw new Error('Use an HTTPS game URL, or HTTP for localhost. Passwords in URLs are not allowed.');
       if ('volume' in value && (!Number.isInteger(value.volume) || value.volume < 0 || value.volume > 100)) throw new Error('Volume must be a whole number from 0 to 100.');
+      if('renderResolution' in value&&![.5,.75,1].includes(value.renderResolution))throw new Error('Choose 100%, 75% or 50% rendering resolution.');
       if('audioMix' in value&&(!value.audioMix||Array.isArray(value.audioMix)||!AUDIO_BUSES.every(key=>Number.isInteger(value.audioMix[key])&&value.audioMix[key]>=0&&value.audioMix[key]<=100)))throw new Error('Sound volumes must be whole numbers from 0 to 100.');
       const previous = store.data.settings, next = validSettings({ ...previous, ...value }); store.data.settings = next;
       try { store.save(); } catch { store.data.settings = previous; throw new Error('Settings could not be saved. Check free disk space.'); }
