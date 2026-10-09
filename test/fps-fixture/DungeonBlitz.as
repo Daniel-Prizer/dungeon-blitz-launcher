@@ -28,6 +28,7 @@ package {
    stage.addEventListener(MouseEvent.MOUSE_UP,mouse);
    ExternalInterface.addCallback("FPSFixtureControl",control);
    ExternalInterface.addCallback("BlitzRenderState",snapshot);
+   ExternalInterface.addCallback("BlitzShowFPS",BlitzFrameCounter.SetShown);
   }
   private function position():void {
    var left:Number=margins?(stage.stageWidth-Math.min(stage.stageWidth,stage.stageHeight*1.5))*0.5:0;

@@ -94,6 +94,7 @@ class LegacyRuntime extends EventEmitter {
     const previous=this.settings;this.settings=validSettings(settings);
     if(!previous || previous.gameZoom!==this.settings.gameZoom)this.send({type:'zoom',value:this.settings.gameZoom});
     if(!previous || previous.renderResolution!==this.settings.renderResolution)this.send({type:'render-resolution',value:this.settings.renderResolution});
+    if(!previous || previous.showFPS!==this.settings.showFPS)this.send({type:'show-fps',value:this.settings.showFPS});
     if(!previous || previous.keepGameAwake!==this.settings.keepGameAwake)this.send({type:'background',value:this.settings.keepGameAwake});
     if(!previous||JSON.stringify(previous.audioMix)!==JSON.stringify(this.settings.audioMix))this.send({type:'audio-mix',value:this.settings.audioMix});
     if(this.host?.stdin.writable) {

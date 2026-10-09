@@ -25,6 +25,7 @@ function render(next) {
     for(const bus of audioBuses){$('audio-'+bus).value=s.audioMix[bus];$('audio-value-'+bus).textContent=s.audioMix[bus]+'%';}
     $('game-zoom').value = s.gameZoom; $('hardware-acceleration').checked = s.hardwareAcceleration; $('keep-awake').checked = s.keepGameAwake;
     $('render-resolution').value=s.renderResolution;
+    $('show-fps').checked=s.showFPS;
     $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
     $('dismiss').focus();
   }
@@ -38,6 +39,7 @@ function render(next) {
   $('audio-mix-status').textContent=state.audioIntegration===false?'Separate sound controls need an update for this client version. Master volume still works.':'Player includes characters, abilities and menu sounds. Environment includes ambient loops and world sounds.';
   for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
   $('render-resolution').disabled=state.clientIntegration===false||state.audioIntegration===false;
+  $('show-fps').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('url-status').textContent = state.pendingURL ? 'Saved. Reconnect to use the new game URL.' : '';
   $('reconnect').textContent = state.pendingURL ? 'Apply URL & reconnect' : 'Reconnect game';
 }
@@ -69,6 +71,7 @@ document.addEventListener('keydown',async e=>{
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#unlock-key'))return;if(recording){recording=false;call('capture-shortcut',false);$('unlock-key').setAttribute('aria-pressed','false');$('unlock-key').textContent=window.blitzShortcuts.label(state.settings.unlockKey);}},true);
 $('game-zoom').onchange = () => save({ gameZoom: Number($('game-zoom').value) });
 $('render-resolution').onchange=()=>save({renderResolution:Number($('render-resolution').value)});
+$('show-fps').onchange=()=>save({showFPS:$('show-fps').checked});
 $('hardware-acceleration').onchange = () => save({ hardwareAcceleration: $('hardware-acceleration').checked });
 $('keep-awake').onchange = () => save({ keepGameAwake: $('keep-awake').checked });
 function volumeInput(source) {

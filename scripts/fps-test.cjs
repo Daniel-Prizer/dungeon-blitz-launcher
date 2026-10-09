@@ -20,7 +20,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   const call=(name,value)=>page.evaluate(([name,value])=>window.blitz.action(name,value),[name,value]);
   const cmd=value=>app.evaluate(({},value)=>global.__blitzTest.nativeCommand(null,value),value);
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setContentSize(1920,1112);w.showInactive();w.focus();});
-  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false,renderResolution:1});await call('restart-game');
+  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false});await call('restart-game');
   await until(async()=>!(await call('state')).loading&&(await call('state')).clientIntegration);await wait(4000);
   async function sample(name,image=false){
    const file=path.join(out,name+'.png');if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');if(image&&fs.existsSync(file))fs.unlinkSync(file);
@@ -36,7 +36,15 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    assert(counter.lowFPS>0&&counter.lowFPS<=counter.fps&&counter.highFPS>=counter.fps);
    assert.equal(counter.text.replace(/\r\n?/g,'\n'),Math.round(counter.fps)+' FPS\nLow '+Math.round(counter.lowFPS)+'\nHigh '+Math.round(counter.highFPS));return counter;
   }
+  const hidden=await sample('live-default-hidden',true);assert.equal(hidden.renderProbe.frameCounter.shown,false);assert.equal(hidden.renderProbe.frameCounter.visible,false);
+  await call('settings');const fpsCheckbox=page.getByRole('checkbox',{name:'Show FPS counter',exact:true});assert.equal(await fpsCheckbox.isChecked(),false);
+  await fpsCheckbox.check();await until(async()=>(await call('state')).settings.showFPS);await call('dismiss');await wait(1200);
   const live=await sample('live-1080p',true),counter=measured(live);assert(counter.visible);
+  await call('settings');await fpsCheckbox.uncheck();await until(async()=>!(await call('state')).settings.showFPS);await call('dismiss');await wait(700);
+  assert.equal((await sample('live-setting-hidden')).renderProbe.frameCounter.visible,false);
+  await cmd({type:'show-fps',value:'true'});assert.equal((await sample('invalid-setting-ignored')).renderProbe.frameCounter.shown,false);
+  assert((await call('save-settings',{showFPS:1})).error,'Nonboolean settings must be rejected');
+  await call('settings');assert.equal(await fpsCheckbox.isChecked(),false);await fpsCheckbox.check();await until(async()=>(await call('state')).settings.showFPS);await call('dismiss');await wait(700);
   assert(counter.x+counter.width<=(live.renderProbe.stageWidth-(1152+62)*live.renderProbe.nativeScale)/2,'Counter must fit outside the original game frame');
   assert.equal(live.renderProbe.animationRate,100,'Production target must remain unchanged');
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(2560,1472));await wait(1800);assert(measured(await sample('live-1440p',true)).visible);
@@ -66,5 +74,6 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   console.log('PASS Real Flash measured FPS in gray margin at 1080p/1440p/fullscreen; cropped views hide counter; focus preserved');
   console.log('PASS Independent 30/60/100 frame observer and forced stall prove measured cadence, not target FPS; counter clicks pass through');
   console.log('PASS Recent 30-second low/high range retains stalls, expires old values, bounds history and passes clicks through all three rows');
+  console.log('PASS FPS starts hidden; actual Settings checkbox shows/hides it immediately and retains the choice; malformed values rejected');
  }finally{if(app){await app.evaluate(()=>global.__blitzTest.shutdown()).catch(()=>{});await app.close().catch(()=>{});}await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});
