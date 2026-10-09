@@ -19,6 +19,13 @@ let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, client
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
 let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false,renderResolution=1;
+let showFPS=false,appliedShowFPS=null;
+async function applyFPSCounter(){
+ if(!win||win.isDestroyed()||appliedShowFPS===showFPS)return;
+ const wanted=showFPS;
+ const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzShowFPS==='function'&&e.BlitzShowFPS(${wanted});})()`).catch(()=>false);
+ if(applied===true&&showFPS===wanted)appliedShowFPS=wanted;
+}
 async function applyAudioMix(){
  if(!win||win.isDestroyed()||!audioIntegration)return;
  const key=JSON.stringify(audioMix);if(key===appliedAudioMix)return;
@@ -179,7 +186,7 @@ app.whenReady().then(async () => {
   wc.on('will-redirect', (event,url) => { if (!gameURL(url)) event.preventDefault(); });
   wc.on('new-window', (event,url) => { event.preventDefault(); void routeLink(url); });
   if (wc.setWindowOpenHandler) wc.setWindowOpenHandler(({url}) => { void routeLink(url); return { action: 'deny' }; });
-  wc.on('did-start-loading', () => {clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';emit({ type: 'loading', value: true });});
+  wc.on('did-start-loading', () => {clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;emit({ type: 'loading', value: true });});
   wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
   wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
   wc.on('dom-ready', applyZoom);
@@ -187,7 +194,7 @@ app.whenReady().then(async () => {
   // initial blank renderer. Enable after it has a real document instead.
   wc.on('did-navigate',()=>{linkContext=null;});
   wc.on('did-finish-load',watchHTMLLinks);
-  const audioTimer=setInterval(()=>{void applyAudioMix();if(!appliedDisplayKey)void applyZoom();},1000);win.on('closed',()=>clearInterval(audioTimer));
+  const audioTimer=setInterval(()=>{void applyAudioMix();void applyFPSCounter();if(!appliedDisplayKey)void applyZoom();},1000);win.on('closed',()=>clearInterval(audioTimer));
   wc.on('did-fail-load', (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) emit({ type: 'error', message: description }); });
   wc.on('render-process-gone', () => emit({ type: 'error', message: 'The game process stopped. Reload to reconnect.' }));
   wc.on('enter-html-full-screen', () => { win.setFullScreen(false); emit({ type: 'fullscreen' }); });
@@ -218,6 +225,7 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     if (!win || win.isDestroyed()) return;
     if (cmd.type === 'zoom') { zoom = Math.max(.5, Math.min(3, Number(cmd.value) || 1)); await applyZoom(); }
     if(cmd.type==='render-resolution'&&[.5,.75,1].includes(cmd.value)){renderResolution=cmd.value;await applyZoom();}
+    if(cmd.type==='show-fps'&&typeof cmd.value==='boolean'){showFPS=cmd.value;await applyFPSCounter();}
     if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
     if (['viewport','test-viewport'].includes(cmd.type) && Number.isInteger(cmd.width) && Number.isInteger(cmd.height)) {
       viewport={width:Math.max(1,Math.min(8000,cmd.width)),height:Math.max(1,Math.min(8000,cmd.height))};

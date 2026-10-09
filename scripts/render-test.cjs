@@ -13,7 +13,7 @@ async function until(fn){for(let i=0;i<150;i++){const v=await fn();if(v)return v
   const call=(n,v)=>page.evaluate(([n,v])=>window.blitz.action(n,v),[n,v]);
   const cmd=value=>app.evaluate(({},value)=>global.__blitzTest.nativeCommand(null,value),value);
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.showInactive();w.focus();});
-  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false,renderResolution:1});await call('restart-game');
+  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:true});await call('restart-game');
   await until(async()=>!(await call('state')).loading&&(await call('state')).clientIntegration);await wait(5000);
   async function capture(name){
    const file=path.join(out,name+'.png');if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');

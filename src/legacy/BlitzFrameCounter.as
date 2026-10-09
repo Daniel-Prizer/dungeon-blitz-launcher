@@ -23,6 +23,7 @@ package {
   private static var history:Array=[];
   private static var low:Number=NaN;
   private static var high:Number=NaN;
+  private static var shown:Boolean=false;
   public static function Attach(stage:Stage,frameSource:DisplayObject,position:Function):void {
    if(!stage||!frameSource)return;
    placement=position;
@@ -53,7 +54,14 @@ package {
    }
    if(label.x!=nextX)label.x=nextX;
    if(label.y!=padding)label.y=padding;
+   show=show&&shown;
    if(label.visible!=show)label.visible=show;
+  }
+  public static function SetShown(value:Boolean):Boolean {
+   shown=value;
+   if(label&&!shown)label.visible=false;
+   if(placement!=null)placement();
+   return true;
   }
   public static function SetMagnification(value:Number):void {
    if(!isFinite(value)||value<0.1||value>16)return;
@@ -82,7 +90,7 @@ package {
    var fresh:Boolean=updates>0&&uint(uint(getTimer())-sampledAt)<=2500;
    return {fps:fresh?fps:null,lowFPS:fresh?low:null,highFPS:fresh?high:null,rangeSeconds:30,rangeSamples:history.length,
     sampleFrames:sampledFrames,sampleMs:sampledMs,totalFrames:total,
-    updates:updates,visible:label.visible,text:label.text,x:label.x,y:label.y,
+    updates:updates,shown:shown,visible:label.visible,text:label.text,x:label.x,y:label.y,
     width:label.width,height:label.height,mouseEnabled:label.mouseEnabled,
     selectable:label.selectable,source:"game-enter-frame"};
   }

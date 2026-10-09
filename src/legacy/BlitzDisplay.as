@@ -11,6 +11,7 @@ package {
    if(main&&main.stage)BlitzFrameCounter.Attach(main.stage,main,PositionCounter);
    if(!registered&&ExternalInterface.available){
     ExternalInterface.addCallback("BlitzSetPictureZoom",SetZoom);
+    ExternalInterface.addCallback("BlitzShowFPS",BlitzFrameCounter.SetShown);
     ExternalInterface.addCallback("BlitzRenderState",Snapshot);
     registered=true;
    }
