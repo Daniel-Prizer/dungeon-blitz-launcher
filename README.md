@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.6.1** (patch: removes experimental neural enhancement and its runtime overhead).
+Version **0.6.2** (patch: removes experimental neural enhancement and its runtime overhead; excludes stale build artifacts and local diagnostic paths).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 

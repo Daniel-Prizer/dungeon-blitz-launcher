@@ -10,7 +10,7 @@ const target = path.join(root, 'runtime/game');
   await require('./build-game-window.cjs')();
   // Remove only the retired enhancer's known generated resources. An unknown
   // file prevents removing its directory rather than broadening this cleanup.
-  for (const relative of ['neural-window.node','neural/passes.json','neural/CuNNy-4x16-NVL.hlsl','neural/CuNNy-veryfast-NVL.hlsl','neural/NOTICE.txt','neural/COPYING.GPL3','neural/COPYING.LESSER']) {
+  for (const relative of ['neural-window.node','NeuralWindow.lib','NeuralWindow.exp','neural/passes.json','neural/CuNNy-4x16-NVL.hlsl','neural/CuNNy-veryfast-NVL.hlsl','neural/NOTICE.txt','neural/COPYING.GPL3','neural/COPYING.LESSER']) {
     const file=path.join(target,'resources',relative);
     if(fs.existsSync(file))fs.unlinkSync(file);
   }
