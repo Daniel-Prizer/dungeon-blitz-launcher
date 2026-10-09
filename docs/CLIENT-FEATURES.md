@@ -26,6 +26,14 @@ The pinned [Electron 11 FrameSubscriber](https://github.com/electron/electron/bl
 
 Same-frame comparisons and explicit RGBA/BGRA normalization proved that the stronger model did process pixels; the original half matched the source exactly. These results and the user feedback support removing the entire enhancer, rather than adding more overhead for an unproven quality increase. No neural module, model or overlay ships in 0.6.1. Game zoom and all original game clocks remain unchanged. The historical source is available in Git history.
 
+## Interaction-delay investigation in 0.6.4
+
+The user reported delayed NPC clicks followed by queued actions. The cause has not been reproduced. The reviewed client limits interaction attempts to intervals of at least 50ms and sends a talk-to-NPC packet for nonlocal levels; this is client-code evidence, not a measurement of Minesa server response time. No click debouncing, packet cadence, input listeners or game clocks are changed.
+
+The separate legacy Chromium game window now disables native occlusion heuristics in production, as the isolated tests already did. This avoids a possible embedded-window backgrounding cause while preserving the explicit background-activity setting. A [Chromium developer's explanation of native Windows occlusion](https://groups.google.com/a/chromium.org/g/embedder-dev/c/ZF3uHHyWLKw) describes stopping rendering for covered windows and contention from Windows event tracking. Applying that to this launcher's separate game/owner windows is an inference; it is not proof of the reported delay's cause or a verified fix.
+
+On the inactive, software-rendered desktop, 24 sequential probes per case each measured three renderer/Flash diagnostic calls. At 1920×1080, old/native median durations were 20.7/33.4ms, p95 31.2/43.2ms and maximum 33.4/63.2ms. At 2560×1440 they were 51.3/52.5ms, p95 64.4/67.2ms and maximum 64.6/67.9ms. No multi-second title-screen stall appeared. These figures are neither input latency nor achieved FPS; they exclude authenticated combat, physical GPU presentation and server response timing. Native sizing increases raster work, and no performance improvement is established.
+
 ## 60/120 FPS and animation timing
 
 The exact pinned public client starts its stage at 30 FPS and Main.Init changes it to 100 FPS on Flash versions 11 and newer. Therefore describing this game as universally capped at 30 FPS would be incorrect. This is a revision-specific code observation, not measured live combat frame cadence. The launcher does not change either assignment, Game.TARGETFPS, animation timers, physics, sound ticks or network scheduling. Raising a simulation clock to 120 without reviewing those dependencies could change game speed; this release adds no such edit.

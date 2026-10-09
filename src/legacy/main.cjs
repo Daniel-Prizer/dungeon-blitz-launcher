@@ -44,10 +44,13 @@ app.enableSandbox();
 app.commandLine.appendSwitch('ppapi-flash-path', path.join(process.resourcesPath, 'pepflashplayer64.dll'));
 app.commandLine.appendSwitch('ppapi-flash-version', '32.0.0.363');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+// This dedicated game HWND is positioned over a separate Chromium owner.
+// Disable legacy native occlusion heuristics for that embedded surface; explicit
+// hide/background settings still control activity. No clocks or input are changed.
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
 if (process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP) {
   app.disableHardwareAcceleration();
-  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
-  app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
 }
 function emit(data) { const message = JSON.stringify(data) + '\n'; if (connected) pipe.write(message); else queued.push(message); }
 function gameURL(url) { try { const u = new URL(url); return u.origin === ORIGIN && !u.username && !u.password; } catch (_) { return false; } }
@@ -232,10 +235,12 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     if (cmd.type === 'clear-cache') await win.webContents.session.clearCache();
     if (cmd.type === 'clear-data') await win.webContents.session.clearStorageData();
     if (['capture','test-geometry'].includes(cmd.type) && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.path === 'string') {
+      const probeStarted=process.hrtime.bigint();
       const geometry=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`);
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`);
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`);
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,renderProbe,geometry,testEdits,testLinks}));
+      const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);

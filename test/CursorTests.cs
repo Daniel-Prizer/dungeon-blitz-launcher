@@ -2,6 +2,13 @@ using System;
 public static class CursorTests {
   static void Check(bool condition,string message){if(!condition)throw new Exception(message);}
   public static int Main(){
+    foreach(double density in new[]{1.0,1.5,2.0})foreach(bool menu in new[]{false,true}){
+      var bounds=CursorLockState.Bounds(1280,900,density,menu);int inset=(int)(12*density);
+      Check(bounds.left==inset&&bounds.right==1280-inset&&bounds.bottom==900-inset,"Side/bottom inset retained");
+      Check(bounds.top==(menu?0:inset),"Windowed menu reachable; fullscreen top inset retained");
+      if(menu)Check(bounds.top<=16*density&&bounds.bottom>16*density,"Menu button centers stay inside lock");
+    }
+    foreach(bool menu in new[]{false,true}){var bounds=CursorLockState.Bounds(1,1,2,menu);Check(bounds.right>bounds.left&&bounds.bottom>bounds.top,"Tiny clip area stays nonempty");}
     var state=new CursorLockState();Check(!state.ShouldConfine(true,true),"Default off");state.Configure(true,0xA4);
     Check(state.ShouldConfine(true,true),"Enabled foreground");Check(!state.ShouldConfine(false,true),"Hidden release");Check(!state.ShouldConfine(true,false),"Blur release");
     state.Key(0xA4,true,true);state.Key(0xA4,true,true);Check(!state.Suspended,"Alt repeats do not toggle");state.Key(0xA4,false,true);Check(state.Suspended,"Left Alt release unlocks");

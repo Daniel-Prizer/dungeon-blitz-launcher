@@ -22,10 +22,20 @@ async function until(fn){for(let i=0;i<150;i++){const v=await fn();if(v)return v
    const record=JSON.parse(fs.readFileSync(file+'.json'));assert(record.renderProbe,'Real native rendering adapter must be initialized');
    assert(fs.statSync(file).size>100000,'A detailed real game image must render');return {name,...record};
   }
+  async function responsiveness(name){
+   const file=path.join(out,name+'-probe'),samples=[];
+   for(let i=0;i<24;i++){
+    if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');await cmd({type:'test-geometry',path:file});await until(()=>fs.existsSync(file+'.json'));
+    const sample=JSON.parse(fs.readFileSync(file+'.json'));assert(Number.isFinite(sample.probeDurationMs));samples.push(sample.probeDurationMs);await wait(15);
+   }
+   samples.sort((a,b)=>a-b);return{samples:24,medianMs:samples[12],p95Ms:samples[22],maxMs:samples[23],meaning:'Three renderer/Flash diagnostic calls on the unauthenticated title screen; not input latency, combat FPS or server round-trip time'};
+  }
   for(const [width,height] of [[1920,1080],[2560,1440]]){
    await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(size[0],size[1]+32),[width,height]);await wait(1500);
    await cmd({type:'test-rendering-mode',value:'old'});await wait(2000);const old=await capture(width+'-old');
+   old.responsiveness=await responsiveness(width+'-old');
    await cmd({type:'test-rendering-mode',value:'native'});await wait(2000);const native=await capture(width+'-native');
+   native.responsiveness=await responsiveness(width+'-native');
    assert.equal(native.scale,1,'At 100% Windows DPI normal game rendering must use no browser magnification');
    assert.equal(native.renderProbe.stageWidth,width);assert.equal(native.renderProbe.stageHeight,height);
    assert(native.renderProbe.bitmapWidth>old.renderProbe.bitmapWidth*1.35,'The game itself must allocate more raster pixels');
@@ -33,6 +43,7 @@ async function until(fn){for(let i=0;i<150;i++){const v=await fn();if(v)return v
    assert.equal(native.renderProbe.animationRate,old.renderProbe.animationRate,'Animation clock must stay unchanged');
    assert(native.focused&&native.contentFocused);records.push({width,height,old,native});
    console.log('Native raster',JSON.stringify({width,height,old:old.renderProbe,native:native.renderProbe}));
+   console.log('Title-screen diagnostic timings',JSON.stringify({width,old:old.responsiveness,native:native.responsiveness}));
   }
   for(const zoom of [.5,.75,1,1.5,3]){
    await call('save-settings',{gameZoom:zoom});await wait(1500);const r=await capture('zoom-'+zoom);

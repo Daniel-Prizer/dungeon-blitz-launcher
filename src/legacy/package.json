@@ -1,6 +1,6 @@
 {
   "name": "blitz-game-host",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "main": "main.cjs",
   "private": true
 }
