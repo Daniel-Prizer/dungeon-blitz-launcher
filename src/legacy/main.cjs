@@ -7,9 +7,6 @@ const {editingCommand,pasteIntoFlash}=require('./editing.cjs');
 const {patchClient}=require('./client-patch.cjs');
 const {classifyLink}=require('./links.cjs');
 const {patchAudio}=require('./audio-patch.cjs');
-const {NeuralPresentation}=require('./neural.cjs');
-let neural,neuralRequested=false;
-async function applyPresentation(){if(!neural)return;await neural.configure(neuralRequested&&clientIntegration);await applyZoom();}
 let audioDelta=null;try{audioDelta=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'audio-delta.json'),'utf8'));}catch(_){}
 const LIVE = process.env.BLITZ_GAME_URL;
 function validGameAddress(value) {
@@ -45,11 +42,8 @@ app.enableSandbox();
 app.commandLine.appendSwitch('ppapi-flash-path', path.join(process.resourcesPath, 'pepflashplayer64.dll'));
 app.commandLine.appendSwitch('ppapi-flash-version', '32.0.0.363');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-// A local non-activating presentation surface can cover the Flash HWND. The
-// game compositor must keep painting; background throttling remains configurable.
-app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
 if (process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP) {
-  if(process.env.BLITZ_HOST_GPU_TEST!=='1')app.disableHardwareAcceleration();
+  app.disableHardwareAcceleration();
   app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
   app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
 }
@@ -80,8 +74,6 @@ app.whenReady().then(async () => {
   win.on('will-move',event=>event.preventDefault());
   win.on('will-resize',event=>event.preventDefault());
   require(path.join(process.resourcesPath,'game-window.node')).attach(win.getNativeWindowHandle());
-  neural=new NeuralPresentation(win,value=>{emit({type:'neural-status',value});if(value.mode==='off'&&value.error)void applyZoom();});
-  win.on('closed',()=>neural.stop());
   win.setMenuBarVisibility(false);
   win.on('focus',()=>emit({type:'focused'}));
   // Alt+F4 on the game surface closes its launcher without a confirmation.
@@ -142,10 +134,10 @@ app.whenReady().then(async () => {
           const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));
           headers.push({name:'Content-Length',value:String(patched.length)});
           await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:patched.toString('base64')});fulfilled=true;
-          clientIntegration=true;emit({type:'client-integration',value:true});await applyZoom();setImmediate(()=>void applyPresentation());
-        } else {clientIntegration=false;emit({type:'client-integration',value:false});setImmediate(()=>void applyPresentation());}
+          clientIntegration=true;emit({type:'client-integration',value:true});await applyZoom();
+        } else {clientIntegration=false;emit({type:'client-integration',value:false});}
       }
-    }catch(_){clientIntegration=false;emit({type:'client-integration',value:false});setImmediate(()=>void applyPresentation());}
+    }catch(_){clientIntegration=false;emit({type:'client-integration',value:false});}
     finally {if(!fulfilled&&!wc.isDestroyed())await wc.debugger.sendCommand('Fetch.continueRequest',{requestId:params.requestId}).catch(()=>{});}
   });
   try {wc.debugger.attach('1.3');await wc.debugger.sendCommand('Fetch.enable',{patterns:[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}]});}
@@ -155,7 +147,7 @@ app.whenReady().then(async () => {
   wc.on('will-redirect', (event,url) => { if (!gameURL(url)) event.preventDefault(); });
   wc.on('new-window', (event,url) => { event.preventDefault(); void routeLink(url); });
   if (wc.setWindowOpenHandler) wc.setWindowOpenHandler(({url}) => { void routeLink(url); return { action: 'deny' }; });
-  wc.on('did-start-loading', () => {clientIntegration=false;neural.stop();appliedAudioMix='';emit({ type: 'loading', value: true });});
+  wc.on('did-start-loading', () => {clientIntegration=false;appliedAudioMix='';emit({ type: 'loading', value: true });});
   wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
   wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
   wc.on('dom-ready', applyZoom);
@@ -204,24 +196,19 @@ readline.createInterface({ input: pipe }).on('line', async line => {
     if(cmd.type==='audio-mix'&&cmd.value&&['player','music','environment','creatures'].every(key=>Number.isInteger(cmd.value[key])&&cmd.value[key]>=0&&cmd.value[key]<=100)){audioMix=cmd.value;await applyAudioMix();}
     if(cmd.type==='test-audio-fixture'&&process.env.BLITZ_HOST_TEST==='1'){audioIntegration=true;emit({type:'audio-integration',value:true});await applyAudioMix();}
     if (cmd.type === 'background') win.webContents.setBackgroundThrottling(!cmd.value);
-    if(cmd.type==='neural'&&typeof cmd.value==='boolean'){neuralRequested=cmd.value;neural.setCompare(cmd.compare===true);await applyPresentation();}
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();
     if (cmd.type === 'focus' && win.isVisible()) { win.focus(); win.webContents.focus(); }
-    if (cmd.type === 'visibility') { neural.setVisible(!!cmd.value);if (cmd.value) win.showInactive(); else win.hide(); }
+    if (cmd.type === 'visibility') { if (cmd.value) win.showInactive(); else win.hide(); }
     if (cmd.type === 'clear-cache') await win.webContents.session.clearCache();
     if (cmd.type === 'clear-data') await win.webContents.session.clearStorageData();
     if (['capture','test-geometry'].includes(cmd.type) && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.path === 'string') {
       const geometry=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`);
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`);
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,geometry,testEdits,testLinks,neural:neural.snapshot()}));
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,geometry,testEdits,testLinks}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);
-    if(cmd.type==='test-neural-readback'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string'){neural.testReadback(cmd.path);emit({type:'neural-readback',path:cmd.path});}
-    if(cmd.type==='test-neural-fixture'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string')await neural.testFixture(cmd.path);
-    if(cmd.type==='test-neural-comparison'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string')await neural.testComparison(cmd.path);
-    if(cmd.type==='test-neural-subscription'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.path==='string')neural.testSubscription(cmd.path);
     if (cmd.type === 'test-paste-source' && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.text==='string') {
       // Exercise real insertion with dummy data without touching the clipboard.
       readPasteText=()=>cmd.text;
