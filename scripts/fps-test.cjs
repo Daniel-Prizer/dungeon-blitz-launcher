@@ -32,7 +32,9 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    assert.equal(counter.source,'game-enter-frame');assert.equal(counter.mouseEnabled,false);assert.equal(counter.selectable,false);
    assert(counter.sampleMs>=1000&&counter.sampleFrames>0&&counter.fps>0);
    assert(Math.abs(counter.fps-counter.sampleFrames*1000/counter.sampleMs)<.0001,'FPS must be counted frames over actual elapsed time');
-   assert.equal(counter.text,Math.round(counter.fps)+' FPS');return counter;
+   assert.equal(counter.rangeSeconds,30);assert(counter.rangeSamples>=1&&counter.rangeSamples<=31);
+   assert(counter.lowFPS>0&&counter.lowFPS<=counter.fps&&counter.highFPS>=counter.fps);
+   assert.equal(counter.text.replace(/\r\n?/g,'\n'),Math.round(counter.fps)+' FPS\nLow '+Math.round(counter.lowFPS)+'\nHigh '+Math.round(counter.highFPS));return counter;
   }
   const live=await sample('live-1080p',true),counter=measured(live);assert(counter.visible);
   assert(counter.x+counter.width<=(live.renderProbe.stageWidth-(1152+62)*live.renderProbe.nativeScale)/2,'Counter must fit outside the original game frame');
@@ -50,14 +52,19 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   }
   for(const rate of [30,60,100])await control(rate,0);
   const loaded=await control(100,80);assert(loaded.renderProbe.frameCounter.fps<20,'Stalled fixture must show measured low FPS while target stays 100');
-  await control(60,0);
+  const slow=loaded.renderProbe.frameCounter;assert(slow.lowFPS<20&&slow.highFPS>slow.fps*1.5,'Recent range must retain both slow and fast measured averages');
+  const recovered=await control(60,0);assert(recovered.renderProbe.frameCounter.lowFPS<20,'Recent low remains visible immediately after recovery');
+  await sample('recovered-with-range',true);
   const before=await sample('before-click'),c=measured(before);assert(c.visible);
-  for(const type of ['mouseDown','mouseUp'])await cmd({type:'test-input',input:{type,x:Math.round((c.x+25)*before.scale),y:Math.round((c.y+12)*before.scale),button:'left',clickCount:1}});
-  await wait(150);const clicked=await sample('clicked-counter');assert.equal(clicked.renderProbe.fixture.mouseDowns,1);assert.equal(clicked.renderProbe.fixture.mouseUps,1);assert.notEqual(clicked.renderProbe.fixture.lastTarget,'blitz-fps-counter','Counter must never receive gameplay clicks');
+  for(const row of [12,32,52])for(const type of ['mouseDown','mouseUp'])await cmd({type:'test-input',input:{type,x:Math.round((c.x+25)*before.scale),y:Math.round((c.y+row)*before.scale),button:'left',clickCount:1}});
+  await wait(150);const clicked=await sample('clicked-counter');assert.equal(clicked.renderProbe.fixture.mouseDowns,3);assert.equal(clicked.renderProbe.fixture.mouseUps,3);assert.notEqual(clicked.renderProbe.fixture.lastTarget,'blitz-fps-counter','All counter rows must pass gameplay clicks through');
   assert.equal((await control(60,0,false)).renderProbe.frameCounter.visible,false);
   await control(60,0,true);await sample('fixture-visible',true);
+  await wait(31000);const expired=measured(await sample('range-expired',true));
+  assert(expired.lowFPS>20,'The forced-stall low must expire from the 30-second range');
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:(await call('state')).version,records},null,2));
   console.log('PASS Real Flash measured FPS in gray margin at 1080p/1440p/fullscreen; cropped views hide counter; focus preserved');
   console.log('PASS Independent 30/60/100 frame observer and forced stall prove measured cadence, not target FPS; counter clicks pass through');
+  console.log('PASS Recent 30-second low/high range retains stalls, expires old values, bounds history and passes clicks through all three rows');
  }finally{if(app){await app.evaluate(()=>global.__blitzTest.shutdown()).catch(()=>{});await app.close().catch(()=>{});}await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

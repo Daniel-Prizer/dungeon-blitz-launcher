@@ -20,16 +20,20 @@ package {
   private static var sampledAt:uint=0;
   private static var fps:Number=NaN;
   private static var units:Number=1;
+  private static var history:Array=[];
+  private static var low:Number=NaN;
+  private static var high:Number=NaN;
   public static function Attach(stage:Stage,frameSource:DisplayObject,position:Function):void {
    if(!stage||!frameSource)return;
    placement=position;
    if(surface==stage&&source==frameSource)return;
    Detach();surface=stage;source=frameSource;placement=position;
    frames=0;total=0;updates=0;sampledFrames=0;sampledMs=0;fps=NaN;
+   history.length=0;low=NaN;high=NaN;
    started=uint(getTimer());sampledAt=started;
    label=new TextField();label.name="blitz-fps-counter";
    label.defaultTextFormat=new TextFormat("_sans",14,0xC9CDD6);
-   label.width=76;label.height=24;label.text="— FPS";
+   label.width=76;label.height=64;label.multiline=true;label.text="— FPS\nLow —\nHigh —";
    label.scaleX=units;label.scaleY=units;
    label.mouseEnabled=false;label.selectable=false;label.tabEnabled=false;
    label.visible=false;surface.addChild(label);
@@ -61,7 +65,14 @@ package {
    var now:uint=uint(getTimer());var elapsed:uint=now-started;
    if(elapsed>=1000){
     sampledFrames=frames;sampledMs=elapsed;sampledAt=now;
-    fps=1000*frames/elapsed;label.text=Math.round(fps)+" FPS";
+    fps=1000*frames/elapsed;
+    // Range of measured averages whose samples end within the last 30 seconds.
+    // Bounded history, including uint clock rollover; never store frame payloads.
+    while(history.length&&uint(now-uint(history[0].at))>30000)history.shift();
+    if(history.length>=31)history.shift();
+    history.push({at:now,fps:fps});low=fps;high=fps;
+    for each(var sample:Object in history){low=Math.min(low,Number(sample.fps));high=Math.max(high,Number(sample.fps));}
+    label.text=Math.round(fps)+" FPS\nLow "+Math.round(low)+"\nHigh "+Math.round(high);
     frames=0;started=now;++updates;
    }
    if(placement!=null)placement();
@@ -69,7 +80,8 @@ package {
   public static function Snapshot():Object {
    if(!surface||!label)return null;
    var fresh:Boolean=updates>0&&uint(uint(getTimer())-sampledAt)<=2500;
-   return {fps:fresh?fps:null,sampleFrames:sampledFrames,sampleMs:sampledMs,totalFrames:total,
+   return {fps:fresh?fps:null,lowFPS:fresh?low:null,highFPS:fresh?high:null,rangeSeconds:30,rangeSamples:history.length,
+    sampleFrames:sampledFrames,sampleMs:sampledMs,totalFrames:total,
     updates:updates,visible:label.visible,text:label.text,x:label.x,y:label.y,
     width:label.width,height:label.height,mouseEnabled:label.mouseEnabled,
     selectable:label.selectable,source:"game-enter-frame"};

@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.7.0** (minor: adds measured game FPS in the gray margin and optional lower rendering resolution).
+Version **0.8.0** (minor: adds rolling low/high readings to the measured game FPS counter).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 
@@ -10,7 +10,7 @@ The game surface follows the launcher and cannot be dragged or resized separatel
 
 The windowed title bar is 32px high and uses a muted Dungeon Blitz wordmark, with no ready/status label. A matching DB monogram supplies the Windows icon.
 
-A small FPS counter sits in the upper-left gray margin. It counts the actual game-loop Flash frame events over elapsed milliseconds and updates about once a second. It accepts no mouse/keyboard focus, so clicks still reach the game. It hides when zoom leaves no side margin. The number is game frame cadence, not the configured target, monitor refresh, network latency or measured GPU scanout.
+A small FPS counter sits in the upper-left gray margin. It counts the actual game-loop Flash frame events over elapsed milliseconds and updates about once a second. Low and High show the smallest and largest measured averages whose samples ended within the last 30 seconds; these are not 1% lows or individual frame times. It accepts no mouse/keyboard focus, so clicks still reach the game. It hides when zoom leaves no side margin. The number is game frame cadence, not the configured target, monitor refresh, network latency or measured GPU scanout.
 
 Game links on the selected game origin reload the configured game page. User-activated external HTTP/HTTPS links open in your default browser, never inside the Flash host. Privileged schemes and credential-bearing URLs are blocked; unsolicited external popups are denied.
 
