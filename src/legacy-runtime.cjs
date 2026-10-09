@@ -7,7 +7,7 @@ const net = require('node:net');
 const { randomBytes } = require('node:crypto');
 const { UNLOCK_KEYS, validSettings } = require('./policy.cjs');
 class LegacyRuntime extends EventEmitter {
-  constructor(root, parentHandle, test = false, privateDesktop = false, gameURL) {
+  constructor(root, parentHandle, test = false, privateDesktop = false, gameURL, hardwareAcceleration=true) {
     super();
     this.closed = false; this.bounds = null; this.host = null; this.pending = []; this.zoom = 1; this.test = test; this.privateDesktop = privateDesktop;
     this.audioIntegration=false;
@@ -21,6 +21,7 @@ class LegacyRuntime extends EventEmitter {
     env.BLITZ_HOST_CHANNEL = `\\\\.\\pipe\\blitz-game-${randomBytes(24).toString('hex')}`;
     env.BLITZ_HOST_TOKEN = randomBytes(32).toString('hex');
     env.BLITZ_GAME_URL = gameURL;
+    env.BLITZ_GAME_ACCELERATION=hardwareAcceleration===false?'0':'1';
     if (test) env.BLITZ_CURSOR_DRY_RUN = '1'; else delete env.BLITZ_CURSOR_DRY_RUN;
     this.server = net.createServer(socket => {
       let authenticated = false;
@@ -92,6 +93,7 @@ class LegacyRuntime extends EventEmitter {
   configure(settings) {
     const previous=this.settings;this.settings=validSettings(settings);
     if(!previous || previous.gameZoom!==this.settings.gameZoom)this.send({type:'zoom',value:this.settings.gameZoom});
+    if(!previous || previous.renderResolution!==this.settings.renderResolution)this.send({type:'render-resolution',value:this.settings.renderResolution});
     if(!previous || previous.keepGameAwake!==this.settings.keepGameAwake)this.send({type:'background',value:this.settings.keepGameAwake});
     if(!previous||JSON.stringify(previous.audioMix)!==JSON.stringify(this.settings.audioMix))this.send({type:'audio-mix',value:this.settings.audioMix});
     if(this.host?.stdin.writable) {

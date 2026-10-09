@@ -25,7 +25,7 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   const legacy = path.join(output,'resources/runtime/game/resources/app.asar');
   assert.deepEqual(asar.extractFile(legacy,'main.cjs'),fs.readFileSync(path.join(root,'src/legacy/main.cjs')));
   assert.deepEqual(asar.extractFile(legacy,'editing.cjs'),fs.readFileSync(path.join(root,'src/legacy/editing.cjs')));
-  for(const file of ['client-patch.cjs','client-layout.json','links.cjs','audio-patch.cjs','rendering.cjs','BlitzAudio.as','BlitzDisplay.as'])assert.deepEqual(asar.extractFile(legacy,file),fs.readFileSync(path.join(root,'src/legacy',file)));
+  for(const file of ['client-patch.cjs','client-layout.json','links.cjs','audio-patch.cjs','rendering.cjs','BlitzAudio.as','BlitzDisplay.as','BlitzFrameCounter.as'])assert.deepEqual(asar.extractFile(legacy,file),fs.readFileSync(path.join(root,'src/legacy',file)));
   assert.equal(JSON.parse(asar.extractFile(legacy,'package.json')).version,version);
   for(const file of ['NativeHost.exe','game/BlitzGame.exe','game/resources/pepflashplayer64.dll','game/resources/game-window.node','game/resources/audio-delta.json'])
     assert.equal(hash(path.join(output,'resources/runtime',file)),hash(path.join(root,'runtime',file)),file);

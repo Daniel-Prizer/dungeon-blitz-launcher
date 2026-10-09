@@ -36,6 +36,16 @@ On the inactive, software-rendered desktop, 24 sequential probes per case each m
 
 ## 60/120 FPS and animation timing
 
+### Passive counter and CPU raster budget in 0.7.0
+
+The counter observes the same Main ENTER_FRAME event source as the game loop, counts delivered events over actual unsigned getTimer intervals, and updates text once per second. An initial stage EXIT_FRAME prototype overcounted events compared with the game source and was discarded. The shipped listener is passive and runs after the existing game listener; it changes no clocks, packets or game bytecode. See the primary [Flash frame-event reference](https://airsdk.dev/reference/actionscript/3.0/flash/events/Event.html#ENTER_FRAME) and [getTimer reference](https://airsdk.dev/reference/actionscript/3.0/flash/utils/package.html#getTimer()). This is game-loop cadence, not unique artwork frames or GPU presentation.
+
+A 1.5-second read-only sample of the existing game process found one Flash plugin thread using about 96.4% of one logical processor on a 32-logical-processor system. One saturated thread represents only about 3.1% of that CPU's total logical capacity. This is evidence of a busy Flash thread during that short sample, not proof of a particular combat scene's bottleneck. No desktop, game credentials or account state was inspected.
+
+The optional 75%/50% render resolution reduces the bitmap dimensions while retaining displayed picture size through bounded browser magnification. It deliberately trades sharpness for fewer pixels; default 100% retains the sharp native path. At 1440p, actual bitmaps measured 1998×1159 (100%), 1494×867 (75%) and 996×578 (50%). At 1080p they measured 1494×867, 1122×651 and 744×432. The picture's displayed scale stayed within 0.5%, the counter's physical size stayed equal, and the game's target remained 100 at every setting. Three title-screen frame samples per setting were approximately 59–61 FPS on the inactive software-rendered desktop. This did not demonstrate an FPS gain; authenticated combat, physical GPU scanout and server delays remain outside the measurements.
+
+The existing graphics-acceleration checkbox now reaches the separate game host at startup too. It does not rewrite the game's ActionScript or draw path to offload additional work to the GPU. No process-priority, CPU-affinity, global graphics or unsupported renderer switches are added.
+
 The exact pinned public client starts its stage at 30 FPS and Main.Init changes it to 100 FPS on Flash versions 11 and newer. Therefore describing this game as universally capped at 30 FPS would be incorrect. This is a revision-specific code observation, not measured live combat frame cadence. The launcher does not change either assignment, Game.TARGETFPS, animation timers, physics, sound ticks or network scheduling. Raising a simulation clock to 120 without reviewing those dependencies could change game speed; this release adds no such edit.
 
 [RIFE ncnn Vulkan](https://github.com/nihui/rife-ncnn-vulkan) can estimate intermediate frames from pairs of images without engine motion/depth inputs. It was actually run offline, using the official 20221029 Windows release's rife-v4.6 model on the RTX 4080 SUPER. Its original CLI expects RGB PNG fixtures; supplying RGBA created striped output and was corrected before measuring. No corrupt output is accepted as evidence.

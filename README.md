@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.6.4** (patch: keeps the top menu accessible during cursor lock and refreshes fullscreen Shell state).
+Version **0.7.0** (minor: adds measured game FPS in the gray margin and optional lower rendering resolution).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 
@@ -9,6 +9,8 @@ The launcher automatically opens Minesa's live Dungeon Blitz in one isolated ori
 The game surface follows the launcher and cannot be dragged or resized separately. Its edges remain game input. Move and resize the launcher normally using its title bar and outer window frame.
 
 The windowed title bar is 32px high and uses a muted Dungeon Blitz wordmark, with no ready/status label. A matching DB monogram supplies the Windows icon.
+
+A small FPS counter sits in the upper-left gray margin. It counts the actual game-loop Flash frame events over elapsed milliseconds and updates about once a second. It accepts no mouse/keyboard focus, so clicks still reach the game. It hides when zoom leaves no side margin. The number is game frame cadence, not the configured target, monitor refresh, network latency or measured GPU scanout.
 
 Game links on the selected game origin reload the configured game page. User-activated external HTTP/HTTPS links open in your default browser, never inside the Flash host. Privileged schemes and credential-bearing URLs are blocked; unsolicited external popups are denied.
 
@@ -20,10 +22,11 @@ Game links on the selected game origin reload the configured game page. User-act
 - Game URL: defaults to https://dungeonblitzr.theminesa.studio/. Accepts HTTPS pages and HTTP on localhost/127.0.0.1/[::1]. Credentials and privileged URL schemes are rejected. Save the URL, then use Apply URL & reconnect. An address edit never silently interrupts gameplay. The isolated runtime's HTTP access is restricted to that selected origin; pages requiring resources on another origin may not work.
 - Game scale: Fit entire game, or 50–300%. Larger-than-Fit views crop edges. The reviewed Minesa client redraws its own game bitmap at the requested size inside a full-window Flash stage. Normal 1080p/1440p rendering does not enlarge a fixed low-resolution bitmap in Chromium. Windows DPI is compensated in the host; exceptionally large zooms use a bounded 4096×2730 layout budget with residual browser scaling. Margin clicks preserve focus and pass native aiming and attack events to the game. The Lost Focus splash is removed; normal focus and key cleanup remain.
 - Graphics acceleration requires a launcher restart. Background activity can be disabled.
+- Rendering resolution: 100% is the default and retains the sharp native rendering. 75% and 50% reduce the game's backing bitmap while keeping the displayed picture size and normal animation speed. They draw approximately 44% and 75% fewer pixels, respectively, with softer enlargement. This can reduce CPU raster work when a Flash thread is busy; it is not a guaranteed combat FPS improvement. The FPS counter keeps its on-screen size. Unknown client revisions disable this setting.
 
 The dedicated game host disables legacy Chromium native-window occlusion heuristics to avoid incorrectly treating its separate game surface as covered. Explicit background settings remain available. This is a potential client-stall mitigation; the reported delayed NPC interactions have not been reproduced or established as resolved. Fullscreen notifications now follow actual visibility changes and are refreshed on game activation. The isolated tests verify native state, but cannot visually verify Explorer taskbar behavior.
 
-The game uses original native Flash rendering. Neural enhancement, comparison and FPS controls are removed; saved experimental graphics preferences are discarded. Game scale remains available and animation timing is unchanged. The display adapter reuses the original cache-invalidation/resize path; it changes neither game clocks nor multiplayer state.
+The game uses original native Flash rendering. Neural enhancement, comparison and FPS target controls are removed; saved experimental graphics preferences are discarded. The new FPS counter is observational. Game scale remains available and animation timing is unchanged. The display adapter reuses the original cache-invalidation/resize path; it changes neither game clocks nor multiplayer state. Graphics acceleration is now forwarded to the separate game host as well as the local shell.
 
 F11 toggles fullscreen. Escape exits fullscreen. Ctrl+, opens settings even while the game has focus. Fullscreen has no title/exit strip. Closing and reconnecting do not show leave-game confirmations.
 
@@ -38,6 +41,7 @@ npm run test:launcher: hidden launcher UI and live Flash rendering.
 npm run test:native: same user-flow checks on a guarded inactive Windows desktop, native layout/focus, fullscreen, cursor configuration and real Windows audio-session attenuation using a silent fixture.
 npm run test:input: live Flash email/password typing and paste compared with typed-reference pixels.
 npm run test:render: real game captures and native bitmap dimensions at 1080p/1440p, bounded 50–300% zoom, animation-rate equality, fullscreen and focus.
+npm run test:fps: actual game-loop counter at 1080p/1440p/fullscreen, independent fixture frame counts at 30/60/100 targets, forced CPU stalls and mouse click-through. Frame-rate controls exist only in the unshipped fixture.
 npm run test:margins: live full-window Flash bounds, side-click focus and rendered magnification; a separate Flash fixture verifies actual stage MouseDown/MouseUp and aim coordinates.
 npm run test:window: real Windows hit-test queries at every game edge/corner and exact native placement after launcher move/resize/maximize/fullscreen/settings. No OS pointer input is sent.
 
