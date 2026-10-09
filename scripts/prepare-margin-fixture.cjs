@@ -11,6 +11,7 @@ function download(url,file){return new Promise((resolve,reject)=>{https.get(url,
  fs.mkdirSync(dir,{recursive:true});
  if(!fs.existsSync(jar)){
   const zip=path.join(dir,'ffdec.zip');await download('https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version26.3.0/ffdec_26.3.0.zip',zip);
+  if(require('node:crypto').createHash('sha256').update(fs.readFileSync(zip)).digest('hex')!=='35f4930eb7c380afe66f2117f90b006deac0631473ad7500bb39c78f68645ecd')throw Error('JPEXS release checksum mismatch');
   execFileSync('powershell.exe',['-NoProfile','-Command',`Expand-Archive -LiteralPath '${zip.replaceAll("'","''")}' -DestinationPath '${path.join(dir,'ffdec').replaceAll("'","''")}' -Force`],{windowsHide:true,stdio:'inherit'});
  }
  if(!fs.existsSync(path.join(dir,'live.swf')))await download(source,path.join(dir,'live.swf'));

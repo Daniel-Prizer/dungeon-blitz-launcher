@@ -11,13 +11,16 @@ function gameURL(value) {
   } catch { return null; }
 }
 function zoom(value) { return Number.isFinite(value) ? Math.max(.5, Math.min(3, value)) : 1; }
+const AUDIO_BUSES=['player','music','environment','creatures'];
+function validAudioMix(input={}) {return Object.fromEntries(AUDIO_BUSES.map(key=>[key,Number.isInteger(input?.[key])&&input[key]>=0&&input[key]<=100?input[key]:100]));}
 function validSettings(input = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) input = {};
   return { gameURL: gameURL(input.gameURL) || LIVE,
     volume: Number.isInteger(input.volume) && input.volume >= 0 && input.volume <= 100 ? input.volume : 100,
+    audioMix:validAudioMix(input.audioMix),
     cursorLock: input.cursorLock === true,
     unlockKey: Object.hasOwn(UNLOCK_KEYS, input.unlockKey) ? input.unlockKey : 'AltLeft',
     gameZoom: zoom(input.gameZoom ?? input.defaultZoom),
     keepGameAwake: input.keepGameAwake !== false, hardwareAcceleration: input.hardwareAcceleration !== false };
 }
-module.exports = { LIVE, UNLOCK_KEYS, gameURL, zoom, validSettings };
+module.exports = { LIVE, UNLOCK_KEYS, gameURL, zoom, validSettings, validAudioMix, AUDIO_BUSES };
