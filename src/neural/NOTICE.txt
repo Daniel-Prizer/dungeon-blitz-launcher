@@ -1,14 +1,14 @@
-CuNNy veryfast NVL by funnyplanter
+CuNNy 4x16 NVL by funnyplanter
 https://github.com/funnyplanter/CuNNy
 Source revision: 906031bb00c15dd6a6bbbaa21c0eb0b724ca8437
-Shader SHA-256: 18cbe307f256b9ad63864133002a4bacb9c9404cc31e596e6b17a180b8c7db29
+Shader SHA-256: 4540ee2bf570b13088451d934ea631f152620c1275f37cf9b9bf607388886c11
 
 The original shader's notice specifies GPL version 3 or later. The upstream
 repository additionally supplies an LGPL version 3 license. Both license texts
 are included; the launcher's MIT notice does not replace these upstream notices.
 
 The original shader is preserved verbatim. scripts/prepare-neural.cjs adapts its
-four passes to an independently loaded Direct3D 11 shader interface: constant
+six passes to an independently loaded Direct3D 11 shader interface: constant
 buffer and texture bindings, sampler declarations, dispatch wrappers, and a
 simple bijective 8x8 thread mapping. Learned weights and network math are kept.
 Generated passes.json is an ordinary replaceable local resource, not embedded

@@ -110,7 +110,7 @@ async function action(name, value) {
       if ('gameURL' in value && !gameURL(value.gameURL)) throw new Error('Use an HTTPS game URL, or HTTP for localhost. Passwords in URLs are not allowed.');
       if ('volume' in value && (!Number.isInteger(value.volume) || value.volume < 0 || value.volume > 100)) throw new Error('Volume must be a whole number from 0 to 100.');
       if('upscaler'in value&&!['off','neural'].includes(value.upscaler))throw new Error('Unsupported upscaling mode.');
-      if('presentationFPS'in value&&![60,120].includes(value.presentationFPS))throw new Error('Choose a 60 or 120 FPS presentation limit.');
+      if('neuralCompare'in value&&typeof value.neuralCompare!=='boolean')throw new Error('Invalid image comparison setting.');
       if('audioMix' in value&&(!value.audioMix||Array.isArray(value.audioMix)||!AUDIO_BUSES.every(key=>Number.isInteger(value.audioMix[key])&&value.audioMix[key]>=0&&value.audioMix[key]<=100)))throw new Error('Sound volumes must be whole numbers from 0 to 100.');
       const previous = store.data.settings, next = validSettings({ ...previous, ...value }); store.data.settings = next;
       try { store.save(); } catch { store.data.settings = previous; throw new Error('Settings could not be saved. Check free disk space.'); }

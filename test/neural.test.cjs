@@ -10,6 +10,10 @@ test('a stalled capture restores original rendering without a popup',async()=>{
  let ended=false,reported;const p=new NeuralPresentation({isDestroyed:()=>false,webContents:{isDestroyed:()=>false,endFrameSubscription(){},capturePage:()=>new Promise(()=>{})}},status=>reported=status);
  p.active=p.visible=true;p.native={end(){ended=true;}};await p.capture(p.generation);assert(ended);assert.equal(reported.mode,'off');assert.match(reported.error,/Original rendering restored/);
 });
-test('presentation rates do not invoke game JavaScript or modify its clock',()=>{
- const p=new NeuralPresentation({},()=>{});p.setRate(120);assert.equal(p.rate,120);p.setRate(1000);assert.equal(p.rate,120);p.setRate(60);assert.equal(p.rate,60);
+test('comparison changes only presentation and cannot change game rate',()=>{
+ const calls=[],p=new NeuralPresentation({},()=>{});p.native={comparison:value=>calls.push(value)};p.setCompare(true);p.setCompare(false);assert.deepEqual(calls,[1,0]);assert.equal(p.rate,60);assert.equal(p.setRate,undefined);
+});
+test('empty captures cannot silently report a working enhancer',()=>{
+ let ended=false,reported;const p=new NeuralPresentation({isDestroyed:()=>false,webContents:{isDestroyed:()=>false,endFrameSubscription(){}}},status=>reported=status);
+ p.active=p.visible=true;p.lastAccepted=Date.now()-2100;p.native={end(){ended=true;}};p.checkLiveness();assert(ended);assert.equal(reported.mode,'off');assert.match(reported.error,/No usable game frames/);
 });

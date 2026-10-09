@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.5.0** (minor: experimental GPU neural upscaling).
+Version **0.6.0** (minor: neural image comparison and a stronger smoothing model; removes the ineffective FPS selector).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 
@@ -20,8 +20,9 @@ Game links on the selected game origin reload the configured game page. User-act
 - Game URL: defaults to https://dungeonblitzr.theminesa.studio/. Accepts HTTPS pages and HTTP on localhost/127.0.0.1/[::1]. Credentials and privileged URL schemes are rejected. Save the URL, then use Apply URL & reconnect. An address edit never silently interrupts gameplay. The isolated runtime's HTTP access is restricted to that selected origin; pages requiring resources on another origin may not work.
 - Game scale: Fit entire game, or 50–300%. Larger-than-Fit views crop edges. The reviewed Minesa client uses a fixed logical picture inside a full-window Flash stage: changing scale enlarges the picture while the side margins remain part of Flash. Margin clicks preserve focus and pass native aiming and attack events to the game. The Lost Focus splash is removed; normal focus and key cleanup remain.
 - Graphics acceleration requires a launcher restart. Background activity can be disabled.
-- Upscaling: Original (default), or Neural 2× (experimental). A real four-pass CuNNy network reconstructs the game image at twice its captured resolution and fits that result to the same game window. Native Flash raster resolution and game/input coordinates stay unchanged. This is image enhancement, not an FPS boost. Original instantly removes the presentation surface. Capture/device failures automatically restore original rendering, with a note in Settings and no popup. Large viewports above 3840×2160 are unsupported in this experiment.
-- Presentation limit: 60 or 120 processed captures per second when neural mode is enabled. This is an upper limit, not a promised frame rate and not frame generation. Game animation/simulation timing is untouched. On the guarded inactive desktop the live public client supplied about 30 processed captures/s at either limit; captures can repeat the same game frame. End-to-end input latency and physical display cadence have not been measured. Leave Original selected for the lowest overhead.
+- Image enhancement: Original (default), or Neural smoothing (experimental). A six-pass CuNNy 4x16 network reconstructs a doubled texture, then the GPU explicitly fits it to a window-sized display target. Screen resolution, game scale and animation/simulation speed stay unchanged; the capture path can lower displayed frame rate and add input delay. The effect mostly changes pixel edges and can be subtle on an already sharp source. It is not a resolution/FPS upgrade. Original instantly removes the surface; capture/device failures restore it automatically, with a Settings note and no popup. Viewports above 3840×2160 are unsupported.
+- Compare: original left, neural right. Shows both interpretations of the same frame, separated by a thin line, without changing input/focus. It is disabled with Original. Tests compare the final window-sized output against the exact original frame, rather than just inspecting the doubled intermediate texture. The original half must match the source pixels exactly.
+- The old 60/120 presentation selector has been removed. The legacy frame-subscription implementation is hardcoded to 30 captures/s; increasing the processing ceiling could not make it generate additional game frames. Live frame generation is not implemented. Existing FPS preferences are discarded during migration. End-to-end input latency and physical display cadence remain unmeasured; Original has the lowest overhead.
 
 F11 toggles fullscreen. Escape exits fullscreen. Ctrl+, opens settings even while the game has focus. Fullscreen has no title/exit strip. Closing and reconnecting do not show leave-game confirmations.
 
@@ -38,7 +39,9 @@ npm run test:input: live Flash email/password typing and paste compared with typ
 npm run test:margins: live full-window Flash bounds, side-click focus and rendered magnification; a separate Flash fixture verifies actual stage MouseDown/MouseUp and aim coordinates.
 npm run test:window: real Windows hit-test queries at every game edge/corner and exact native placement after launcher move/resize/maximize/fullscreen/settings. No OS pointer input is sent.
 
-npm run test:neural: actual D3D11 learned-network output, RGB color preservation, bounded argument validation, sustained frame delivery, transparent native hit testing, overlay placement after move/resize/fullscreen, real settings controls and original-rendering fallback on the guarded inactive desktop.
+npm run test:neural: actual D3D11 learned-network output, final window-sized pixel differences, exact source-color preservation and original comparison half, bounded validation, sustained frame delivery, overlay z-order/placement after move/resize/fullscreen, actual settings controls and fallback on the guarded inactive desktop.
+
+npm run test:neural:gpu: the same guard and checks with hardware-accelerated Flash capture, where supported on the inactive desktop. It still does not verify physical display scanout.
 
 npm run test:input:neural: the real live login typing/paste regression with neural mode enabled. Dummy strings only; no login or system clipboard.
 

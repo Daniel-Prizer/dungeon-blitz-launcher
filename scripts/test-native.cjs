@@ -7,6 +7,7 @@ execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo
 if(process.argv.includes('--focus'))process.env.BLITZ_PRIVATE_TEST='focus';
 if(process.argv.includes('--focus-neural')){process.env.BLITZ_PRIVATE_TEST='focus';process.env.BLITZ_NEURAL_INPUT_TEST='1';}
 if(process.argv.includes('--neural'))process.env.BLITZ_PRIVATE_TEST='neural';
+if(process.argv.includes('--neural-gpu')){process.env.BLITZ_PRIVATE_TEST='neural';process.env.BLITZ_NEURAL_GPU_TEST='1';}
 if(process.argv.includes('--window'))process.env.BLITZ_PRIVATE_TEST='window';
 if(process.argv.includes('--margins')){process.env.BLITZ_PRIVATE_TEST='margins';execFileSync(process.execPath,[path.join(__dirname,'prepare-margin-fixture.cjs')],{windowsHide:true,stdio:'inherit'});}
 try{execFileSync(helper,[process.execPath,path.join(__dirname,'private-desktop-test.cjs')],{stdio:'inherit',windowsHide:true,timeout:245000})}
