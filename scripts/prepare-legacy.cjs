@@ -18,6 +18,7 @@ const target = path.join(root, 'runtime/game');
   if(fs.existsSync(retired))fs.rmdirSync(retired);
   if (!fs.existsSync(path.join(source, 'Dungeon Blitz R.exe'))) throw new Error('Install the official Dungeon Blitz R launcher before importing its Flash runtime.');
   fs.mkdirSync(path.join(target, 'resources'), { recursive: true });
+  execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:exe','/platform:x64','/r:System.Web.Extensions.dll','/r:System.IO.Compression.dll','/r:System.IO.Compression.FileSystem.dll',`/out:${path.join(root,'runtime/UpdateInstaller.exe')}`,path.join(root,'src/UpdateInstaller.cs')],{stdio:'inherit',windowsHide:true});
   for (const name of fs.readdirSync(source)) {
     if (['resources', 'Uninstall Dungeon Blitz R.exe'].includes(name)) continue;
     const dest = path.join(target, name === 'Dungeon Blitz R.exe' ? 'BlitzGame.exe' : name);

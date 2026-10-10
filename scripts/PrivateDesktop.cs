@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 
 // A disposable Windows desktop for integration tests. NEVER switches the input
 // desktop, sends input, or captures the user's screen. Children inherit this desktop.
@@ -27,6 +28,10 @@ public static class PrivateDesktop {
   [DllImport("kernel32.dll")] static extern bool GetExitCodeProcess(IntPtr process,out uint code);
   [DllImport("kernel32.dll")] static extern bool TerminateProcess(IntPtr process,uint code);
   [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
+  [StructLayout(LayoutKind.Sequential)] struct SecurityAttributes {public int length;public IntPtr descriptor;public bool inherit;}
+  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(string text,uint revision,out IntPtr descriptor,out uint length);
+  [DllImport("kernel32.dll")] static extern IntPtr LocalFree(IntPtr value);
+  [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true,EntryPoint="CreateDesktopW")] static extern IntPtr CreateTestDesktop(string name,IntPtr device,IntPtr mode,uint flags,uint access,ref SecurityAttributes security);
   static bool Check() {
     string expected=Environment.GetEnvironmentVariable("BLITZ_PRIVATE_DESKTOP");
     if(expected==null || !expected.StartsWith("BlitzTest-"))return false;
@@ -37,7 +42,13 @@ public static class PrivateDesktop {
     if(args.Length==1 && args[0]=="--check")return Check()?0:9;
     if(args.Length!=2 || !File.Exists(args[0]) || !File.Exists(args[1]) || args[0].Contains("\"") || args[1].Contains("\""))return 2;
     string name="BlitzTest-"+Guid.NewGuid().ToString("N");
-    IntPtr desktop=CreateDesktop(name,IntPtr.Zero,IntPtr.Zero,0,0x000F01FF,IntPtr.Zero);
+    // Only this newly created, inactive test desktop admits AppContainer GUI
+    // processes. Never change WinSta0 or the user's input desktop permissions.
+    IntPtr descriptor;uint descriptorLength;
+    string user=WindowsIdentity.GetCurrent().User.Value;
+    if(!ConvertStringSecurityDescriptorToSecurityDescriptor("D:(A;;GA;;;"+user+")(A;;GA;;;AC)S:(ML;;NW;;;LW)",1,out descriptor,out descriptorLength))return 3;
+    var security=new SecurityAttributes{length=Marshal.SizeOf(typeof(SecurityAttributes)),descriptor=descriptor,inherit=false};
+    IntPtr desktop=CreateTestDesktop(name,IntPtr.Zero,IntPtr.Zero,0,0x000F01FF,ref security);LocalFree(descriptor);
     if(desktop==IntPtr.Zero){Console.Error.WriteLine("Cannot create isolated desktop: "+Marshal.GetLastWin32Error());return 3;}
     IntPtr job=CreateJobObject(IntPtr.Zero,null);var limit=new ExtendedLimit();limit.basic.flags=0x2000;
     if(job==IntPtr.Zero || !SetInformationJobObject(job,9,ref limit,Marshal.SizeOf(limit)))return 4;

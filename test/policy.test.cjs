@@ -13,7 +13,7 @@ test('launcher defaults and validation discard obsolete browser settings', () =>
   for (let i=0;i<=100;i++)assert.equal(validSettings({volume:i}).volume,i);
   assert.equal(validSettings({unlockKey:'F11'}).unlockKey,'AltLeft');assert.equal(validSettings({unlockKey:'F8'}).unlockKey,'F8');
   assert.equal(validSettings({unlockKey:'KeyG'}).unlockKey,'KeyG');assert.equal(validSettings({unlockKey:'ControlLeft'}).unlockKey,'ControlLeft');assert.equal(validSettings({unlockKey:'Escape'}).unlockKey,'AltLeft');
-  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','volume','audioMix','cursorLock','unlockKey','gameZoom','renderResolution','showFPS','keepGameAwake','hardwareAcceleration']);
+  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','volume','audioMix','cursorLock','unlockKey','gameZoom','renderResolution','showFPS','autoUpdates','keepGameAwake','hardwareAcceleration']);
   assert.equal(defaults.showFPS,false);
   assert.equal(validSettings({showFPS:true}).showFPS,true);
   for(const value of [false,1,'true',null,{},[]])assert.equal(validSettings({showFPS:value}).showFPS,false);

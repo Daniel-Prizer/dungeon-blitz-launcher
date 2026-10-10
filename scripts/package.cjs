@@ -12,10 +12,14 @@ const root = path.resolve(__dirname, '..');
     out: path.join(root, 'release', require('../package.json').version), overwrite: true, asar: true, prune: true,
     icon: fs.existsSync(path.join(root, 'assets/icon.ico')) ? path.join(root, 'assets/icon.ico') : undefined,
     extraResource: [path.join(root, 'runtime')],
-    ignore: [/^\/runtime($|\/)/, /^\/release($|\/)/, /^\/\.test-profile($|\/)/, /^\/\.probe-profile($|\/)/, /^\/\.test-tools($|\/)/, /^\/(?:Blitz Browser|Dungeon Blitz Launcher)\.exe$/, /^\/scripts($|\/)/, /^\/test($|\/)/, /^\/docs($|\/)/, /^\/\.git($|\/)/],
+    ignore: [/^\/artifacts($|\/)/, /^\/runtime($|\/)/, /^\/release($|\/)/, /^\/\.test-profile($|\/)/, /^\/\.probe-profile($|\/)/, /^\/\.test-tools($|\/)/, /^\/(?:Blitz Browser|Dungeon Blitz Launcher)\.exe$/, /^\/scripts($|\/)/, /^\/test($|\/)/, /^\/docs($|\/)/, /^\/\.git($|\/)/],
     win32metadata: { CompanyName: 'Dungeon Blitz Launcher', FileDescription: 'Dungeon Blitz Launcher for Dungeon Blitz', ProductName: 'Dungeon Blitz Launcher' },
   });
   const output = paths[0], executable = path.join(output, 'Dungeon Blitz Launcher.exe');
+  // Unfinished projector experiments are source/tests only. A release must not
+  // accidentally advertise or bundle a runtime which failed compatibility tests.
+  const packagedRuntime=path.join(output,'resources/runtime');
+  for(const name of ['SandboxHost.exe','projector']){const item=path.join(packagedRuntime,name);if(fs.existsSync(item))fs.rmSync(item,{recursive:true,force:true});}
   // A running source session can recreate its log while resources are copied.
   // Clean the copied output, leaving the active session's diagnostics alone.
   const diagnostics=path.join(output,'resources/runtime/host-diagnostics.log');if(fs.existsSync(diagnostics))fs.unlinkSync(diagnostics);
