@@ -4,6 +4,17 @@ test('client compatibility rejects unreviewed, malformed and oversized input',()
  for(const input of [null,'text',Buffer.alloc(0),Buffer.from('CWSnotaswf'),Buffer.alloc(3*1024*1024)])assert.equal(patchClient(input),null);
 });
 
+test('latest deployed client edits only the two reviewed presentation methods',{skip:!fs.existsSync(path.join(__dirname,'../.test-tools/focus/latest.swf'))},()=>{
+ const input=fs.readFileSync(path.join(__dirname,'../.test-tools/focus/latest.swf')),out=patchClient(input);assert(out);
+ const r=require('../src/legacy/client-layout-latest.json'),before=zlib.inflateSync(input.subarray(8)),after=zlib.inflateSync(out.subarray(8));
+ assert.equal(after.length,before.length+6);assert.equal(out.readUInt32LE(4),after.length+8);
+ assert.equal(after[r.focus.start],0x47);assert(after.subarray(r.focus.start+1,r.focus.start+r.focus.length).every(b=>b===2));
+ const normal=Buffer.concat([after.subarray(0,r.layout.start),before.subarray(r.layout.start,r.layout.start+r.layout.length),after.subarray(r.layout.start+r.layout.length+6)]);
+ for(const [start,length] of [[r.focus.start,r.focus.length],[r.abcLengthPosition,4],[r.layout.lengthPosition,r.layout.start-r.layout.lengthPosition]])before.subarray(start,start+length).copy(normal,start);
+ assert.deepEqual(normal,before,'All assets, authentication, packets, clocks and unrelated game bytes must be retained');
+ const changed=Buffer.from(input);changed[changed.length-1]^=1;assert.equal(patchClient(changed),null);
+});
+
 test('October 10 client uses separately pinned offsets and preserves all other bytes',{skip:!fs.existsSync(path.join(__dirname,'../.test-tools/focus/current.swf'))},()=>{
  const input=fs.readFileSync(path.join(__dirname,'../.test-tools/focus/current.swf')),out=patchClient(input);assert(out);
  const r=require('../src/legacy/client-layout-current.json'),before=zlib.inflateSync(input.subarray(8)),after=zlib.inflateSync(out.subarray(8));

@@ -9,14 +9,14 @@ const {classifyLink}=require('./links.cjs');
 const {patchAudio}=require('./audio-patch.cjs');
 const {rasterPlan}=require('./rendering.cjs');
 const audioDeltas=[];
-for(const name of ['audio-delta.json','audio-delta-current.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
+for(const name of ['audio-delta.json','audio-delta-current.json','audio-delta-latest.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
 const LIVE = process.env.BLITZ_GAME_URL;
 function validGameAddress(value) {
   try { const u=new URL(value);return !u.username&&!u.password&&(u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname))); } catch(_){return false;}
 }
 if(!validGameAddress(LIVE))app.exit(2);
 const ORIGIN = new URL(LIVE).origin;
-let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false;
+let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false, testClientHash='';
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
 let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false,renderResolution=1;
@@ -107,6 +107,9 @@ async function applyZoom() {
 }
 app.whenReady().then(async () => {
   const ses = session.defaultSession;
+  // Fresh live-client tests use only their disposable profile. Clearing its
+  // cache before creating a renderer avoids legacy DevTools startup deadlocks.
+  if(process.env.BLITZ_HOST_TEST==='1')await ses.clearCache();
   ses.setPermissionRequestHandler((wc, permission, callback) => callback(permission === 'fullscreen' && gameURL(wc.getURL())));
   ses.setPermissionCheckHandler((wc, permission) => permission === 'fullscreen' && wc && gameURL(wc.getURL()));
   ses.on('will-download', (event) => event.preventDefault());
@@ -176,6 +179,7 @@ app.whenReady().then(async () => {
       if(url.origin===ORIGIN && /\/DungeonBlitz\.swf$/i.test(url.pathname) && params.responseStatusCode===200) {
         const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
         const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),presentation=patchClient(bytes),audio=presentation&&audioDeltas.map(delta=>patchAudio(presentation,delta)).find(Boolean),patched=audio||presentation;
+        if(process.env.BLITZ_HOST_TEST==='1')testClientHash=require('crypto').createHash('sha256').update(bytes).digest('hex');
         audioIntegration=!!audio;emit({type:'audio-integration',value:audioIntegration});
         if(patched) {
           const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));
@@ -187,7 +191,10 @@ app.whenReady().then(async () => {
     }catch(_){clientIntegration=false;emit({type:'client-integration',value:false});}
     finally {if(!fulfilled&&!wc.isDestroyed())await wc.debugger.sendCommand('Fetch.continueRequest',{requestId:params.requestId}).catch(()=>{});}
   });
-  try {wc.debugger.attach('1.3');await wc.debugger.sendCommand('Fetch.enable',{patterns:[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}]});}
+  try {
+    wc.debugger.attach('1.3');
+    await wc.debugger.sendCommand('Fetch.enable',{patterns:[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}]});
+  }
   catch(_){emit({type:'client-integration',value:false});}
   wc.on('will-attach-webview', e => e.preventDefault());
   wc.on('will-navigate', (event,url) => { event.preventDefault(); void routeLink(url); });
@@ -262,7 +269,7 @@ readMessages(pipe, async cmd => {
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`);
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`);
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);

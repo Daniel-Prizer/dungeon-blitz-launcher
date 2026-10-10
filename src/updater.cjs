@@ -20,6 +20,12 @@ class Updater extends EventEmitter {
  publish(patch){Object.assign(this.status,patch);this.emit('state');}
  start(){this.stop(false);if(this.enabled){this.first=setTimeout(()=>void this.check(),10000);this.first.unref();this.timer=setInterval(()=>void this.check(),6*60*60*1000);this.timer.unref();}}
  stop(cancel=true){clearTimeout(this.first);clearInterval(this.timer);if(cancel)this.controller?.abort();}
+ checkForClientUpdate(){
+  // One extra automatic check per launcher session. Remote game reloads must
+  // not produce repeated GitHub requests or override the automatic-update opt-out.
+  if(!this.enabled||this.clientUpdateChecked)return;
+  this.clientUpdateChecked=true;clearTimeout(this.first);return this.check();
+ }
  async check(){if(this.busy||this.status.phase==='ready')return;this.busy=true;this.controller=new AbortController();const signal=this.controller.signal;this.publish({phase:'checking',error:''});
   try{const release=await json(`https://api.github.com/repos/${REPO}/releases/latest`,2000000,signal);if(release.draft||release.prerelease||!/^v\d+\.\d+\.\d+$/.test(release.tag_name))throw Error('Invalid GitHub release');const next=release.tag_name.slice(1);
    if(!newer(next,this.current)){this.publish({phase:'current'});return;}

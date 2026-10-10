@@ -5,6 +5,14 @@ const {verifyFiles,Updater}=require('../src/updater.cjs');
 const pair=crypto.generateKeyPairSync('ed25519');
 const manifest=()=>({schema:1,platform:'win32-x64',version:'0.10.0',zip:{name:'Dungeon-Blitz-Launcher-0.10.0-win64.zip',size:10,sha256:'a'.repeat(64)},files:[{path:'Dungeon Blitz Launcher.exe',size:3,sha256:crypto.createHash('sha256').update('new').digest('hex')},{path:'release/0.10.0/Dungeon Blitz Launcher-win32-x64/Dungeon Blitz Launcher.exe',size:3,sha256:crypto.createHash('sha256').update('new').digest('hex')}]});
 function sign(value){const bytes=Buffer.from(JSON.stringify(value));return {payload:bytes.toString('base64'),signature:crypto.sign(null,bytes,pair.privateKey).toString('base64')};}
+test('an incompatible client triggers one automatic update check per session and honors opt-out',()=>{
+ const create=enabled=>new Updater({current:'0.13.0',cache:'unused',installRoot:'unused',helper:'unused',enabled,publicKey:pair.publicKey});
+ const updater=create(true);let checks=0;updater.check=()=>{checks++;};
+ updater.checkForClientUpdate();updater.checkForClientUpdate();assert.equal(checks,1);
+ const disabled=create(false);disabled.check=()=>{checks++;};disabled.checkForClientUpdate();assert.equal(checks,1);
+ disabled.enabled=true;disabled.checkForClientUpdate();assert.equal(checks,2);disabled.checkForClientUpdate();assert.equal(checks,2);
+ updater.stop();disabled.stop();
+});
 test('signed updates reject tampering, wrong signer, rollback and wrong platform',()=>{
  assert.equal(verifyManifest(sign(manifest()),pair.publicKey,'0.9.0').version,'0.10.0');
  const changed=sign(manifest());changed.payload=Buffer.from(changed.payload,'base64').toString().replace('0.10.0','0.11.0');assert.throws(()=>verifyManifest(changed,pair.publicKey,'0.9.0'));
@@ -30,7 +38,7 @@ test('complete signed download pipeline stages exact files, rejects corruption/r
   fs.mkdirSync(path.join(dir,'destination'));
   function responses(corrupt=false){return async url=>{requests.push(url);if(url.endsWith('/latest'))return new Response(JSON.stringify({tag_name:'v0.10.0',assets:[{name:'Dungeon-Blitz-Launcher-0.10.0-update.json'}]}));if(url.endsWith('-update.json'))return new Response(JSON.stringify(envelope));return new Response(corrupt?Buffer.alloc(bytes.length):bytes);};}
   const make=cache=>new Updater({current:'0.9.0',cache:path.join(dir,cache),installRoot:path.join(dir,'destination'),helper,publicKey:pair.publicKey});
-  global.fetch=responses();const updater=make('good');await updater.check();assert.equal(updater.status.phase,'ready');assert.equal(requests.length,3);await verifyFiles(path.join(updater.stage,'files'),value);assert.equal(fs.readdirSync(path.join(dir,'destination')).length,0,'Checking must not replace or execute a build');
+  global.fetch=responses();const updater=make('good');await updater.checkForClientUpdate();assert.equal(updater.status.phase,'ready');await updater.checkForClientUpdate();assert.equal(requests.length,3,'Repeated compatibility failures must not redownload or check again');await verifyFiles(path.join(updater.stage,'files'),value);assert.equal(fs.readdirSync(path.join(dir,'destination')).length,0,'Checking must not replace or execute a build');
   global.fetch=responses(true);const corrupt=make('corrupt');await corrupt.check();assert.equal(corrupt.status.phase,'error');assert.match(corrupt.status.error,/hash mismatch/);assert.equal(corrupt.stage,null);
   global.fetch=async()=>new Response(null,{status:302,headers:{location:'https://attacker.invalid/payload'}});const redirected=make('redirect');await redirected.check();assert.equal(redirected.status.phase,'error');assert.match(redirected.status.error,/origin rejected/);
   global.fetch=async(url,{signal})=>new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}));const cancelled=make('cancelled');const pending=cancelled.check();cancelled.stop();await pending;assert.equal(cancelled.status.phase,'idle');assert.equal(cancelled.busy,false);
