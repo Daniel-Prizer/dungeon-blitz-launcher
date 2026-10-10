@@ -32,6 +32,14 @@ public class TransitionFixtureBuilder {
     if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals("baf51368e22c568f758efda185540460f7d39b5384b3ff3d6792821838fae506"))throw new IllegalStateException("Baseline reconstruction mismatch");
     allocator.setCodeBytes(original);allocator.getCode().checkValidOffsets(allocator);allocator.setCodeBytes(original);
    }
+   if(args.length>2&&args[2].equals("cache-baseline")){
+    MethodBody cache=abc.findBodyByClassAndName("class_23","method_1753");
+    byte[] original=cache.getCodeBytes().clone();
+    byte[] guard=HexFormat.of().parseHex("62082a1203000029d27611040000");
+    System.arraycopy(guard,0,original,0x83,guard.length);
+    if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals("6eb2b5564dc4cfb3ad9afa62e7ef2d264f806416c013229edbcde107067f8a4c"))throw new IllegalStateException("Cache baseline reconstruction mismatch");
+    cache.setCodeBytes(original);cache.getCode().checkValidOffsets(cache);cache.setCodeBytes(original);
+   }
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
   }
   if(changed!=1)throw new IllegalStateException("Fixture must modify one Game only");

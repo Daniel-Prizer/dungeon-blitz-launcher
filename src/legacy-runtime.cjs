@@ -6,6 +6,8 @@ const readline = require('node:readline');
 const net = require('node:net');
 const { randomBytes } = require('node:crypto');
 const { UNLOCK_KEYS, validSettings } = require('./policy.cjs');
+const { gameEnvironment } = require('./game-environment.cjs');
+const { readMessages } = require('./legacy/transport.cjs');
 class LegacyRuntime extends EventEmitter {
   constructor(root, parentHandle, test = false, privateDesktop = false, gameURL, hardwareAcceleration=true) {
     super();
@@ -16,7 +18,7 @@ class LegacyRuntime extends EventEmitter {
     const log = message => { try { const file=path.join(root,'host-diagnostics.log'); if(fs.existsSync(file)&&fs.statSync(file).size>65536)fs.writeFileSync(file,'');fs.appendFileSync(file,`${new Date().toISOString()} ${message}\n`); } catch {} };
     log('Starting native game host');
     if (!fs.existsSync(executable)) throw new Error('Game runtime missing. Run npm run prepare:game from the source folder.');
-    const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE; delete env.NODE_OPTIONS;
+    const env = gameEnvironment(process.env,test);
     if (test) env.BLITZ_HOST_TEST = '1'; else delete env.BLITZ_HOST_TEST;
     env.BLITZ_HOST_CHANNEL = `\\\\.\\pipe\\blitz-game-${randomBytes(24).toString('hex')}`;
     env.BLITZ_HOST_TOKEN = randomBytes(32).toString('hex');
@@ -27,9 +29,7 @@ class LegacyRuntime extends EventEmitter {
       let authenticated = false;
       socket.setTimeout(5000, () => { if (!authenticated) socket.destroy(); });
       socket.on('error', () => {});
-      readline.createInterface({ input: socket }).on('line', line => {
-      if (line.length > 32768) { socket.destroy(); return; }
-      let event; try { event = JSON.parse(line); } catch { socket.destroy(); return; }
+      readMessages(socket,event => {
       if (!authenticated) {
         if (event.type !== 'auth' || event.token !== env.BLITZ_HOST_TOKEN || this.pipe) { socket.destroy(); return; }
         authenticated = true; socket.setTimeout(0); this.pipe = socket;
@@ -82,6 +82,7 @@ class LegacyRuntime extends EventEmitter {
       });
     });
     this.server.on('error', error => this.emit('failure', error.message));
+    this.server.maxConnections=8;
     this.server.listen(env.BLITZ_HOST_CHANNEL, () => {
       if (this.closed) { this.server.close(); return; }
       this.child = spawn(executable, [], { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true, env });
