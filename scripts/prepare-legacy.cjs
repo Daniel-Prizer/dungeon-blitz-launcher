@@ -27,6 +27,7 @@ const target = path.join(root, 'runtime/game');
   const plugin = path.join(source, 'resources/vendor/flash/win32/pepflashplayer64.dll');
   if (!fs.existsSync(path.join(target, 'resources/pepflashplayer64.dll'))) fs.copyFileSync(plugin, path.join(target, 'resources/pepflashplayer64.dll'));
   execFileSync(process.execPath,[path.join(__dirname,'prepare-audio.cjs')],{stdio:'inherit',windowsHide:true});
+  execFileSync(process.execPath,[path.join(__dirname,'prepare-audio.cjs'),'--current'],{stdio:'inherit',windowsHide:true});
   await asar.createPackage(path.join(root, 'src/legacy'), path.join(target, 'resources/app.asar'));
   execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe', ['/nologo', '/target:exe', '/platform:x64', '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.Web.Extensions.dll', `/out:${path.join(root, 'runtime/NativeHost.exe')}`, ...['NativeHost.cs','CursorLock.cs','GameAudio.cs'].map(name=>path.join(root,'src',name))], { stdio: 'inherit' });
   const hashes = {};

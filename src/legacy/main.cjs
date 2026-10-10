@@ -8,7 +8,8 @@ const {patchClient}=require('./client-patch.cjs');
 const {classifyLink}=require('./links.cjs');
 const {patchAudio}=require('./audio-patch.cjs');
 const {rasterPlan}=require('./rendering.cjs');
-let audioDelta=null;try{audioDelta=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'audio-delta.json'),'utf8'));}catch(_){}
+const audioDeltas=[];
+for(const name of ['audio-delta.json','audio-delta-current.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
 const LIVE = process.env.BLITZ_GAME_URL;
 function validGameAddress(value) {
   try { const u=new URL(value);return !u.username&&!u.password&&(u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname))); } catch(_){return false;}
@@ -167,7 +168,7 @@ app.whenReady().then(async () => {
       const url=new URL(params.request.url);
       if(url.origin===ORIGIN && /\/DungeonBlitz\.swf$/i.test(url.pathname) && params.responseStatusCode===200) {
         const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
-        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),presentation=patchClient(bytes),audio=presentation&&patchAudio(presentation,audioDelta),patched=audio||presentation;
+        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),presentation=patchClient(bytes),audio=presentation&&audioDeltas.map(delta=>patchAudio(presentation,delta)).find(Boolean),patched=audio||presentation;
         audioIntegration=!!audio;emit({type:'audio-integration',value:audioIntegration});
         if(patched) {
           const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));

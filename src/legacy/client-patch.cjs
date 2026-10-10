@@ -1,13 +1,15 @@
 'use strict';
 const crypto = require('crypto'), zlib = require('zlib');
-const revision = require('./client-layout.json');
+const revisions = [require('./client-layout.json'), require('./client-layout-current.json')];
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 function u30(value) { const bytes=[];do {let b=value&127;value>>>=7;bytes.push(value?b|128:b);}while(value);return Buffer.from(bytes); }
 // Pinned to a reviewed client revision, not guessed offsets in arbitrary SWFs.
 // Only presentation/layout changes: original game input, focus state, packets,
 // authentication, game data and assets remain untouched.
 function patchClient(input) {
-  if (!Buffer.isBuffer(input) || input.length > 2*1024*1024 || digest(input) !== revision.inputHash) return null;
+  if (!Buffer.isBuffer(input) || input.length > 2*1024*1024) return null;
+  const revision = revisions.find(item => item.inputHash === digest(input));
+  if (!revision) return null;
   if(input.toString('ascii',0,3)!=='CWS')return null;
   const body=zlib.inflateSync(input.slice(8));
   const layout=revision.layout,focus=revision.focus;

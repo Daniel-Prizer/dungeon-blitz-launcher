@@ -8,6 +8,14 @@ test('audio delta reconstructs inserted bytes and refuses damaged or unbounded d
  assert.equal(patchAudio(Buffer.from('broken'),delta),null);
 });
 const root=path.resolve(__dirname,'..'),live=path.join(root,'.test-tools/focus/live.swf'),delta=path.join(root,'runtime/game/resources/audio-delta.json'),compiled=path.join(root,'.test-tools/audio/audio.swf');
+const current=path.join(root,'.test-tools/focus/current.swf'),currentDelta=path.join(root,'runtime/game/resources/audio-delta-current.json'),currentCompiled=path.join(root,'.test-tools/audio-current/audio.swf');
+test('October 10 audio/display adapter exactly reconstructs its separately compiled reviewed revision',{skip:![current,currentDelta,currentCompiled].every(fs.existsSync)},()=>{
+ const presentation=patchClient(fs.readFileSync(current));assert(presentation);
+ const audio=patchAudio(presentation,JSON.parse(fs.readFileSync(currentDelta)));assert(audio);
+ assert.deepEqual(zlib.inflateSync(audio.subarray(8)),zlib.inflateSync(fs.readFileSync(currentCompiled).subarray(8)));
+ assert.equal(patchAudio(presentation,JSON.parse(fs.readFileSync(delta))),null,'Historical adapter must never be applied to the new client');
+ const changed=Buffer.from(presentation);changed[changed.length-1]^=1;assert.equal(patchAudio(changed,JSON.parse(fs.readFileSync(currentDelta))),null);
+});
 test('reviewed audio delta matches the independently compiled client',{skip:![live,delta,compiled].every(fs.existsSync)},()=>{
  const presentation=patchClient(fs.readFileSync(live));assert(presentation);
  const audio=patchAudio(presentation,JSON.parse(fs.readFileSync(delta)));assert(audio);

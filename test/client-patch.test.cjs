@@ -3,6 +3,17 @@ const {patchClient}=require('../src/legacy/client-patch.cjs'),revision=require('
 test('client compatibility rejects unreviewed, malformed and oversized input',()=>{
  for(const input of [null,'text',Buffer.alloc(0),Buffer.from('CWSnotaswf'),Buffer.alloc(3*1024*1024)])assert.equal(patchClient(input),null);
 });
+
+test('October 10 client uses separately pinned offsets and preserves all other bytes',{skip:!fs.existsSync(path.join(__dirname,'../.test-tools/focus/current.swf'))},()=>{
+ const input=fs.readFileSync(path.join(__dirname,'../.test-tools/focus/current.swf')),out=patchClient(input);assert(out);
+ const r=require('../src/legacy/client-layout-current.json'),before=zlib.inflateSync(input.subarray(8)),after=zlib.inflateSync(out.subarray(8));
+ assert.equal(after.length,before.length+6);
+ assert.equal(after[r.focus.start],0x47);
+ const normal=Buffer.concat([after.subarray(0,r.layout.start),before.subarray(r.layout.start,r.layout.start+r.layout.length),after.subarray(r.layout.start+r.layout.length+6)]);
+ for(const [start,length] of [[r.focus.start,r.focus.length],[r.abcLengthPosition,4],[r.layout.lengthPosition,r.layout.start-r.layout.lengthPosition]])before.subarray(start,start+length).copy(normal,start);
+ assert.deepEqual(normal,before,'Only the two reviewed methods and their lengths may change');
+ const changed=Buffer.from(input);changed[changed.length-1]^=1;assert.equal(patchClient(changed),null);
+});
 test('reviewed client edits only layout, debug-local descriptions and focus presentation',{skip:!fs.existsSync(path.join(__dirname,'../.test-tools/focus/live.swf'))},()=>{
  const input=fs.readFileSync(path.join(__dirname,'../.test-tools/focus/live.swf')),out=patchClient(input);assert(out);
  const before=zlib.inflateSync(input.subarray(8)),after=zlib.inflateSync(out.subarray(8)),r=revision;
