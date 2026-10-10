@@ -1,7 +1,8 @@
 const fs=require('node:fs'),path=require('node:path'),https=require('node:https');
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),dir=path.join(root,'.test-tools/focus'),jar=path.join(dir,'ffdec/ffdec.jar');
-const source='https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-d7fadc1f5c3f';
+const current=process.argv.includes('--current');
+const source=current?'https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-7a652582ebf5':'https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-d7fadc1f5c3f';
 function download(url,file){return new Promise((resolve,reject)=>{https.get(url,{headers:{'User-Agent':'DungeonBlitzLauncher-tests'}},response=>{
   if(response.statusCode>=300&&response.statusCode<400&&response.headers.location){response.resume();return download(new URL(response.headers.location,url).href,file).then(resolve,reject);}
   if(response.statusCode!==200){response.resume();return reject(new Error('Fixture download failed: '+response.statusCode));}
@@ -14,7 +15,11 @@ function download(url,file){return new Promise((resolve,reject)=>{https.get(url,
   if(require('node:crypto').createHash('sha256').update(fs.readFileSync(zip)).digest('hex')!=='35f4930eb7c380afe66f2117f90b006deac0631473ad7500bb39c78f68645ecd')throw Error('JPEXS release checksum mismatch');
   execFileSync('powershell.exe',['-NoProfile','-Command',`Expand-Archive -LiteralPath '${zip.replaceAll("'","''")}' -DestinationPath '${path.join(dir,'ffdec').replaceAll("'","''")}' -Force`],{windowsHide:true,stdio:'inherit'});
  }
- if(!fs.existsSync(path.join(dir,'live.swf')))await download(source,path.join(dir,'live.swf'));
+ const file=path.join(dir,current?'current.swf':'live.swf');
+ if(!fs.existsSync(file))await download(source,file);
+ const expected=require(current?'../src/legacy/client-layout-current.json':'../src/legacy/client-layout.json').inputHash;
+ if(require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex')!==expected)throw Error('Source client changed; review the new revision before building adapters');
+ if(current){console.log('Verified current reviewed game revision.');return;}
  execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-importScript',path.join(dir,'live.swf'),path.join(dir,'input-probe.swf'),path.join(root,'test/fixtures')],{windowsHide:true,stdio:'inherit'});
  console.log('Prepared isolated Flash stage input fixture.');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.10.0** (minor: signed GitHub automatic updates).
+Version **0.10.1** (patch: restore sharp native rendering for Minesa's October 10 client).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 

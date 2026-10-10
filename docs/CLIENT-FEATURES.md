@@ -26,6 +26,12 @@ The pinned [Electron 11 FrameSubscriber](https://github.com/electron/electron/bl
 
 Same-frame comparisons and explicit RGBA/BGRA normalization proved that the stronger model did process pixels; the original half matched the source exactly. These results and the user feedback support removing the entire enhancer, rather than adding more overhead for an unproven quality increase. No neural module, model or overlay ships in 0.6.1. Game zoom and all original game clocks remain unchanged. The historical source is available in Git history.
 
+## October 10 client compatibility in 0.10.1
+
+The live page now requests `clientrev=swf-7a652582ebf5`; the fetched SWF has SHA-256 `101d60694c4e5cf916c5167e06e544b9ac5dba8a4a4ba570e4d9972c86c5e31b`. Its unrecognized hash disabled the native raster adapter in 0.10.0, causing browser magnification of the original smaller bitmap. Rendering preferences were not reset. The new revision has its own pinned offsets and compiled audio/display delta; the historical revision remains supported. Unknown bytes still run unchanged.
+
+Both layout and focus method bytes are identical to the previous reviewed revision. Resolved layout instructions, the focus class and SoundManager also match in JPEXS p-code exports. Build-time checks retain every method outside the explicitly allowed presentation/audio edits; authentication, packets, game frame rate and simulation remain unchanged. Full imported SWFs and test profiles are excluded from releases. The Settings compatibility message now explains that an unsupported client loses native rendering as well as the other adapter features.
+
 ## Interaction-delay investigation in 0.6.4
 
 The user reported delayed NPC clicks followed by queued actions. The cause has not been reproduced. The reviewed client limits interaction attempts to intervals of at least 50ms and sends a talk-to-NPC packet for nonlocal levels; this is client-code evidence, not a measurement of Minesa server response time. No click debouncing, packet cadence, input listeners or game clocks are changed.
