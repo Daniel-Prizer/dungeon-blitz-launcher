@@ -1,6 +1,12 @@
 # Projector migration: experimental, not shipped
 
-The production launcher in 0.10.0 still uses the existing separate Electron 11 / Flash 32.0.0.363 host. The signed updater is a completed feature; the projector migration is not. Do not enable a weaker fallback or widen personal-data access to make a compatibility test pass.
+The production launcher in 0.15.1 still uses the existing separate Electron 11 / Flash 32.0.0.363 host. The signed updater is a completed feature; the projector migration is not. Do not enable a weaker fallback or widen personal-data access to make a compatibility test pass.
+
+## October 10 re-evaluation
+
+The official launcher v1.2.0 pins Adobe projector 32.0.0.465 to the same SHA-256 used by this prototype: [official projector lock](https://github.com/db-preservation-contributors/dungeon-blitz-r-launcher/blob/v1.2.0/projector.lock.json). On Windows its [launch preparation](https://github.com/db-preservation-contributors/dungeon-blitz-r-launcher/blob/v1.2.0/lib/projector.js) returns the executable and remote SWF URL, and [main.js](https://github.com/db-preservation-contributors/dungeon-blitz-r-launcher/blob/v1.2.0/main.js) starts it using an ordinary child-process spawn. That specific launch path does not establish AppContainer containment. Its current Electron shell is separate from the game's standalone renderer.
+
+Using that newer projector would remove Chromium 87 from the game-rendering path. It would not repair Flash or guarantee protection against future CVEs: [Adobe ended support and security updates](https://www.adobe.com/products/flashplayer/end-of-life-alternative.html). Switching without isolation would also expose the standalone player under the ordinary Windows user token. The fresh AppContainer SharedObject fixture still fails on this machine, using synthetic data only. Consequently this is not a safe, feature-complete replacement to ship yet; it remains excluded. Settings communication and a tiny internal render probe alone are insufficient evidence of game, storage, input and link compatibility.
 
 ## Implemented foundation
 

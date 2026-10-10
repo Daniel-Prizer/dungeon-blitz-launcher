@@ -1,4 +1,16 @@
-# Current validation: 0.15.0 (minor)
+# Current validation: 0.15.1 (patch)
+
+Fixes experimental widescreen screen anchoring, full-view modal mattes, original bottom-HUD decoration and visible terrain-tile protection. The guarded inactive-desktop transition suite passes against fresh public UI/Home assets and the latest reviewed live client, without player profiles, credentials, desktop input/capture or ClipCursor.
+
+- The runner rebuilds the legacy runtime and checks every source file against its actual app.asar before launch. A stale archive initially ignored new fixture commands; those apparent passes were discarded. Tests now assert actual camera/clock parameters and menu visibility, not just enlarged hidden shapes.
+- The original tile protection baseline reproduces 272,250 incorrect sampled pixels after 23,000 logical pixels of travel with a nonzero level origin and tied cache timestamps. The corrected production drawing/cache path reports zero across all six vertical positions, with zero cache rebuilds. Only the owned fixture deliberately ties its clock; production timing is unchanged.
+- Actual HUD, chat, party and idol/trove artwork verifies independent anchors, original world-label/party origins, stable positions, click-through border, original vector decoration and restoration. Both rendered outer corners dim when a modal appears; panel/pedestal widths remain unchanged. Test-only UI wiring skips player/network initialization, so this is not a live authenticated inventory/combat test.
+- Native layout checks cover 1080p/1440p, all three detail levels, 50–300% zoom, input mapping, fullscreen and menu restoration. The latest live unauthenticated title retains its original layout when widescreen is requested. No animation/simulation/packet clock is changed.
+- All 29 unit groups pass. The standalone Adobe 32.0.0.465 AppContainer settings/bitmap fixture passes again, but its fresh synthetic SharedObject storage test still fails. The prototype remains excluded from releases; a working tiny render probe is not proof of full multiplayer/feature compatibility.
+- Vertical expansion is withheld: inspected room bounds include collision/spawn markers and do not establish complete scenery or valid private live camera limits.
+- Final package verification passes for matching source/runtime, security fuses, root executable version and absence of retired neural/projector resources. The actual packaged Electron updater passes signed extraction, physical ASAR verification, tamper rejection and failed-stage cleanup. The separate installer test identity passes fresh install/all payload hashes/shortcut targets/Windows registration, repeat Setup without payload replacement, busy-process refusal, newer-version preservation, traversal/junction rejection and managed uninstall. No real game is started by these installer/updater tests.
+
+## Included validation: 0.15.0 (minor)
 
 Adds windowless latest-release Setup using the existing signed update pipeline. Unit integration installs a signed dummy release through the real native bootstrap helper, rejects an outside/zero caller PID and an active game stand-in without killing it, preserves the prior shim and unrelated files, then repeats a current-version check with no payload rewrite or download. All fixtures are disposable and non-game executables. No player settings/profile is opened by bootstrap mode.
 

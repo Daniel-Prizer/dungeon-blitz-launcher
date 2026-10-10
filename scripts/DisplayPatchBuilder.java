@@ -56,8 +56,21 @@ public class DisplayPatchBuilder {
   // checking offsets. Keep the reviewed raw body, including that original jump.
   body.setCodeBytes(code);return true;
  }
+ static MethodBody correctTileReuse(ABC abc)throws Exception {
+  MethodBody body=abc.findBodyByClassAndName("class_23","method_1389");
+  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("5f91731eaabfb8a921914bd5b31a8802123761f932292e0ddc841ce57fe1f34d"))throw new IllegalStateException("Unreviewed terrain tile reuse policy");
+  byte[] code=body.getCodeBytes().clone();
+  if(!Arrays.equals(Arrays.copyOfRange(code,311,340),HexFormat.of().parseHex("2402a0ae092a1252ffff62072a1103000029d276120d00002910a3ffff")))throw new IllegalStateException("Terrain protection range mismatch");
+  // The six staggered half-columns also prefetch a seventh boundary column.
+  // Protect that complete range, including equal LRU timestamps during a
+  // stalled clock. The old start+2 guard can evict an already checked visible
+  // tile in that condition. The original 100-MB pool budget is unchanged;
+  // original-width rendering keeps the small extra protected cache ring.
+  // Change one operand only, preserving all branch/exception addresses.
+  code[312]=6;body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
+ }
  public static void main(String[] args)throws Exception {
-  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null;
+  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();MethodBody layout=abc.findBodyByClassAndName("Main","method_561");if(layout==null)continue;
    reviewInput(abc);
@@ -86,10 +99,11 @@ public class DisplayPatchBuilder {
    layout.setCodeBytes(code);layout.getCode();layout.max_stack=Math.max(layout.max_stack,4);layout.setModified();layout.getCode().checkValidOffsets(layout);
    boolean transition=restoreTransition(abc);MethodBody allocation=abc.findBodyByClassAndName("Game","method_1947");
    MethodBody cache=correctCacheCheck(abc);
+   MethodBody reuse=correctTileReuse(abc);correctedReuseHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(reuse.getCodeBytes()));
    correctedCacheHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes()));
-   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
+   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
-   System.out.println("Verified native raster layout, rounded texture-cache check and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?3:2)));
+   System.out.println("Verified native raster layout, rounded texture-cache check, visible tile protection and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?4:3)));
   }
   if(changed!=1)throw new IllegalStateException("Expected exactly one reviewed layout method");
   try(OutputStream out=new FileOutputStream(args[1])){swf.saveTo(out);}
@@ -100,6 +114,8 @@ public class DisplayPatchBuilder {
    if(!hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))throw new IllegalStateException("Serialized transition body changed");verified++;
    MethodBody cache=tag.getABC().findBodyByClassAndName("class_23","method_1753");
    if(cache==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes())).equals(correctedCacheHash))throw new IllegalStateException("Serialized terrain cache check changed");
+   MethodBody reuse=tag.getABC().findBodyByClassAndName("class_23","method_1389");
+   if(reuse==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(reuse.getCodeBytes())).equals(correctedReuseHash))throw new IllegalStateException("Serialized terrain protection changed");
   }
   if(verified!=1)throw new IllegalStateException("Serialized allocator missing");
  }

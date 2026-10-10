@@ -2,6 +2,11 @@ const path=require('node:path'),fs=require('node:fs');
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),helper=path.join(root,'.test-tools/PrivateDesktop.exe');
 fs.mkdirSync(path.dirname(helper),{recursive:true});
+// Rebuild before launch: source-only edits otherwise leave stale native-host
+// command handlers in runtime/app.asar, silently ignoring new fixture inputs.
+execFileSync(process.execPath,[path.join(__dirname,'prepare-legacy.cjs')],{stdio:'inherit',windowsHide:true});
+const asar=require('@electron/asar'),assert=require('node:assert/strict');
+for(const file of fs.readdirSync(path.join(root,'src/legacy'))){if(fs.statSync(path.join(root,'src/legacy',file)).isFile())assert.deepEqual(asar.extractFile(path.join(root,'runtime/game/resources/app.asar'),file),fs.readFileSync(path.join(root,'src/legacy',file)),'Test host must match current source: '+file);}
 if(!process.argv.some(value=>['--focus','--render','--fps','--transition','--window','--margins'].includes(value)))execFileSync(process.execPath,[path.join(__dirname,'prepare-shortcut-fixture.cjs')],{stdio:'inherit',windowsHide:true});
 fs.writeFileSync(path.join(root,'docs/private-desktop-test.log'),'');
 execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:exe','/platform:x64',`/out:${helper}`,path.join(__dirname,'PrivateDesktop.cs')],{stdio:'inherit',windowsHide:true});
