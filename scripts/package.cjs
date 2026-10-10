@@ -12,7 +12,7 @@ const root = path.resolve(__dirname, '..');
     out: path.join(root, 'release', require('../package.json').version), overwrite: true, asar: true, prune: true,
     icon: fs.existsSync(path.join(root, 'assets/icon.ico')) ? path.join(root, 'assets/icon.ico') : undefined,
     extraResource: [path.join(root, 'runtime')],
-    ignore: [/^\/artifacts($|\/)/, /^\/runtime($|\/)/, /^\/release($|\/)/, /^\/\.test-profile($|\/)/, /^\/\.probe-profile($|\/)/, /^\/\.test-tools($|\/)/, /^\/(?:Blitz Browser|Dungeon Blitz Launcher)\.exe$/, /^\/scripts($|\/)/, /^\/test($|\/)/, /^\/docs($|\/)/, /^\/\.git($|\/)/],
+    ignore: [/^\/artifacts($|\/)/, /^\/runtime($|\/)/, /^\/release($|\/)/, /^\/\.test-profile($|\/)/, /^\/\.probe-profile($|\/)/, /^\/\.test-tools($|\/)/, /^\/(?:Blitz Browser|Dungeon Blitz Launcher(?: Setup)?)\.exe$/, /^\/scripts($|\/)/, /^\/test($|\/)/, /^\/docs($|\/)/, /^\/\.git($|\/)/],
     win32metadata: { CompanyName: 'Dungeon Blitz Launcher', FileDescription: 'Dungeon Blitz Launcher for Dungeon Blitz', ProductName: 'Dungeon Blitz Launcher' },
   });
   const output = paths[0], executable = path.join(output, 'Dungeon Blitz Launcher.exe');

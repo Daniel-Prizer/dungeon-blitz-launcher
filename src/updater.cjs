@@ -25,7 +25,7 @@ class Updater extends EventEmitter {
    if(!newer(next,this.current)){this.publish({phase:'current'});return;}
    const name=`Dungeon-Blitz-Launcher-${next}-update.json`;if(!release.assets?.some(asset=>asset.name===name))throw Error('Latest release has no signed update; use its manual download');
    const manifest=verifyManifest(await json(releaseAsset(next,name),6000000,signal),this.publicKey,this.current);if(manifest.version!==next)throw Error('Release and manifest disagree');
-   await new Promise((resolve,reject)=>execFile(this.helper,['preflight',this.installRoot],{windowsHide:true,timeout:10000},error=>error?reject(Error('Installation folder is not writable. Move the complete launcher folder to Downloads for automatic updates.')):resolve()));
+   await new Promise((resolve,reject)=>execFile(this.helper,['preflight',this.installRoot],{windowsHide:true,timeout:10000},error=>error?reject(Error('Installation folder is not writable. Reinstall for your Windows account, or keep the portable launcher in a writable folder.')):resolve()));
    fs.mkdirSync(this.cache,{recursive:true});const dir=fs.mkdtempSync(path.join(this.cache,'stage-'));this.stage=dir;const archive=path.join(dir,'payload.zip');
    await new Promise((resolve,reject)=>execFile(this.helper,['protect',dir],{windowsHide:true,timeout:10000},error=>error?reject(error):resolve()));
    this.publish({phase:'downloading',version:next,percent:0});const {res,finish}=await response(releaseAsset(next,manifest.zip.name),signal);const file=fs.openSync(archive,'wx');let size=0;const hash=crypto.createHash('sha256');
