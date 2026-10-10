@@ -1,8 +1,8 @@
 'use strict';
 const { app, BrowserWindow, session } = require('electron');
 const path = require('path');
-const readline = require('readline');
 const net = require('net');
+const {readMessages}=require('./transport.cjs');
 const {editingCommand,pasteIntoFlash}=require('./editing.cjs');
 const {patchClient}=require('./client-patch.cjs');
 const {classifyLink}=require('./links.cjs');
@@ -226,10 +226,8 @@ app.whenReady().then(async () => {
   emit({type:'error',message:'The game window could not start. Reconnect to try again.'});
   if(win&&!win.isDestroyed())win.destroy();app.exit(1);
 });
-readline.createInterface({ input: pipe }).on('line', async line => {
-  if (line.length > 16384) return;
+readMessages(pipe, async cmd => {
   try {
-    const cmd = JSON.parse(line);
     if (!win || win.isDestroyed()) return;
     if (cmd.type === 'zoom') { zoom = Math.max(.5, Math.min(3, Number(cmd.value) || 1)); await applyZoom(); }
     if(cmd.type==='render-resolution'&&[.5,.75,1].includes(cmd.value)){renderResolution=cmd.value;await applyZoom();}
@@ -250,6 +248,7 @@ readline.createInterface({ input: pipe }).on('line', async line => {
       if(exists){clientIntegration=true;audioIntegration=true;emit({type:'client-integration',value:true});emit({type:'audio-integration',value:true});await applyZoom();await applyWidescreen();}
     }
     if(cmd.type==='test-transition-control'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.play==='boolean'&&typeof cmd.transition==='boolean')await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzTransitionFixtureControl(${cmd.play},${cmd.transition})`);
+    if(cmd.type==='test-world-control'&&process.env.BLITZ_HOST_TEST==='1'&&Number.isFinite(cmd.pan)&&cmd.pan>=0&&cmd.pan<=1500&&typeof cmd.scene==='boolean'&&typeof cmd.oldCoverage==='boolean'&&(cmd.reuse===undefined||typeof cmd.reuse==='boolean'))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzWorldFixtureControl(${cmd.pan},${cmd.scene},${cmd.oldCoverage},${cmd.reuse===true})`);
     if (cmd.type === 'background') win.webContents.setBackgroundThrottling(!cmd.value);
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();

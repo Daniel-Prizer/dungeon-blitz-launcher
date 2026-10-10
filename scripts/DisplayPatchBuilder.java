@@ -11,6 +11,22 @@ import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 // Same-size substitutions preserve every original branch and exception offset.
 public class DisplayPatchBuilder {
  static AVM2Instruction ins(int op,int... args){return new AVM2Instruction(0,op,args);}
+ static MethodBody correctCacheCheck(ABC abc)throws Exception {
+  MethodBody body=abc.findBodyByClassAndName("class_23","method_1753");
+  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("6eb2b5564dc4cfb3ad9afa62e7ef2d264f806416c013229edbcde107067f8a4c"))throw new IllegalStateException("Unreviewed texture-cache resize check");
+  // Allocation uses ceil(tileWidth * rasterScale), but this comparison used
+  // the fractional product. At widescreen scales that destroys/rebuilds the
+  // entire terrain cache every frame. Round exactly as the original allocator.
+  // Replace only the always-false obfuscator guard; preserve all offsets.
+  byte[] code=body.getCodeBytes().clone();
+  byte[] guard=HexFormat.of().parseHex("62082a1203000029d27611040000");
+  if(!Arrays.equals(Arrays.copyOfRange(code,0x83,0x91),guard))throw new IllegalStateException("Cache guard mismatch");
+  ByteArrayOutputStream replacement=new ByteArrayOutputStream();
+  for(AVM2Instruction i:new AVM2Instruction[]{ins(0x60,abc.constants.getPublicQnameId("Math",true)),ins(0x2b),ins(0x46,abc.constants.getPublicQnameId("ceil",true),1)})replacement.write(i.getBytes());
+  if(replacement.size()>guard.length)throw new IllegalStateException("Cache rounding exceeds reviewed range");
+  Arrays.fill(code,0x83,0x91,(byte)2);System.arraycopy(replacement.toByteArray(),0,code,0x83,replacement.size());
+  body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
+ }
  static boolean restoreTransition(ABC abc)throws Exception {
   MethodBody body=abc.findBodyByClassAndName("Game","method_1947");if(body==null)throw new IllegalStateException("Missing reviewed transition canvas allocator");
   String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes()));
@@ -29,7 +45,7 @@ public class DisplayPatchBuilder {
   body.setCodeBytes(code);return true;
  }
  public static void main(String[] args)throws Exception {
-  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;
+  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();MethodBody layout=abc.findBodyByClassAndName("Main","method_561");if(layout==null)continue;
    Map<Integer,byte[]> original=new HashMap<>();for(MethodBody b:abc.bodies)original.put(b.method_info,b.getCodeBytes().clone());
@@ -56,9 +72,11 @@ public class DisplayPatchBuilder {
    }
    layout.setCodeBytes(code);layout.getCode();layout.max_stack=Math.max(layout.max_stack,4);layout.setModified();layout.getCode().checkValidOffsets(layout);
    boolean transition=restoreTransition(abc);MethodBody allocation=abc.findBodyByClassAndName("Game","method_1947");
-   for(MethodBody b:abc.bodies)if(b!=layout&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
+   MethodBody cache=correctCacheCheck(abc);
+   correctedCacheHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes()));
+   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
-   System.out.println("Verified native raster layout and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?2:1)));
+   System.out.println("Verified native raster layout, rounded texture-cache check and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?3:2)));
   }
   if(changed!=1)throw new IllegalStateException("Expected exactly one reviewed layout method");
   try(OutputStream out=new FileOutputStream(args[1])){swf.saveTo(out);}
@@ -67,6 +85,8 @@ public class DisplayPatchBuilder {
    MethodBody allocation=tag.getABC().findBodyByClassAndName("Game","method_1947");if(allocation==null)continue;
    String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(allocation.getCodeBytes()));
    if(!hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))throw new IllegalStateException("Serialized transition body changed");verified++;
+   MethodBody cache=tag.getABC().findBodyByClassAndName("class_23","method_1753");
+   if(cache==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes())).equals(correctedCacheHash))throw new IllegalStateException("Serialized terrain cache check changed");
   }
   if(verified!=1)throw new IllegalStateException("Serialized allocator missing");
  }

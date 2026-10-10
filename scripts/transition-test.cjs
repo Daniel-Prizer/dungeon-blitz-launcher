@@ -9,6 +9,10 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
  execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
  let mode='fixed';
  const server=http.createServer((req,res)=>{
+  if(['/assets/UI_0.swf','/assets/LevelsHome.swf'].includes(req.url)){
+   const assets=process.env.BLITZ_TEST_ASSET_DIR||path.resolve(root,'../db r/dungeon-blitz-r/src/client/content/localhost/p/cbp');
+   res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(assets,path.basename(req.url))));return;
+  }
   if(req.url==='/DungeonBlitz.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/transition',mode+'.swf')));return;}
   res.setHeader('Content-Type','text/html');res.end('<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#484955}#game-container{width:100vw!important;height:100vh!important;min-width:0!important;min-height:0!important}object{display:block;width:100%;height:100%}</style></head><body><div id="game-container"><object id="DungeonBlitz" type="application/x-shockwave-flash" data="/DungeonBlitz.swf"><param name="movie" value="/DungeonBlitz.swf"><param name="allowScriptAccess" value="always"><param name="wmode" value="direct"></object></div></body></html>');
  });
@@ -46,6 +50,16 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
     else{assert.equal(after.bitmapWidth,before.bitmapWidth);assert.equal(after.bitmapHeight,before.bitmapHeight);}
    }
   }
+  mode='cache-baseline';
+  await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',gameZoom:1,renderResolution:1,experimentalWidescreen:true});await call('restart-game');
+  await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await wait(900);
+  await cmd({type:'test-transition-control',play:true,transition:false});await wait(600);
+  await cmd({type:'test-world-control',pan:250,scene:false,oldCoverage:false});await wait(1200);
+  const badCache=(await sample('cache-baseline',true)).renderProbe.fixture;
+  assert.equal(badCache.worldError,'');assert(badCache.worldFrames>=5);assert.equal(badCache.cacheRebuilds,badCache.worldFrames,'Original fractional check must reproduce a cache rebuild every rendered frame');
+  mode='fixed';
+  await call('save-settings',{experimentalWidescreen:false});await call('restart-game');
+  await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await wait(900);
   assert((await call('save-settings',{experimentalWidescreen:'true'})).error);
   await call('settings');const checkbox=page.getByRole('checkbox',{name:'Experimental 16:9',exact:true});assert.equal(await checkbox.isChecked(),false);
   await checkbox.check();await until(async()=>(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1100);
@@ -54,6 +68,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   let p=(await sample('wide-play-1440p',true)).renderProbe;
   assert.equal(p.widescreen.active,true);assert(Math.abs(p.widescreen.logicalWidth/768-16/9)<1e-9);
   assert.equal(p.animationRate,30);assert.equal(p.widescreen.frameAttached,true);assert.equal(p.widescreen.frameInteractive,false);
+  assert.equal(p.widescreen.frameStyle,'original-vector-three-slice');
   assert(Math.abs(p.fixture.left+(p.widescreen.logicalWidth-1152)/2)<.026);assert(Math.abs(p.fixture.right-(852+(p.widescreen.logicalWidth-1152)/2))<.026);
   assert.equal(p.fixture.edgeVisible,false);
   const half=(p.widescreen.logicalWidth-1152)/2;
@@ -65,6 +80,26 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    await cmd({type:'test-input',input:{type:'mouseUp',x:Math.round(startX+logical*p.nativeScale),y:Math.round(startY+350*p.nativeScale),button:'left',clickCount:1}});await wait(100);
    const click=(await sample('input-'+Math.round(logical))).renderProbe.fixture;assert(Math.abs(click.mouseX-logical)<1.1);assert(Math.abs(click.mouseY-350)<1.1);assert.notEqual(click.target,'blitz-wide-frame');
   }
+  await cmd({type:'test-world-control',pan:250,scene:false,oldCoverage:true});await wait(600);
+  const badCoverage=(await sample('world-old-coverage',true)).renderProbe.fixture;
+  assert.equal(badCoverage.worldError,'');assert(badCoverage.pixelErrors>0,'Four original columns must reproduce uncovered pixels on the wider right edge');
+  for(const resolution of [1,.75,.5]){
+   await call('save-settings',{renderResolution:resolution});await wait(700);
+   for(const pan of [0,127,250,287,575,888]){
+    await cmd({type:'test-world-control',pan,scene:false,oldCoverage:false});await wait(450);
+    const world=(await sample('world-'+resolution+'-pan-'+pan,pan===250)).renderProbe.fixture;
+    assert.equal(world.worldError,'');assert(world.worldFrames>=3);assert.equal(world.pixelErrors,0,'Actual cache and Game renderer must cover all sampled world pixels');
+    assert.equal(world.cacheRebuilds,0,'Stable dimensions must reuse the terrain cache');
+   }
+   for(const pan of [1000,1300,1500,1150,700,400,150,0,287,888]){
+    await cmd({type:'test-world-control',pan,scene:false,oldCoverage:false,reuse:true});await wait(180);
+    const moving=(await sample('moving-'+resolution+'-'+pan)).renderProbe.fixture;
+    assert.equal(moving.worldError,'');assert.equal(moving.pixelErrors,0,'Continuous panning and actual tile eviction/reuse must preserve texture positions');assert.equal(moving.cacheRebuilds,0);
+   }
+  }
+  await call('save-settings',{renderResolution:1});await wait(700);
+  await cmd({type:'test-world-control',pan:250,scene:true,oldCoverage:false});await wait(1000);
+  const home=(await sample('original-home-art-wide',true)).renderProbe.fixture;assert.equal(home.worldError,'');assert(home.worldFrames>=3);assert.equal(home.cacheRebuilds,0);
   for(const resolution of [.75,.5,1]){
    await call('save-settings',{renderResolution:resolution});await wait(1100);const before=(await sample('wide-resolution-'+resolution,true)).renderProbe;
    await cmd({type:'test-transition-control',play:true,transition:true});await wait(500);const after=(await sample('wide-transition-'+resolution,true)).renderProbe;
@@ -90,9 +125,11 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await until(async()=>!(await call('state')).loading&&(await call('state')).clientIntegration);await wait(5000);
   const live=await sample('live-title-wide-enabled',true);assert(live.renderProbe);assert.equal(live.renderProbe.widescreen.requested,true);assert.equal(live.renderProbe.widescreen.active,false);assert.equal(live.renderProbe.animationRate,100);
   await call('save-settings',{experimentalWidescreen:false});
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:(await call('state')).version,records,limits:'Inactive desktop, synthetic play/HUD roots using real client layout/allocator/input methods; live unauthenticated title only. No authenticated combat, credentials, desktop switching or pointer confinement.'},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:(await call('state')).version,records,limits:'Inactive desktop/software rendering. Actual original class_23 terrain cache and Game.method_1946 with an owned striped scene, offline original Home/UI vector assets and mock HUD; live unauthenticated title only. Small disposable cache pool for regression. No authenticated combat, credentials, desktop switching or pointer confinement.'},null,2));
   console.log('PASS Actual transition allocator baseline reproduces fixed 2048x1152 mismatch; corrected dimensions match native view at 1080p/1440p');
   console.log('PASS Experimental setting defaults off, validates booleans, widens logical view to 16:9 only in play, preserves clocks and restores menu/HUD geometry');
   console.log('PASS Widescreen input coordinates at left/center/right, no HUD drift, click-through frame, 50/75/100% raster and transitions; live title unaffected');
+  console.log('PASS Baseline rebuilds terrain cache every frame; fixed renderer reuses it. Old column coverage reproduces right-edge gaps; six columns paint every sampled pixel across six camera offsets and three detail levels');
+  console.log('PASS Original ornate border vector assets and offline Home art render through the actual terrain-cache/Game drawing path');
  }finally{if(app){await app.evaluate(()=>global.__blitzTest.shutdown()).catch(()=>{});await app.close().catch(()=>{});}await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

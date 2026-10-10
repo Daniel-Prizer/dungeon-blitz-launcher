@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.11.0** (minor: experimental 16:9 play view and a native scene-transition canvas fix).
+Version **0.11.1** (patch: widescreen terrain-cache rebuild/coverage fixes, original border artwork and tighter process/command boundaries).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 
@@ -16,7 +16,7 @@ Game links on the selected game origin reload the configured game page. User-act
 
 ## Settings
 
-- Experimental 16:9: off by default. Widens the logical view during play without stretching sprites or changing game clocks. Title/login/character selection and connection handovers keep the original layout. Bottom HUD/chat/quest panels and dialogs remain centered; independent top HUD/link controls anchor to the edges. A muted gray vector frame replaces the fixed-width decorative border during widescreen play and does not intercept clicks. Some maps may show unfinished scenery or fixed-width overlays; turn it off if a screen looks wrong. This is a client presentation experiment, not official server widescreen support. See [widescreen testing and limitations](docs/WIDESCREEN.md).
+- Experimental 16:9: off by default. Widens the logical view during play without stretching sprites or changing game clocks. Title/login/character selection and connection handovers keep the original layout. Bottom HUD/chat/quest panels and dialogs remain centered; independent top HUD/link controls anchor to the edges. The original ornate gray vector border preserves its corners and sides, extending its middle without intercepting clicks. The terrain cache reuses rounded raster dimensions and covers the full wider view. Some maps may show unfinished scenery or fixed-width overlays; turn it off if a screen looks wrong. This is a client presentation experiment, not official server widescreen support. See [widescreen testing and limitations](docs/WIDESCREEN.md).
 
 - Automatic updates: enabled by default. Checks our GitHub release after startup and every six hours, verifies an Ed25519 signature plus all file hashes, and stages the update without interrupting the game. Installs after the launcher closes; the previous root executable and build remain available. Settings also has Check for updates and Install & restart. Keep the complete ZIP folder layout in a writable location such as Downloads; updates do not request administrator access. Existing 0.9.0 builds need a manual download of 0.10.0 to obtain the updater.
 - Master: 0–100 in steps of 1; fresh profiles start at 100. Zero silences game audio. Controls only Windows audio sessions belonging to the game and its child processes; leaves device/master volume and other apps alone. The game's own sound controls still apply. New audio sessions and active output devices are checked every second.
@@ -44,7 +44,7 @@ npm run test:launcher: hidden launcher UI and live Flash rendering.
 npm run test:native: same user-flow checks on a guarded inactive Windows desktop, native layout/focus, fullscreen, cursor configuration and real Windows audio-session attenuation using a silent fixture.
 npm run test:input: live Flash email/password typing and paste compared with typed-reference pixels.
 npm run test:render: real game captures and native bitmap dimensions at 1080p/1440p, bounded 50–300% zoom, animation-rate equality, fullscreen and focus.
-npm run test:transition: actual live-revision transition allocation before/after at 1080p/1440p, widescreen fixture input/HUD restoration and native detail changes, plus live unauthenticated title rendering.
+npm run test:transition: actual terrain-cache/render-method regressions, transition allocation before/after at 1080p/1440p, widescreen input/HUD restoration and native detail changes, original offline Home/UI assets, plus live unauthenticated title rendering. Offline artwork tests require the adjacent preservation checkout's assets or BLITZ_TEST_ASSET_DIR.
 npm run test:fps: actual game-loop counter at 1080p/1440p/fullscreen, independent fixture frame counts at 30/60/100 targets, forced CPU stalls and mouse click-through. Frame-rate controls exist only in the unshipped fixture.
 npm run test:margins: live full-window Flash bounds, side-click focus and rendered magnification; a separate Flash fixture verifies actual stage MouseDown/MouseUp and aim coordinates.
 npm run test:window: real Windows hit-test queries at every game edge/corner and exact native placement after launcher move/resize/maximize/fullscreen/settings. No OS pointer input is sent.
