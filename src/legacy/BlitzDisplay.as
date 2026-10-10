@@ -23,6 +23,7 @@ package {
   private static const WIDE_WIDTH:Number=768*16/9;
   public static function Attach(value:Main):void {
    main=value;
+   BlitzInput.Attach(value);
    if(main&&main.stage)BlitzFrameCounter.Attach(main.stage,main,PositionCounter);
    if(!registered&&ExternalInterface.available){
     ExternalInterface.addCallback("BlitzSetPictureZoom",SetZoom);

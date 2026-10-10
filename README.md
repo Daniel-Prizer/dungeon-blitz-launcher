@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.13.0** (minor: automatic compatibility-update checks, saved cursor-lock toggling and support for Minesa's newly deployed client, restoring sharp native rendering, margin input and experimental 16:9).
+Version **0.14.0** (minor: optional Left Shift mounting and game-owned Escape behavior, plus automatic compatibility-update checks, saved cursor-lock toggling and support for Minesa's newly deployed client, restoring sharp native rendering, margin input and experimental 16:9).
 
 Run **Dungeon Blitz Launcher Setup.exe** once, then open **Dungeon Blitz Launcher** from Start or the desktop shortcut. The single installer includes the complete runtime; there is no ZIP to unpack. It installs for your Windows account in `%LOCALAPPDATA%\Programs\Dungeon Blitz Launcher` by default and does not request administrator access. Windows Settings → Apps provides the normal uninstall option. A desktop shortcut is optional during setup. Existing launcher preferences and Flash sign-in storage stay in their existing locations; uninstall preserves them.
 
@@ -33,7 +33,9 @@ The dedicated game host disables legacy Chromium native-window occlusion heurist
 
 The game uses original native Flash rendering. Neural enhancement, comparison and FPS target controls are removed; saved experimental graphics preferences are discarded. The new FPS counter is observational. Game scale remains available and animation timing is unchanged. The display adapter reuses the original cache-invalidation/resize path. Version 0.11.0 restores the original scale-aware scene-transition allocation in the reviewed October 10 client, replacing its fixed 2048×1152 canvas with matching native dimensions. Game clocks and packet handlers are unchanged; the optional widescreen mode changes camera extent. Graphics acceleration is now forwarded to the separate game host as well as the local shell.
 
-F11 toggles fullscreen. Escape exits fullscreen. Ctrl+, opens settings even while the game has focus. Fullscreen has no title/exit strip. Closing and reconnecting do not show leave-game confirmations.
+F11 toggles fullscreen. Escape stays with the game to close its menus; it never leaves launcher fullscreen. In launcher Settings, Escape dismisses the dialog or cancels key capture. Ctrl+, opens Settings even while the game has focus. Fullscreen has no title/exit strip. Closing and reconnecting do not show leave-game confirmations.
+
+Settings → Controls → Left Shift mounts / dismounts adds an optional alias for your current in-game mount binding. Your original key still works; changing it in the game changes the alias automatically. Left Shift still types normally in chat and login, and right Shift stays unchanged. Key capture and unsupported clients disable the alias. It sends a single paired key event through the game's original input path; equipped-mount, combat and server restrictions still apply. Left Shift cannot simultaneously be the cursor-lock shortcut.
 
 Your existing original Flash sign-in profile is retained. Old browser-only preference fields are discarded when the launcher saves preferences. Launcher settings retain their historical local profile directory for migration; they are not sent to the server. Clipboard text is read only when you explicitly paste into the game and stays inside its process.
 

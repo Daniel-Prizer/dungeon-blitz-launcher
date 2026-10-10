@@ -2,6 +2,7 @@ const path=require('node:path'),fs=require('node:fs');
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),helper=path.join(root,'.test-tools/PrivateDesktop.exe');
 fs.mkdirSync(path.dirname(helper),{recursive:true});
+if(!process.argv.some(value=>['--focus','--render','--fps','--transition','--window','--margins'].includes(value)))execFileSync(process.execPath,[path.join(__dirname,'prepare-shortcut-fixture.cjs')],{stdio:'inherit',windowsHide:true});
 fs.writeFileSync(path.join(root,'docs/private-desktop-test.log'),'');
 execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:exe','/platform:x64',`/out:${helper}`,path.join(__dirname,'PrivateDesktop.cs')],{stdio:'inherit',windowsHide:true});
 if(process.argv.includes('--focus'))process.env.BLITZ_PRIVATE_TEST='focus';

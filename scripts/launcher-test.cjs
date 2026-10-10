@@ -12,6 +12,9 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
   const fixtureRequests=[];
   const server=http.createServer((req,res)=>{
     fixtureRequests.push(req.url);
+    if(req.url==='/assets/UI_0.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.resolve(root,'../db r/dungeon-blitz-r/src/client/content/localhost/p/cbp/UI_0.swf')));return;}
+    if(req.url==='/shortcut-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/input-shortcuts/fixture.swf')));return;}
+    if(req.url==='/shortcuts'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/shortcut-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
     if(req.url==='/audio-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/audio/fixture.swf')));return;}
     if(req.url==='/audio-fixture'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/audio-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
     if(req.url==='/link-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/focus/link-probe.swf')));return;}
@@ -27,6 +30,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
   try{
     const page=await app.firstWindow();await page.waitForFunction(()=>window.blitz);
     const call=(n,v)=>page.evaluate(([n,v])=>window.blitz.action(n,v),[n,v]);
+    const shellKey=keyCode=>app.evaluate(({BrowserWindow},keyCode)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;for(const type of ['keyDown','keyUp'])wc.sendInputEvent({type,keyCode});},keyCode);
     if(privateDesktop){await app.evaluate(({BrowserWindow})=>{const win=BrowserWindow.getAllWindows()[0];win.showInactive();win.focus()});}
     await wait(15000);assert.equal((await call('state')).error,'');assert.equal((await call('state')).gameURL,LIVE);
     assert.equal(app.context().pages().length,1,'There is only the local launcher renderer, no browser tabs');
@@ -114,10 +118,15 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     assert.equal(await page.locator('#titlebar').isVisible(),false);assert.equal(await page.locator('#surface').evaluate(el=>el.getBoundingClientRect().y),0);
     const full=await measure('fullscreen');const size=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentSize());assert.deepEqual(full.viewport,{width:size[0],height:size[1]});
     if(privateDesktop){assert(full.focused);assert.equal(await app.evaluate(()=>global.__blitzTest.runtime().shellFullscreen.requested),true);}
-    await command({type:'test-input',input:{type:'keyDown',keyCode:'Escape'}});await wait(400);assert.equal((await call('state')).fullscreen,false);
-    await command({type:'test-input',input:{type:'keyDown',keyCode:'F11'}});await wait(400);assert.equal((await call('state')).fullscreen,true);
-    await command({type:'test-input',input:{type:'keyUp',keyCode:'F11'}});await call('exit-fullscreen');await wait(400);
-    checks.push('Rendered game scale, native focus restoration, actual fullscreen button, game F11/Escape, no fullscreen strip');
+    for(const type of ['keyDown','keyUp'])await command({type:'test-input',input:{type,keyCode:'Escape'}});
+    await wait(400);assert.equal((await call('state')).fullscreen,true,'Escape belongs to the game and must keep fullscreen');
+    await shellKey('Escape');assert.equal((await call('state')).fullscreen,true,'Shell Escape must also keep fullscreen');
+    await command({type:'test-input',input:{type:'keyDown',keyCode:'F11'}});await wait(400);assert.equal((await call('state')).fullscreen,false);
+    await command({type:'test-input',input:{type:'keyUp',keyCode:'F11'}});
+    await call('fullscreen');await wait(400);await call('settings');await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();await wait(400);await shellKey('Escape');await wait(400);
+    assert.equal((await call('state')).modal,null,'Escape closes launcher Settings');assert.equal((await call('state')).fullscreen,true,'Closing Settings preserves fullscreen');
+    await call('exit-fullscreen');await wait(400);
+    checks.push('Rendered game scale, native focus restoration, fullscreen button/F11, Escape reaches game and keeps fullscreen, Escape closes Settings without exiting fullscreen');
     await page.getByRole('button',{name:'Settings',exact:true}).click();await page.locator('#game-url').fill('file:///C:/Windows/system.ini');await page.locator('#apply-url').click();await wait(200);assert.equal((await call('state')).settings.gameURL,LIVE);
     await page.locator('#game-url').fill(fixture);await page.locator('#apply-url').click();await until(async()=> (await call('state')).pendingURL,'New URL not saved');assert.equal((await call('state')).gameURL,LIVE,'URL edit must not navigate current game');
     await page.locator('#reconnect').click();await until(async()=> !(await call('state')).loading,'Fixture did not start');await wait(1000);assert.equal((await call('state')).gameURL,fixture);assert.equal((await call('state')).error,'');
@@ -166,7 +175,36 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       assert.equal(probe.contextDepth,0,'Emitter context must not leak');mixChecks.push({bus,value,probe});
     }
     fs.writeFileSync(path.join(out,'mixer-results.json'),JSON.stringify(mixChecks,null,2));checks.push('16 silent Flash mixer readbacks prove independent bus gains, zero/unmute, active loops and uncompounded stream fade gain');
-    await call('save-settings',{gameURL:LIVE,volume:100,cursorLock:false,unlockKey:'AltLeft',gameZoom:1});
+    if(privateDesktop){
+      await call('save-settings',{gameURL:fixture+'shortcuts',shiftMount:false,unlockKey:'AltLeft'});await call('restart-game');await wait(2000);
+      const control=async value=>{await command({type:'test-shortcut-control',value});await wait(100);};
+      const key=async(keyCode,modifiers=[])=>{for(const type of ['keyDown','keyUp'])await command({type:'test-input',input:{type,keyCode,modifiers}});await wait(250);};
+      const probe=async()=>(await measure('shortcut-keys')).geometry.inputProbe;
+      await until(async()=>{const p=await probe();if(p?.error)throw Error('Shortcut fixture '+p.phase+': '+p.error);return p?.phase==='ready';},'Real key manager fixture must initialize');await command({type:'test-shortcut-fixture'});await wait(200);
+      await clickGame(600,300);await wait(200);
+      await control('play');assert.equal((await probe()).key,56,'Actual reviewed client defaults Mount to 8');assert.equal((await probe()).mountCommand,12);
+      await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,'Disabled alias must do nothing');
+      await call('settings');const checkbox=page.locator('#shift-mount');await checkbox.check();await until(async()=>(await call('state')).settings.shiftMount,'Mount checkbox saves');
+      assert.equal(JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'))).settings.shiftMount,true);
+      assert.equal((await call('save-settings',{shiftMount:'yes'})).ok,false);assert.equal((await call('save-settings',{unlockKey:'ShiftLeft'})).ok,false,'Shortcut conflict must be explained');
+      await call('dismiss');await wait(500);await control('play');await key('Shift',['left']);
+      let p=await probe();assert.deepEqual(p.events.filter(e=>e.command===12).map(e=>[e.type,e.code]),[['keyDown',56],['keyUp',56]],'Left Shift sends exactly one paired current mount key');
+      await control('rebind');await key('Shift',['left']);p=await probe();assert.deepEqual(p.events.filter(e=>e.command===12).map(e=>[e.type,e.code]),[['keyDown',81],['keyUp',81]],'Alias follows actual in-game rebind to Q');
+      await control('play');await key('8');assert.equal((await probe()).events.filter(e=>e.command===12&&e.type==='keyDown').length,1,'Original mount key still works');
+      for(const mode of ['login','capture','unbound','typing']){await control(mode);await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,mode+' must not mount');}
+      await command({type:'test-input',input:{type:'char',keyCode:'A'}});await wait(200);assert.equal((await probe()).text,'A','Typing stays available');
+      // Electron 11 sendInputEvent derives dom_code solely from generic Shift;
+      // even modifiers:['right'] produces ShiftLeft. Right-side filtering is
+      // covered by the pure production-policy test, without physical OS input.
+      await control('play');
+      await key('Shift',['left','control']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,'Shift chord must not mount');
+      await control('play');for(let i=0;i<4;i++)await command({type:'test-input',input:{type:'keyDown',keyCode:'Shift',modifiers:['left']}});await wait(400);
+      await command({type:'test-input',input:{type:'keyUp',keyCode:'Shift',modifiers:['left']}});assert.equal((await probe()).events.filter(e=>e.command===12&&e.type==='keyDown').length,1,'Held Shift cannot repeat mounting');
+      await control('menu');await call('fullscreen');await wait(400);await key('Escape');assert.equal((await call('state')).fullscreen,true);assert.equal((await probe()).panel,false,'Escape must reach Flash stage to close its panel');
+      await call('exit-fullscreen');await call('settings');await checkbox.uncheck();await until(async()=>!(await call('state')).settings.shiftMount,'Mount opt-out saves');await call('dismiss');await wait(400);await control('play');await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0);
+      checks.push('Real Flash stage Esc remains fullscreen; actual reviewed key manager and new helper prove opt-in Left Shift/current mount rebind, one paired event, original key, typing/login/capture/unbound/chord guards and saved checkbox; right-side filtering separately unit-tested');
+    }
+    await call('save-settings',{gameURL:LIVE,volume:100,cursorLock:false,unlockKey:'AltLeft',gameZoom:1,shiftMount:false});
     const stored=JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8'));assert.equal(stored.settings.volume,100);assert(!stored.tabs&&!stored.history);
     fs.writeFileSync(path.join(out,privateDesktop?'native-results.json':'hidden-results.json'),JSON.stringify({time:new Date().toISOString(),version:(await call('state')).version,checks,live,full,limitation:'No desktop mouse/keyboard events or clipboard used. Cursor confinement is dry-run; its real state machine and native settings/key routing are tested without calling ClipCursor. The inactive desktop has no Explorer; taskbar visibility and authenticated dungeon play are not verified.'},null,2));
     for(const check of checks)console.log('PASS',check);

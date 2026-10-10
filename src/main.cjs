@@ -62,7 +62,6 @@ function keyboard(event, input) {
   const key = input.key.toLowerCase(), ctrl = input.control || input.meta;
   if (key === 'f11') setFullscreen(!win.isFullScreen());
   else if (key === 'escape' && modal) { modal = null; layout(); focusGame(); }
-  else if (key === 'escape' && win.isFullScreen()) setFullscreen(false);
   else if (ctrl && key === ',') openSettings();
   else return;
   event.preventDefault();
@@ -91,7 +90,6 @@ function startGame() {
       if (event.type === 'error') { error = String(event.message).slice(0, 300); modal = 'error'; layout(); win.webContents.focus(); }
       if (event.type === 'fullscreen') setFullscreen(!win.isFullScreen());
       if (event.type === 'settings') openSettings();
-      if (event.type === 'escape' && win.isFullScreen()) setFullscreen(false);
       if (event.type === 'close-window') win.close(); publish();
       if (event.type === 'external-link') void openGameLink(event);
     });
@@ -99,7 +97,6 @@ function startGame() {
       if (!current()) return;
       if (key === 'settings') openSettings();
       else if (key === 'fullscreen') setFullscreen(!win.isFullScreen());
-      else if (key === 'exit-fullscreen') setFullscreen(false);
     });
     layout();
   } catch (e) { error = e.message; loading = false; modal = 'error'; layout(); }
@@ -124,6 +121,8 @@ async function action(name, value) {
       if('showFPS' in value&&typeof value.showFPS!=='boolean')throw new Error('Show FPS counter must be on or off.');
       if('experimentalWidescreen' in value&&typeof value.experimentalWidescreen!=='boolean')throw new Error('Experimental 16:9 must be on or off.');
       if('autoUpdates' in value&&typeof value.autoUpdates!=='boolean')throw new Error('Automatic updates must be on or off.');
+      if('shiftMount' in value&&typeof value.shiftMount!=='boolean')throw new Error('Left Shift mount shortcut must be on or off.');
+      if((value.shiftMount??store.data.settings.shiftMount)&&(value.unlockKey??store.data.settings.unlockKey)==='ShiftLeft')throw new Error('Choose a different cursor-lock shortcut before using Left Shift for your mount.');
       if('audioMix' in value&&(!value.audioMix||Array.isArray(value.audioMix)||!AUDIO_BUSES.every(key=>Number.isInteger(value.audioMix[key])&&value.audioMix[key]>=0&&value.audioMix[key]<=100)))throw new Error('Sound volumes must be whole numbers from 0 to 100.');
       const previous = store.data.settings, next = validSettings({ ...previous, ...value }); store.data.settings = next;
       try { store.save(); } catch { store.data.settings = previous; throw new Error('Settings could not be saved. Check free disk space.'); }

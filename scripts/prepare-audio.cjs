@@ -10,6 +10,7 @@ if(current||latest)execFileSync(process.execPath,[path.join(__dirname,'prepare-m
 const crypto=require('node:crypto');
 const stamp=crypto.createHash('sha256');for(const file of [__filename,path.join(__dirname,'AudioPatchBuilder.java'),path.join(__dirname,'DisplayPatchBuilder.java'),path.join(__dirname,'audio-delta.cjs'),path.join(root,'src/legacy/BlitzAudio.as'),path.join(root,'src/legacy/BlitzFrameCounter.as'),path.join(root,'src/legacy/BlitzDisplay.as'),path.join(root,'src/legacy/client-patch.cjs'),path.join(root,'test/audio-fixture/DungeonBlitz.as'),path.join(root,'test/fps-fixture/DungeonBlitz.as'),path.join(focus,'live.swf')])stamp.update(fs.readFileSync(file));
 stamp.update(fs.readFileSync(sourceFile));stamp.update(fs.readFileSync(path.join(root,'src/legacy/client-layout'+suffix+'.json')));
+stamp.update(fs.readFileSync(path.join(root,'src/legacy/BlitzInput.as')));
 const buildStamp=stamp.digest('hex'),stampFile=path.join(dir,'build-stamp'),deltaFile=path.join(root,'runtime/game/resources','audio-delta'+suffix+'.json');
 if(fs.existsSync(stampFile)&&fs.readFileSync(stampFile,'utf8')===buildStamp&&fs.existsSync(deltaFile)&&fs.existsSync(path.join(dir,'fixture.swf'))&&fs.existsSync(path.join(dir,'fps-fixture.swf'))){console.log('Reviewed client adapters already current.');process.exit(0);}
 const u=value=>{const out=[];do{const b=value&127;value>>>=7;out.push(b|(value?128:0));}while(value);return Buffer.from(out);};
@@ -28,12 +29,13 @@ const payload=b([1,0,0,0],Buffer.from(className+'\0'),abc),tagHeader=Buffer.allo
 const live=fs.readFileSync(sourceFile),patched=require('../src/legacy/client-patch.cjs').patchClient(live);if(!patched)throw Error('Unreviewed source client');
 const swf=zlib.inflateSync(patched.subarray(8));const rectBytes=Math.ceil((5+4*(swf[0]>>3))/8);let start=rectBytes+4;
 while(start<swf.length){const h=swf.readUInt16LE(start);if((h>>6)===1)break;const short=h&63;start+=short===63?6+swf.readUInt32LE(start+2):2+short;}
-const assembled=b(swf.subarray(0,start),stubTag('BlitzAudio'),stubTag('BlitzFrameCounter'),stubTag('BlitzDisplay'),swf.subarray(start));const header=Buffer.from(patched.subarray(0,8));header.writeUInt32LE(assembled.length+8,4);
+const assembled=b(swf.subarray(0,start),stubTag('BlitzAudio'),stubTag('BlitzFrameCounter'),stubTag('BlitzDisplay'),stubTag('BlitzInput'),swf.subarray(start));const header=Buffer.from(patched.subarray(0,8));header.writeUInt32LE(assembled.length+8,4);
 fs.writeFileSync(path.join(dir,'stub.swf'),b(header,zlib.deflateSync(assembled)));
 const jar=path.join(focus,'ffdec/ffdec.jar');
 execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-replace',path.join(dir,'stub.swf'),path.join(dir,'helper.swf'),'BlitzAudio',path.join(root,'src/legacy/BlitzAudio.as')],{stdio:'inherit',windowsHide:true});
 execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-replace',path.join(dir,'helper.swf'),path.join(dir,'frame-helper.swf'),'BlitzFrameCounter',path.join(root,'src/legacy/BlitzFrameCounter.as')],{stdio:'inherit',windowsHide:true});
-execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-replace',path.join(dir,'frame-helper.swf'),path.join(dir,'display-helper.swf'),'BlitzDisplay',path.join(root,'src/legacy/BlitzDisplay.as')],{stdio:'inherit',windowsHide:true});
+execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-replace',path.join(dir,'frame-helper.swf'),path.join(dir,'input-helper.swf'),'BlitzInput',path.join(root,'src/legacy/BlitzInput.as')],{stdio:'inherit',windowsHide:true});
+execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-replace',path.join(dir,'input-helper.swf'),path.join(dir,'display-helper.swf'),'BlitzDisplay',path.join(root,'src/legacy/BlitzDisplay.as')],{stdio:'inherit',windowsHide:true});
 execFileSync('javac',['-cp',path.join(focus,'ffdec/lib/*'),'-d',dir,path.join(__dirname,'AudioPatchBuilder.java')],{stdio:'inherit',windowsHide:true});
 execFileSync('java',['-Djava.awt.headless=true','-cp',dir+path.delimiter+path.join(focus,'ffdec/lib/*'),'AudioPatchBuilder',path.join(dir,'display-helper.swf'),path.join(dir,'mixed.swf')],{stdio:'inherit',windowsHide:true});
 execFileSync('javac',['-cp',path.join(focus,'ffdec/lib/*'),'-d',dir,path.join(__dirname,'DisplayPatchBuilder.java')],{stdio:'inherit',windowsHide:true});

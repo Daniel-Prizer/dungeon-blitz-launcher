@@ -11,6 +11,18 @@ import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 // Same-size substitutions preserve every original branch and exception offset.
 public class DisplayPatchBuilder {
  static AVM2Instruction ins(int op,int... args){return new AVM2Instruction(0,op,args);}
+ static void reviewInput(ABC abc)throws Exception {
+  String[][] methods={
+   {"Game","method_1880","50b45ff8778bd836b027deae4276ff80ca9282ac4e438e93020229319bd34727"},
+   {"Game","method_702","0950f873106a78d0cc22505770c6dfab10ba11e1787f2ddf32a8bfccedc0fc33"},
+   {"Game","method_1949","b69e5a1395896051280a9be625bfc711754fea4862bee8aba76a2a89f0990548"},
+   {"class_108","method_31","776c867ca6219b0f7c354a567d61494aae94a82c3fef396d8b1dc256d5b01eb1"},
+   {"class_108","method_907","d53a585e33f4b55a6907cfa7345fb64bb9f1694dd9a0f338f9b41e74968f657a"}};
+  for(String[] item:methods){MethodBody body=abc.findBodyByClassAndName(item[0],item[1]);
+   if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals(item[2]))throw new IllegalStateException("Unreviewed key mapping/menu handler: "+item[0]+"."+item[1]);
+  }
+  System.out.println("Verified original mount key mapping and Escape menu handlers; no input/gameplay body changes");
+ }
  static MethodBody correctCacheCheck(ABC abc)throws Exception {
   MethodBody body=abc.findBodyByClassAndName("class_23","method_1753");
   if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("6eb2b5564dc4cfb3ad9afa62e7ef2d264f806416c013229edbcde107067f8a4c"))throw new IllegalStateException("Unreviewed texture-cache resize check");
@@ -48,6 +60,7 @@ public class DisplayPatchBuilder {
   SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();MethodBody layout=abc.findBodyByClassAndName("Main","method_561");if(layout==null)continue;
+   reviewInput(abc);
    Map<Integer,byte[]> original=new HashMap<>();for(MethodBody b:abc.bodies)original.put(b.method_info,b.getCodeBytes().clone());
    byte[] code=layout.getCodeBytes().clone();
    byte[] expected={ (byte)0xd1,0x63,9,(byte)0xd2,0x63,10,0x25,(byte)0x80,9,(byte)0xd5,0x25,(byte)0x80,6,(byte)0xd6 };
