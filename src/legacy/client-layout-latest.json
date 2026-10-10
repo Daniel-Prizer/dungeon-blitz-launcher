@@ -1,0 +1,77 @@
+{
+  "inputHash": "fdc215711de56246ce9188b71494c8b00664db66b530e9aabd51a760f9898255",
+  "bodyLength": 1671851,
+  "abcLengthPosition": 543,
+  "abcLength": 1641921,
+  "layout": {
+    "start": 1434745,
+    "length": 594,
+    "lengthPosition": 1434743,
+    "hash": "2adb05e53f8d9ee2df8a9e021b314ae6484db1c9a2bed24a4b893182f852f15e",
+    "centeringOffset": 439,
+    "branches": [
+      {
+        "offset": 74,
+        "size": 4,
+        "relative": 3
+      },
+      {
+        "offset": 81,
+        "size": 4,
+        "relative": 1
+      },
+      {
+        "offset": 107,
+        "size": 4,
+        "relative": 21
+      },
+      {
+        "offset": 128,
+        "size": 4,
+        "relative": 17
+      },
+      {
+        "offset": 197,
+        "size": 4,
+        "relative": 13
+      },
+      {
+        "offset": 214,
+        "size": 4,
+        "relative": 4
+      },
+      {
+        "offset": 225,
+        "size": 4,
+        "relative": 4
+      },
+      {
+        "offset": 238,
+        "size": 4,
+        "relative": 197
+      },
+      {
+        "offset": 312,
+        "size": 4,
+        "relative": 11
+      },
+      {
+        "offset": 371,
+        "size": 4,
+        "relative": 59
+      },
+      {
+        "offset": 393,
+        "size": 4,
+        "relative": 11
+      }
+    ],
+    "clipWidthOffset": 507,
+    "clipHeightOffset": 521
+  },
+  "focus": {
+    "start": 937988,
+    "length": 481,
+    "hash": "5a4c57331cf8c85ac1ac3af2793560eb44b7e2962e4dda1f99577a048d7693df"
+  }
+}

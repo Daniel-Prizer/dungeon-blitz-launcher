@@ -20,6 +20,7 @@ async function until(fn){for(let i=0;i<150;i++){const v=await fn();if(v)return v
    if(fs.existsSync(file))fs.unlinkSync(file);
    await cmd({type:'capture',path:file});await until(()=>fs.existsSync(file+'.json')&&fs.existsSync(file));
    const record=JSON.parse(fs.readFileSync(file+'.json'));assert(record.renderProbe,'Real native rendering adapter must be initialized');
+   assert.equal(record.testClientHash,require('../src/legacy/client-layout-latest.json').inputHash,'Must test the freshly served latest reviewed client, not a cached older one');
    assert(fs.statSync(file).size>100000,'A detailed real game image must render');return {name,...record};
   }
   async function responsiveness(name){

@@ -9,6 +9,15 @@ test('audio delta reconstructs inserted bytes and refuses damaged or unbounded d
 });
 const root=path.resolve(__dirname,'..'),live=path.join(root,'.test-tools/focus/live.swf'),delta=path.join(root,'runtime/game/resources/audio-delta.json'),compiled=path.join(root,'.test-tools/audio/audio.swf');
 const current=path.join(root,'.test-tools/focus/current.swf'),currentDelta=path.join(root,'runtime/game/resources/audio-delta-current.json'),currentCompiled=path.join(root,'.test-tools/audio-current/audio.swf');
+const latest=path.join(root,'.test-tools/focus/latest.swf'),latestDelta=path.join(root,'runtime/game/resources/audio-delta-latest.json'),latestCompiled=path.join(root,'.test-tools/audio-latest/audio.swf');
+test('latest deployed audio/display adapter reconstructs its reviewed client and rejects other revisions',{skip:![latest,latestDelta,latestCompiled].every(fs.existsSync)},()=>{
+ const presentation=patchClient(fs.readFileSync(latest));assert(presentation);
+ const adapter=JSON.parse(fs.readFileSync(latestDelta)),audio=patchAudio(presentation,adapter);assert(audio);
+ assert.deepEqual(zlib.inflateSync(audio.subarray(8)),zlib.inflateSync(fs.readFileSync(latestCompiled).subarray(8)));
+ const body=zlib.inflateSync(audio.subarray(8));for(const symbol of ['BlitzTransitionFixtureControl','BlitzWorldFixtureControl','FPSFixtureControl'])assert(!body.includes(Buffer.from(symbol)));
+ for(const file of [delta,currentDelta])assert.equal(patchAudio(presentation,JSON.parse(fs.readFileSync(file))),null,'Earlier adapter must never apply to the latest client');
+ const changed=Buffer.from(presentation);changed[changed.length-1]^=1;assert.equal(patchAudio(changed,adapter),null);
+});
 test('October 10 audio/display adapter exactly reconstructs its separately compiled reviewed revision',{skip:![current,currentDelta,currentCompiled].every(fs.existsSync)},()=>{
  const presentation=patchClient(fs.readFileSync(current));assert(presentation);
  const audio=patchAudio(presentation,JSON.parse(fs.readFileSync(currentDelta)));assert(audio);

@@ -1,15 +1,19 @@
 using System;
 // Pure policy: confinement is permitted only for the visible, foreground launcher.
-// The emergency shortcut suspension survives focus changes until toggled again.
+// The shortcut toggles the same enabled preference as the Settings checkbox.
 public sealed class CursorLockState {
   public bool Enabled { get; private set; }
-  public bool Suspended { get; private set; }
   public int Shortcut { get; private set; }
   bool shortcutDown, chord;
   public CursorLockState() { Shortcut=0xA4; }
-  public void Configure(bool enabled,int shortcut) { Enabled=enabled;Shortcut=shortcut;Suspended=false;shortcutDown=false;chord=false; }
-  public void Toggle() { if(Enabled)Suspended=!Suspended; }
-  public bool ShouldConfine(bool visible,bool focused) { return Enabled&&!Suspended&&visible&&focused; }
+  public void Configure(bool enabled,int shortcut) {
+    // A saved-preference acknowledgement must not turn a held key's repeats
+    // into new presses. Reset its state only when the binding itself changes.
+    if(Shortcut!=shortcut){shortcutDown=false;chord=false;}
+    Enabled=enabled;Shortcut=shortcut;
+  }
+  public void Toggle() { Enabled=!Enabled; }
+  public bool ShouldConfine(bool visible,bool focused) { return Enabled&&visible&&focused; }
   public static int Inset(int width,int height,double scale) { return Math.Min((int)Math.Round(12*scale),Math.Max(0,(Math.Min(width,height)-1)/2)); }
   public struct Area { public int left,top,right,bottom; }
   public static Area Bounds(int width,int height,double scale,bool menuVisible) {
@@ -27,12 +31,13 @@ public sealed class CursorLockState {
     bool modifier=Shortcut>=0xA0&&Shortcut<=0xA5;
     if(key!=Shortcut) { if(down&&shortcutDown)chord=true;return false; }
     if(down) {
-      if(shortcutDown)return !modifier&&focused&&Enabled;
+      if(!focused){shortcutDown=false;chord=false;return false;}
+      if(shortcutDown)return !modifier;
       shortcutDown=true;chord=false;
-      if(!modifier&&focused&&Enabled) { Toggle();return true; }
+      if(!modifier) { Toggle();return true; }
       return false;
     }
-    bool toggle=shortcutDown&&!chord&&modifier&&focused&&Enabled;
+    bool toggle=shortcutDown&&!chord&&modifier&&focused;
     shortcutDown=false;chord=false;
     if(toggle)Toggle();
     return false;

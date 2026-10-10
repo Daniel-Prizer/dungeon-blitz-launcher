@@ -31,7 +31,7 @@ async function openGameLink(event) {
 }
 function state() {
   return { settings: store.data.settings, gameURL: gameAddress, loading, error, modal, fullscreen: win?.isFullScreen() || false,
-    cursor: game?.cursorState || { enabled: store.data.settings.cursorLock, suspended: false, active: false },
+    cursor: game?.cursorState || { enabled: store.data.settings.cursorLock, active: false },
     audio: game?.audioState || null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: gameAddress !== store.data.settings.gameURL };
 }
 function publish() { if (win && !win.isDestroyed()) win.webContents.send('blitz:state', state()); }
@@ -77,9 +77,16 @@ function startGame() {
     instance.on('ready', () => { if (!current()) return; instance.configure(store.data.settings); layout(); if (win.isFocused()) focusGame(); });
     instance.on('failure', message => { if (!current()) return; error = String(message).slice(0, 300); loading = false; modal = 'error'; layout(); win.webContents.focus(); });
     instance.on('status', () => { if (current()) publish(); });
+    instance.on('cursor-setting', enabled => {
+      if(!current())return;
+      // A foreground shortcut uses the same validated, atomically saved setting
+      // as the local checkbox. Native confinement releases immediately first.
+      void action('save-settings',{cursorLock:enabled}).catch(()=>{if(current()){instance.configure(store.data.settings);publish();}});
+    });
     instance.on('event', event => {
       if (!current()) return;
       if (event.type === 'loading') loading = !!event.value;
+      if ((event.type === 'client-integration' || event.type === 'audio-integration') && event.value === false) updater?.checkForClientUpdate?.();
       if (event.type === 'zoom-applied') layout();
       if (event.type === 'error') { error = String(event.message).slice(0, 300); modal = 'error'; layout(); win.webContents.focus(); }
       if (event.type === 'fullscreen') setFullscreen(!win.isFullScreen());
@@ -106,7 +113,7 @@ async function action(name, value) {
     case 'fullscreen': setFullscreen(!win.isFullScreen()); break;
     case 'exit-fullscreen': setFullscreen(false); break;
     case 'restart-game': modal = null; startGame(); break;
-    case 'toggle-cursor': game?.toggleCursor(); break;
+    case 'toggle-cursor': return action('save-settings',{cursorLock:!store.data.settings.cursorLock});
     case 'check-updates': if(updater)void updater.check();break;
     case 'install-update': if(updater?.installAfterExit(true)){updater.installAfterExit=()=>false;win.close();}break;
     case 'save-settings': {
@@ -121,7 +128,7 @@ async function action(name, value) {
       const previous = store.data.settings, next = validSettings({ ...previous, ...value }); store.data.settings = next;
       try { store.save(); } catch { store.data.settings = previous; throw new Error('Settings could not be saved. Check free disk space.'); }
       game?.configure(next); layout();
-      if(updater&&previous.autoUpdates!==next.autoUpdates){updater.stop();updater.enabled=next.autoUpdates;updater.start();}
+      if(updater&&previous.autoUpdates!==next.autoUpdates){updater.stop();updater.enabled=next.autoUpdates;updater.start();if(game?.clientIntegration===false||game?.audioIntegration===false)updater.checkForClientUpdate?.();}
       return { ok: true, message: previous.hardwareAcceleration !== next.hardwareAcceleration ? 'Saved. Restart the launcher to change graphics acceleration.' : 'Saved' };
     }
     default: throw new Error('Unsupported launcher action.');

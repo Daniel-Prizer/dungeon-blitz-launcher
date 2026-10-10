@@ -46,6 +46,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     const live=await measure(privateDesktop?'native-live':'hidden-live',true);
     await until(()=>fs.existsSync(live.file),'Live capture missing');assert(fs.statSync(live.file).size>100000,'Real Flash login screen must render');
     assert(live.clientIntegration,'Reviewed live client integration must be active');
+    assert.equal(live.testClientHash,require('../src/legacy/client-layout-latest.json').inputHash,'Fresh network must exercise the latest deployed client');
     assert(live.audioIntegration&&live.audioProbe?.initialized,'Live Flash client must expose its reviewed audio adapter');
     assert.deepEqual(live.audioProbe.levels,{player:1,music:1,environment:1,creatures:1});
     assert(live.geometry.rect&&Math.abs(live.geometry.rect.width*live.scale-live.size[0])<2&&Math.abs(live.geometry.rect.height*live.scale-live.size[1])<2,'Flash stage covers the complete game window');
@@ -84,14 +85,21 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     if(privateDesktop){
       await until(async()=> (await call('state')).cursor.enabled,'Native cursor settings not applied');
       assert.equal((await call('state')).cursor.active,false,'Cursor never confines in settings');assert.equal((await call('state')).cursor.dryRun,true);
-      await page.locator('#toggle-cursor').click();await until(async()=> (await call('state')).cursor.suspended,'Release button failed');
-      await page.locator('#toggle-cursor').click();await until(async()=> !(await call('state')).cursor.suspended,'Relock button failed');
+      const savedLock=()=>JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8')).settings.cursorLock;
+      await page.locator('#toggle-cursor').click();await until(async()=> !(await call('state')).settings.cursorLock&&!(await call('state')).cursor.enabled,'Release button must uncheck and save');
+      assert.equal(await page.locator('#cursor-lock').isChecked(),false);assert.equal(savedLock(),false);
+      await page.locator('#toggle-cursor').click();await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Relock button must check and save');
       const host=line=>app.evaluate(({},line)=>global.__blitzTest.runtime().testHost(line),line);
-      await host('TESTKEY 119 1 1');await host('TESTKEY 119 0 1');await until(async()=> (await call('state')).cursor.suspended,'Native custom key dispatch failed');
-      await page.locator('#toggle-cursor').click();await until(async()=> !(await call('state')).cursor.suspended,'Reset custom toggle');
+      await host('TESTKEY 119 1 1');await until(async()=> !(await call('state')).settings.cursorLock,'Native custom key must disable saved checkbox');
+      await host('TESTKEY 119 1 1');await wait(100);assert.equal((await call('state')).settings.cursorLock,false,'Saved-setting acknowledgement cannot turn a repeat into a new toggle');
+      await host('TESTKEY 119 0 1');await host('TESTKEY 119 1 1');await until(async()=> (await call('state')).settings.cursorLock,'Custom key must enable saved checkbox');await host('TESTKEY 119 0 1');
       await bind('AltLeft');await until(async()=> (await call('state')).settings.unlockKey==='AltLeft','Alt save');
-      await host('TESTKEY 164 1 1');await host('TESTKEY 164 0 1');await until(async()=> (await call('state')).cursor.suspended,'Native Alt release dispatch failed');
-      await page.locator('#toggle-cursor').click();
+      await host('TESTKEY 164 1 1');await host('TESTKEY 164 0 1');await until(async()=> !(await call('state')).settings.cursorLock,'Native Alt release must disable saved checkbox');
+      assert.equal(await page.locator('#cursor-lock').isChecked(),false);assert.equal(savedLock(),false);
+      await host('TESTKEY 164 1 1');await host('TESTKEY 164 0 1');await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Alt must also enable an unchecked saved checkbox');
+      assert.equal(await page.locator('#cursor-lock').isChecked(),true);assert.equal(savedLock(),true);
+      for(const key of [9,115]){await host('TESTKEY 164 1 1');await host('TESTKEY '+key+' 1 1');await host('TESTKEY 164 0 1');}
+      await wait(100);assert.equal((await call('state')).settings.cursorLock,true,'Alt+Tab and Alt+F4 cannot toggle checkbox');
     }
     checks.push('Actual settings controls, 0/1/37 volume, checkbox, shortcut selection and release button');
     await page.screenshot({path:path.join(out,privateDesktop?'settings-native.png':'settings.png')});

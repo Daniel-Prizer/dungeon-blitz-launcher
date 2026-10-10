@@ -17,7 +17,9 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
   const page=await app.firstWindow();await page.waitForFunction(()=>window.blitz);
   const call=(n,v)=>page.evaluate(([n,v])=>window.blitz.action(n,v),[n,v]);
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setSize(2048,750);w.showInactive();w.focus();});
-  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false,volume:100});await call('restart-game');
+  // The independent FPS test enables a label in the left margin. Hide it in
+  // this pixel-bound measurement so that label cannot be mistaken for artwork.
+  await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,cursorLock:false,volume:100,showFPS:false,renderResolution:1,experimentalWidescreen:false});await call('restart-game');
   await until(async()=>!(await call('state')).loading&&(await call('state')).clientIntegration===true);await wait(10000);
   await app.evaluate(()=>global.__blitzTest.runtime().focus());await wait(500);
   const command=cmd=>app.evaluate(({},v)=>global.__blitzTest.nativeCommand(null,v),cmd);
@@ -33,6 +35,7 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
   for(const factor of [.5,.75,1,1.5]) {
    await call('save-settings',{gameZoom:factor});await wait(1300);
    const frame=await measure('scale-'+factor,true);assert(frame.clientIntegration);assert(frame.focused&&frame.contentFocused);
+   assert.equal(frame.testClientHash,require('../src/legacy/client-layout-latest.json').inputHash,'Margin focus must be tested on the newly deployed live client');
    await app.evaluate(()=>{const g=global.__blitzTest.runtime();g.windowTest=null;g.testHost('TESTWINDOW');});
    const nativeWindow=await until(()=>app.evaluate(()=>global.__blitzTest.runtime().windowTest));
    assert.deepEqual(nativeWindow.actual,nativeWindow.expected,'Actual game HWND must match the viewport at every picture scale');

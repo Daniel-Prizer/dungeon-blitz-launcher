@@ -19,9 +19,9 @@ function render(next) {
   $('settings-content').hidden = state.modal !== 'settings'; $('error-content').hidden = state.modal !== 'error';
   $('panel-title').textContent = state.modal === 'error' ? 'Could not connect' : 'Settings'; $('error-text').textContent = state.error;
   $('version').textContent = `v${state.version}`;
-  $('compatibility').hidden = state.clientIntegration !== false;
+  $('compatibility').hidden = state.clientIntegration !== false && state.audioIntegration !== false;
   if (state.modal === 'settings' && !settingsOpen) {
-    $('volume').value = $('volume-number').value = s.volume; $('cursor-lock').checked = s.cursorLock;
+    $('volume').value = $('volume-number').value = s.volume;
     for(const bus of audioBuses){$('audio-'+bus).value=s.audioMix[bus];$('audio-value-'+bus).textContent=s.audioMix[bus]+'%';}
     $('game-zoom').value = s.gameZoom; $('hardware-acceleration').checked = s.hardwareAcceleration; $('keep-awake').checked = s.keepGameAwake;
     $('render-resolution').value=s.renderResolution;
@@ -34,9 +34,9 @@ function render(next) {
   settingsOpen = state.modal === 'settings';
   if(!settingsOpen)recording=false;
   if(!recording){$('unlock-key').textContent=window.blitzShortcuts.label(s.unlockKey);$('unlock-key').dataset.code=s.unlockKey;}
-  $('toggle-cursor').disabled = !s.cursorLock;
-  $('toggle-cursor').textContent = state.cursor.suspended ? 'Lock cursor when back in game' : 'Unlock cursor';
-  $('cursor-status').textContent = !s.cursorLock ? 'Cursor lock is off.' : state.cursor.suspended ? 'Cursor is unlocked until you toggle it again.' : 'Cursor locks when you return to the game.';
+  $('cursor-lock').checked = s.cursorLock;
+  $('toggle-cursor').textContent = s.cursorLock ? 'Unlock cursor' : 'Lock cursor';
+  $('cursor-status').textContent = s.cursorLock ? 'Cursor locks when you return to the game.' : 'Cursor lock is off.';
   $('audio-status').textContent = state.audio?.error ? 'Audio control unavailable. Reconnect to retry.' : "Controls this game's sound only.";
   $('audio-mix-status').textContent=state.audioIntegration===false?'Separate sound controls need an update for this client version. Master volume still works.':'Player includes characters, abilities and menu sounds. Environment includes ambient loops and world sounds.';
   for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
@@ -45,6 +45,7 @@ function render(next) {
   $('experimental-widescreen').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('url-status').textContent = state.pendingURL ? 'Saved. Reconnect to use the new game URL.' : '';
   const update=state.update||{};
+  $('compatibility').textContent=update.phase==='ready'?'This game client needs a compatibility update. A launcher update is downloaded and verified; close the launcher to install it with automatic updates on, or use Install & restart.':'This game client needs a compatibility update for sharp rendering, 16:9, separate sound controls, FPS and margin input. '+(s.autoUpdates?'The launcher checks for a signed update automatically.':'Use Check for updates above.')+' The game continues running without unsupported patches.';
   $('update-status').textContent=update.phase==='ready'?`v${update.version} downloaded and verified. ${s.autoUpdates?'Installs when you close the launcher.':'Use Install & restart when convenient.'}`:update.phase==='downloading'?`Downloading v${update.version} · ${update.percent}%`:update.phase==='error'?update.error:({current:'Up to date.',checking:'Checking GitHub…',verifying:'Verifying update…',development:'Updates are disabled in development builds.'}[update.phase]||(s.autoUpdates?'Checks GitHub automatically.':'Automatic updates are off.'));
   if(update.phase==='unavailable')$('update-status').textContent=update.error;
   $('install-update').hidden=update.phase!=='ready';$('check-updates').disabled=['development','unavailable','checking','downloading','verifying'].includes(update.phase);

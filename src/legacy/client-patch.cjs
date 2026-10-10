@@ -1,6 +1,6 @@
 'use strict';
 const crypto = require('crypto'), zlib = require('zlib');
-const revisions = [require('./client-layout.json'), require('./client-layout-current.json')];
+const revisions = [require('./client-layout.json'), require('./client-layout-current.json'), require('./client-layout-latest.json')];
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 function u30(value) { const bytes=[];do {let b=value&127;value>>>=7;bytes.push(value?b|128:b);}while(value);return Buffer.from(bytes); }
 // Pinned to a reviewed client revision, not guessed offsets in arbitrary SWFs.

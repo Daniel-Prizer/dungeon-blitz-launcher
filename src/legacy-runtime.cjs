@@ -51,11 +51,12 @@ class LegacyRuntime extends EventEmitter {
           if(message.startsWith('WINDOWTEST ')) {
             try {this.windowTest=JSON.parse(message.slice(11));}catch{}
           }
-          if(message.startsWith('CURSOR ')) {
-            const [,enabled,suspended,active,dryRun]=message.split(' ');
-            this.cursorState={enabled:enabled==='1',suspended:suspended==='1',active:active==='1',dryRun:dryRun==='1'};
+          if(/^CURSOR [01] [01] [01]$/.test(message)) {
+            const [,enabled,active,dryRun]=message.split(' ');
+            this.cursorState={enabled:enabled==='1',active:active==='1',dryRun:dryRun==='1'};
             this.emit('status');
           }
+          if(/^CURSORSETTING [01]$/.test(message))this.emit('cursor-setting',message.endsWith('1'));
           if(message.startsWith('AUDIO ')) {
             try { this.audioState=JSON.parse(message.slice(6));this.emit('status'); } catch {}
           }
@@ -101,12 +102,11 @@ class LegacyRuntime extends EventEmitter {
     if(!previous||JSON.stringify(previous.audioMix)!==JSON.stringify(this.settings.audioMix))this.send({type:'audio-mix',value:this.settings.audioMix});
     if(this.host?.stdin.writable) {
       if(!previous || previous.volume!==this.settings.volume || !this.configuredHost){this.host.stdin.write(`VOLUME ${this.settings.volume}\n`);}
-      if(!previous || previous.cursorLock!==this.settings.cursorLock || previous.unlockKey!==this.settings.unlockKey || !this.configuredHost)
+      if(!previous || previous.cursorLock!==this.settings.cursorLock || previous.unlockKey!==this.settings.unlockKey || !this.configuredHost || this.cursorState?.enabled!==this.settings.cursorLock)
         this.host.stdin.write(`CURSOR ${this.settings.cursorLock?1:0} ${UNLOCK_KEYS[this.settings.unlockKey]}\n`);
       this.configuredHost=true;
     }
   }
-  toggleCursor() { if(this.host?.stdin.writable)this.host.stdin.write('TOGGLECURSOR\n'); }
   testHost(command) { if(this.test && this.privateDesktop && this.host?.stdin.writable)this.host.stdin.write(command+'\n'); }
   send(command) {
     if (this.closed) return;

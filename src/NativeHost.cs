@@ -109,7 +109,7 @@ public static class NativeHost {
       if(GetClipCursor(out current)&&current.left==ownClip.left&&current.top==ownClip.top&&current.right==ownClip.right&&current.bottom==ownClip.bottom)Unclip(IntPtr.Zero);
       clipped=false;
     }
-    string status="CURSOR "+(cursor.Enabled?"1":"0")+" "+(cursor.Suspended?"1":"0")+" "+(active?"1":"0")+" "+(dryRun?"1":"0");
+    string status="CURSOR "+(cursor.Enabled?"1":"0")+" "+(active?"1":"0")+" "+(dryRun?"1":"0");
     if(lastCursor!=status){lastCursor=status;Emit(status);}
   }
   static HookProc callback = Keyboard;
@@ -125,11 +125,17 @@ public static class NativeHost {
     Emit("FULLSCREEN " +(value?"1":"0")+" "+result+" "+child.ToInt64()+" "+initResult+" "+(FindWindow("Shell_TrayWnd",null)!=IntPtr.Zero?"1":"0")+" "+(GetProp(child,"NonRudeHWND")!=IntPtr.Zero?"1":"0"));
   }
   static void Emit(string message) { Console.WriteLine(message); Console.Out.Flush(); }
+  static bool CursorKey(int key,bool down,bool focused) {
+    bool before=cursor.Enabled,handled=cursor.Key(key,down,focused);
+    UpdateCursor();
+    if(before!=cursor.Enabled)Emit("CURSORSETTING "+(cursor.Enabled?"1":"0"));
+    return handled;
+  }
   static IntPtr Keyboard(int code, IntPtr w, IntPtr l) {
     if(code>=0) {
       int message=w.ToInt32();bool down=message==0x100||message==0x104;
       if(down||message==0x101||message==0x105) {
-        bool handled=cursor.Key(Marshal.ReadInt32(l),down,visible&&LauncherForeground());UpdateCursor();
+        bool handled=CursorKey(Marshal.ReadInt32(l),down,visible&&LauncherForeground());
         if(handled)return new IntPtr(1);
       }
     }
@@ -210,9 +216,8 @@ public static class NativeHost {
           } else if(p[0]=="CURSOR"&&p.Length==3) {
             int shortcut=int.Parse(p[2]);
             if(CursorLockState.ValidShortcut(shortcut))cursor.Configure(p[1]=="1",shortcut);
-          } else if(p[0]=="TOGGLECURSOR")cursor.Toggle();
-          else if(p[0]=="VOLUME"&&p.Length==2) {int requested=int.Parse(p[1]);if(requested>=0&&requested<=100){volume=requested;audioChanged.Set();}}
-          else if(p[0]=="TESTKEY"&&p.Length==4&&dryRun)cursor.Key(int.Parse(p[1]),p[2]=="1",p[3]=="1");
+          } else if(p[0]=="VOLUME"&&p.Length==2) {int requested=int.Parse(p[1]);if(requested>=0&&requested<=100){volume=requested;audioChanged.Set();}}
+          else if(p[0]=="TESTKEY"&&p.Length==4&&dryRun)CursorKey(int.Parse(p[1]),p[2]=="1",p[3]=="1");
           else if(p[0]=="TESTWINDOW"&&dryRun)ReportWindow();
           else if (p[0] == "QUIT") {visible=false;UpdateCursor();Application.Exit();return;}
         } catch { Emit("ERROR Invalid host command."); }
