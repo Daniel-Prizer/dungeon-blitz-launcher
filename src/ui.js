@@ -26,6 +26,7 @@ function render(next) {
     $('game-zoom').value = s.gameZoom; $('hardware-acceleration').checked = s.hardwareAcceleration; $('keep-awake').checked = s.keepGameAwake;
     $('render-resolution').value=s.renderResolution;
     $('show-fps').checked=s.showFPS;
+    $('experimental-widescreen').checked=s.experimentalWidescreen;
     $('auto-updates').checked=s.autoUpdates;
     $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
     $('dismiss').focus();
@@ -41,6 +42,7 @@ function render(next) {
   for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
   $('render-resolution').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('show-fps').disabled=state.clientIntegration===false||state.audioIntegration===false;
+  $('experimental-widescreen').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('url-status').textContent = state.pendingURL ? 'Saved. Reconnect to use the new game URL.' : '';
   const update=state.update||{};
   $('update-status').textContent=update.phase==='ready'?`v${update.version} downloaded and verified. ${s.autoUpdates?'Installs when you close the launcher.':'Use Install & restart when convenient.'}`:update.phase==='downloading'?`Downloading v${update.version} · ${update.percent}%`:update.phase==='error'?update.error:({current:'Up to date.',checking:'Checking GitHub…',verifying:'Verifying update…',development:'Updates are disabled in development builds.'}[update.phase]||(s.autoUpdates?'Checks GitHub automatically.':'Automatic updates are off.'));
@@ -77,6 +79,7 @@ document.addEventListener('pointerdown',e=>{if(e.target.closest('#unlock-key'))r
 $('game-zoom').onchange = () => save({ gameZoom: Number($('game-zoom').value) });
 $('render-resolution').onchange=()=>save({renderResolution:Number($('render-resolution').value)});
 $('show-fps').onchange=()=>save({showFPS:$('show-fps').checked});
+$('experimental-widescreen').onchange=()=>save({experimentalWidescreen:$('experimental-widescreen').checked});
 $('auto-updates').onchange=()=>save({autoUpdates:$('auto-updates').checked});
 $('check-updates').onclick=()=>call('check-updates');$('install-update').onclick=()=>call('install-update');
 $('hardware-acceleration').onchange = () => save({ hardwareAcceleration: $('hardware-acceleration').checked });

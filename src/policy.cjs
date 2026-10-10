@@ -23,6 +23,7 @@ function validSettings(input = {}) {
     gameZoom: zoom(input.gameZoom ?? input.defaultZoom),
     renderResolution: [.5,.75,1].includes(input.renderResolution)?input.renderResolution:1,
     showFPS: input.showFPS === true,
+    experimentalWidescreen: input.experimentalWidescreen === true,
     autoUpdates: input.autoUpdates !== false,
     keepGameAwake: input.keepGameAwake !== false, hardwareAcceleration: input.hardwareAcceleration !== false };
 }
