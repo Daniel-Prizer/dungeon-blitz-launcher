@@ -1,7 +1,7 @@
 {
   "name": "dungeon-blitz-launcher",
   "productName": "Dungeon Blitz Launcher",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "A dedicated Dungeon Blitz launcher with an isolated original Flash game host.",
   "main": "src/main.cjs",
   "private": true,

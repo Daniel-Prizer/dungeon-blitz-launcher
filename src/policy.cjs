@@ -19,6 +19,7 @@ function validSettings(input = {}) {
     volume: Number.isInteger(input.volume) && input.volume >= 0 && input.volume <= 100 ? input.volume : 100,
     audioMix:validAudioMix(input.audioMix),
     cursorLock: input.cursorLock === true,
+    shiftMount: input.shiftMount === true && input.unlockKey !== 'ShiftLeft',
     unlockKey: Object.hasOwn(UNLOCK_KEYS, input.unlockKey) ? input.unlockKey : 'AltLeft',
     gameZoom: zoom(input.gameZoom ?? input.defaultZoom),
     renderResolution: [.5,.75,1].includes(input.renderResolution)?input.renderResolution:1,

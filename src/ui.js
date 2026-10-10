@@ -8,7 +8,7 @@ async function call(name, value) {
   return result;
 }
 function save(patch) {
-  pending = pending.then(() => call('save-settings', patch)).then(result => { $('feedback').textContent = result.message || result.error || 'Saved'; }).catch(() => { $('feedback').textContent = 'Could not save settings.'; });
+  pending = pending.then(() => call('save-settings', patch)).then(async result => { if(result.error)render(await window.blitz.action('state'));$('feedback').textContent = result.message || result.error || 'Saved';return result; }).catch(() => { $('feedback').textContent = 'Could not save settings.'; });
   return pending;
 }
 function render(next) {
@@ -35,6 +35,8 @@ function render(next) {
   if(!settingsOpen)recording=false;
   if(!recording){$('unlock-key').textContent=window.blitzShortcuts.label(s.unlockKey);$('unlock-key').dataset.code=s.unlockKey;}
   $('cursor-lock').checked = s.cursorLock;
+  $('shift-mount').checked=s.shiftMount;
+  $('shift-mount').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('toggle-cursor').textContent = s.cursorLock ? 'Unlock cursor' : 'Lock cursor';
   $('cursor-status').textContent = s.cursorLock ? 'Cursor locks when you return to the game.' : 'Cursor lock is off.';
   $('audio-status').textContent = state.audio?.error ? 'Audio control unavailable. Reconnect to retry.' : "Controls this game's sound only.";
@@ -57,6 +59,7 @@ $('retry').onclick = () => call('restart-game'); $('reconnect').onclick = async 
 $('apply-url').onclick = async () => { await save({ gameURL: $('game-url').value.trim() }); };
 $('toggle-cursor').onclick = () => call('toggle-cursor');
 $('cursor-lock').onchange = () => save({ cursorLock: $('cursor-lock').checked });
+$('shift-mount').onchange=()=>save({shiftMount:$('shift-mount').checked});
 $('unlock-key').onclick = async () => {
   recording=!recording;await call('capture-shortcut',recording);
   $('unlock-key').setAttribute('aria-pressed',String(recording));
@@ -73,8 +76,8 @@ document.addEventListener('keydown',async e=>{
  }
  const modifier=/^(Alt|Control|Shift)(Left|Right)$/.test(e.code);
  if(!Object.hasOwn(window.blitzShortcuts.codes,e.code)||(!modifier&&(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey))){$('shortcut-hint').textContent='Press one key by itself. F11 and Escape are reserved.';return;}
- recording=false;await call('capture-shortcut',false);await save({unlockKey:e.code});
- $('unlock-key').setAttribute('aria-pressed','false');$('shortcut-hint').textContent='Shortcut saved. This key toggles cursor lock in the game.';
+ recording=false;await call('capture-shortcut',false);const result=await save({unlockKey:e.code});
+ $('unlock-key').setAttribute('aria-pressed','false');$('shortcut-hint').textContent=result?.ok?'Shortcut saved. This key toggles cursor lock in the game.':'Shortcut not saved. Choose a different key.';
 },true);
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#unlock-key'))return;if(recording){recording=false;call('capture-shortcut',false);$('unlock-key').setAttribute('aria-pressed','false');$('unlock-key').textContent=window.blitzShortcuts.label(state.settings.unlockKey);}},true);
 $('game-zoom').onchange = () => save({ gameZoom: Number($('game-zoom').value) });

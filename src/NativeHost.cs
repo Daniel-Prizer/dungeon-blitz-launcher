@@ -146,7 +146,6 @@ public static class NativeHost {
         bool ctrl = (GetAsyncKeyState(0x11) & 0x8000) != 0;
         string action = null;
         if (key == 0x7A) action = "fullscreen";
-        else if (key == 0x1B && fullscreen) action = "exit-fullscreen";
         else if (ctrl && key == 0xBC) action = "settings";
         if (action != null) { Emit("KEY " + action); return new IntPtr(1); }
       }
