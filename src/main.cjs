@@ -132,7 +132,7 @@ async function start() {
   if(app.isPackaged){
     const installRoot=require('./update-policy.cjs').installationRoot(process.execPath,app.getVersion());
     if(installRoot){updater=new Updater({current:app.getVersion(),cache:path.join(app.getPath('userData'),'updates'),installRoot,helper:path.join(process.resourcesPath,'runtime/UpdateInstaller.exe'),enabled:store.data.settings.autoUpdates,waitPids:()=>[game?.child?.pid,game?.host?.pid]});updater.on('state',publish);updater.start();}
-    else updater={status:{phase:'unavailable',error:'Automatic updates need the complete ZIP folder layout. Extract the release ZIP into a writable folder.'},stop:()=>{},start:()=>{},check:()=>{},installAfterExit:()=>false};
+    else updater={status:{phase:'unavailable',error:'Install the launcher using Setup, or extract the complete portable ZIP, to enable automatic updates.'},stop:()=>{},start:()=>{},check:()=>{},installAfterExit:()=>false};
   }
   nativeTheme.themeSource = 'dark';
   const ses = session.defaultSession;

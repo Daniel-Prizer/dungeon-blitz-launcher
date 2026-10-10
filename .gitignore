@@ -8,6 +8,7 @@ release/
 .test-tools/
 Blitz Browser.exe
 Dungeon Blitz Launcher.exe
+Dungeon Blitz Launcher Setup.exe
 docs/*
 !docs/TESTING.md
 !docs/CLIENT-FEATURES.md
