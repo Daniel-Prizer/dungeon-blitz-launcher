@@ -4,6 +4,7 @@ const fs = require('node:fs'), path = require('node:path');
 const { gameURL, validSettings, AUDIO_BUSES } = require('./policy.cjs');
 const { loadStore } = require('./store.cjs');
 const { LegacyRuntime } = require('./legacy-runtime.cjs');
+const { Updater } = require('./updater.cjs');
 const { classifyLink } = require('./legacy/links.cjs');
 const smoke = !app.isPackaged && process.argv.includes('--smoke-test');
 const privateDesktop = smoke && process.argv.includes('--private-desktop');
@@ -17,7 +18,7 @@ app.enableSandbox();
 protocol.registerSchemesAsPrivileged([{ scheme: 'blitz', privileges: { standard: true, secure: true } }]);
 const UI = 'blitz://app/index.html';
 const TITLEBAR_HEIGHT=32;
-let win, game, gameAddress = '', modal = null, error = '', loading = true, closing = false, blocker = null, fullscreenRevision = 0, capturingShortcut=false;
+let win, game, updater, gameAddress = '', modal = null, error = '', loading = true, closing = false, blocker = null, fullscreenRevision = 0, capturingShortcut=false;
 const externalLinks = []; let lastExternalLink = 0;
 async function openGameLink(event) {
   const link = classifyLink(event.url, gameAddress);
@@ -31,7 +32,7 @@ async function openGameLink(event) {
 function state() {
   return { settings: store.data.settings, gameURL: gameAddress, loading, error, modal, fullscreen: win?.isFullScreen() || false,
     cursor: game?.cursorState || { enabled: store.data.settings.cursorLock, suspended: false, active: false },
-    audio: game?.audioState || null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), pendingURL: gameAddress !== store.data.settings.gameURL };
+    audio: game?.audioState || null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: gameAddress !== store.data.settings.gameURL };
 }
 function publish() { if (win && !win.isDestroyed()) win.webContents.send('blitz:state', state()); }
 function layout() {
@@ -106,16 +107,20 @@ async function action(name, value) {
     case 'exit-fullscreen': setFullscreen(false); break;
     case 'restart-game': modal = null; startGame(); break;
     case 'toggle-cursor': game?.toggleCursor(); break;
+    case 'check-updates': if(updater)void updater.check();break;
+    case 'install-update': if(updater?.installAfterExit(true)){updater.installAfterExit=()=>false;win.close();}break;
     case 'save-settings': {
       if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid settings.');
       if ('gameURL' in value && !gameURL(value.gameURL)) throw new Error('Use an HTTPS game URL, or HTTP for localhost. Passwords in URLs are not allowed.');
       if ('volume' in value && (!Number.isInteger(value.volume) || value.volume < 0 || value.volume > 100)) throw new Error('Volume must be a whole number from 0 to 100.');
       if('renderResolution' in value&&![.5,.75,1].includes(value.renderResolution))throw new Error('Choose 100%, 75% or 50% rendering resolution.');
       if('showFPS' in value&&typeof value.showFPS!=='boolean')throw new Error('Show FPS counter must be on or off.');
+      if('autoUpdates' in value&&typeof value.autoUpdates!=='boolean')throw new Error('Automatic updates must be on or off.');
       if('audioMix' in value&&(!value.audioMix||Array.isArray(value.audioMix)||!AUDIO_BUSES.every(key=>Number.isInteger(value.audioMix[key])&&value.audioMix[key]>=0&&value.audioMix[key]<=100)))throw new Error('Sound volumes must be whole numbers from 0 to 100.');
       const previous = store.data.settings, next = validSettings({ ...previous, ...value }); store.data.settings = next;
       try { store.save(); } catch { store.data.settings = previous; throw new Error('Settings could not be saved. Check free disk space.'); }
       game?.configure(next); layout();
+      if(updater&&previous.autoUpdates!==next.autoUpdates){updater.stop();updater.enabled=next.autoUpdates;updater.start();}
       return { ok: true, message: previous.hardwareAcceleration !== next.hardwareAcceleration ? 'Saved. Restart the launcher to change graphics acceleration.' : 'Saved' };
     }
     default: throw new Error('Unsupported launcher action.');
@@ -123,6 +128,11 @@ async function action(name, value) {
   return { ok: true };
 }
 async function start() {
+  if(app.isPackaged){
+    const installRoot=require('./update-policy.cjs').installationRoot(process.execPath,app.getVersion());
+    if(installRoot){updater=new Updater({current:app.getVersion(),cache:path.join(app.getPath('userData'),'updates'),installRoot,helper:path.join(process.resourcesPath,'runtime/UpdateInstaller.exe'),enabled:store.data.settings.autoUpdates,waitPids:()=>[game?.child?.pid,game?.host?.pid]});updater.on('state',publish);updater.start();}
+    else updater={status:{phase:'unavailable',error:'Automatic updates need the complete ZIP folder layout. Extract the release ZIP into a writable folder.'},stop:()=>{},start:()=>{},check:()=>{},installAfterExit:()=>false};
+  }
   nativeTheme.themeSource = 'dark';
   const ses = session.defaultSession;
   ses.protocol.handle('blitz', request => {
@@ -153,7 +163,7 @@ async function start() {
   win.on('close', event => {
     if (closing) return; event.preventDefault(); closing = true;
     store.data.window = { width: win.getNormalBounds().width, height: win.getNormalBounds().height, maximized: win.isMaximized() };
-    try { store.save(); } catch {} game?.close(); win.destroy(); app.quit();
+    try { store.save(); } catch {} updater?.stop();game?.close();if(store.data.settings.autoUpdates)updater?.installAfterExit(false);win.destroy(); app.quit();
   });
   win.on('closed', () => { win = null; }); publish();
   if (smoke) global.__blitzTest = { state, externalLinks, nativeCommand: (_id, command) => game?.send(command), runtime: () => game,

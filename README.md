@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.9.0** (minor: adds an FPS counter checkbox, off by default).
+Version **0.10.0** (minor: signed GitHub automatic updates).
 
 Run **Dungeon Blitz Launcher.exe** in this folder. The root executable always points to the latest packaged build. Keep the release folder beside it. No installer or administrator access is needed. Source stays in Downloads/BlitzBrowser; the historical folder name is retained.
 
@@ -16,6 +16,7 @@ Game links on the selected game origin reload the configured game page. User-act
 
 ## Settings
 
+- Automatic updates: enabled by default. Checks our GitHub release after startup and every six hours, verifies an Ed25519 signature plus all file hashes, and stages the update without interrupting the game. Installs after the launcher closes; the previous root executable and build remain available. Settings also has Check for updates and Install & restart. Keep the complete ZIP folder layout in a writable location such as Downloads; updates do not request administrator access. Existing 0.9.0 builds need a manual download of 0.10.0 to obtain the updater.
 - Master: 0–100 in steps of 1; fresh profiles start at 100. Zero silences game audio. Controls only Windows audio sessions belonging to the game and its child processes; leaves device/master volume and other apps alone. The game's own sound controls still apply. New audio sessions and active output devices are checked every second.
 - Player, Music, Environment and Creatures: independent 0–100 sliders in steps of 1, all defaulting to 100. Player covers player characters/abilities and menu sounds; Creatures covers non-player entity sounds; Environment covers ambient streams and room/world sounds. Classification uses the emitting entity, not guessed sound names. Category gain multiplies the game's own volume and Master. Existing channels and loops update without reconnecting; music/ambient fade timing remains unchanged. Separate categories require the reviewed Minesa client; unsupported revisions disable those sliders while Master still works. Flash can quantize a composed channel gain to a 1% step.
 - Lock cursor inside the window: off by default. Windowed confinement includes the top menu, so Settings and Fullscreen remain reachable. Sides and bottom retain a 12-logical-pixel inset, scaled for DPI; fullscreen applies that inset to every game edge. Settings, minimisation, switching apps and close release confinement. Left Alt by itself toggles between unlocked and locked; Alt+Tab and Alt+F4 remain normal Windows shortcuts. Click the shortcut button and press a single key to record it; Escape cancels, and F11 remains reserved for fullscreen. Modifier keys toggle on release so normal keyboard chords remain available. The settings button can also suspend/re-enable locking. An unlocked session stays unlocked until toggled again.

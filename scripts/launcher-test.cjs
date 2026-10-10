@@ -54,6 +54,11 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
     assert.equal(await page.locator('#volume').getAttribute('min'),'0');assert.equal(await page.locator('#volume').getAttribute('max'),'100');assert.equal(await page.locator('#volume').getAttribute('step'),'1');
     assert.equal(await page.locator('#volume').inputValue(),'100');assert.equal(await page.locator('#unlock-key').getAttribute('data-code'),'AltLeft');assert.equal(await page.locator('#cursor-lock').isChecked(),false);
+    assert.equal(await page.locator('#auto-updates').isChecked(),true);
+    await page.locator('#auto-updates').uncheck();await until(async()=> (await call('state')).settings.autoUpdates===false,'Update opt-out not saved');
+    await page.locator('#auto-updates').check();await until(async()=> (await call('state')).settings.autoUpdates===true,'Updates not re-enabled');
+    assert.equal((await call('save-settings',{autoUpdates:'yes'})).ok,false);
+    checks.push('Actual automatic-update checkbox saves both choices and rejects malformed values');
     for(const bus of ['player','music','environment','creatures']){
       const slider=page.locator('#audio-'+bus);assert.equal(await slider.inputValue(),'100');assert.equal(await slider.getAttribute('step'),'1');assert.equal(await slider.isEnabled(),true);
       await slider.press('Home');await until(async()=> (await call('state')).settings.audioMix[bus]===0,'Sound bus zero not saved');

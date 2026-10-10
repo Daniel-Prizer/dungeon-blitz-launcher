@@ -1,0 +1,15 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),{spawn,execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..');
+if(!process.env.BLITZ_PRIVATE_DESKTOP)throw Error('Inactive desktop required');
+execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
+const dir=path.join(root,'.test-tools/projector-probe');fs.mkdirSync(dir,{recursive:true});
+const config=path.join(dir,'launch.json');
+fs.writeFileSync(config,JSON.stringify({executable:path.join(root,'runtime/projector/flashplayer_32_sa.exe'),content:path.join(dir,'wrapper.swf'),profile:'Blitz.Projector.Test',dataDirectory:dir,internet:false}));
+const host=path.join(root,'runtime/SandboxHost.exe');
+const child=spawn(host,[config],{windowsHide:true,stdio:['pipe','pipe','pipe']});
+const log=path.join(dir,'result.log');fs.writeFileSync(log,'');
+let ready=false,confirmed=false,buffer='';child.stdout.on('data',data=>{fs.appendFileSync(log,data);buffer+=data;for(;;){const at=buffer.indexOf('\n');if(at<0)break;const line=buffer.slice(0,at).trim();buffer=buffer.slice(at+1);if(line.startsWith('READY '))ready=true;if(line==='EXIT 0')confirmed=true;}});
+child.stderr.on('data',data=>fs.appendFileSync(log,data));
+const timer=setTimeout(()=>{child.stdin.end();process.exitCode=1;},25000);
+child.on('exit',code=>{clearTimeout(timer);if(code!==0||!ready||!confirmed){process.exitCode=1;fs.appendFileSync(log,'FAIL projector assertion did not complete; no user login or input was used\n');}else fs.appendFileSync(log,'PASS two distinct settings updates and Flash bitmap pixel assertion inside AppContainer\n');});

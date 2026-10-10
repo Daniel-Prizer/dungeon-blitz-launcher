@@ -1,4 +1,5 @@
 node_modules/
+artifacts/
 runtime/
 release/
 .test-profile/
@@ -10,3 +11,4 @@ Dungeon Blitz Launcher.exe
 docs/*
 !docs/TESTING.md
 !docs/CLIENT-FEATURES.md
+!docs/PROJECTOR.md

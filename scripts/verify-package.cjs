@@ -27,9 +27,11 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   assert.deepEqual(asar.extractFile(legacy,'editing.cjs'),fs.readFileSync(path.join(root,'src/legacy/editing.cjs')));
   for(const file of ['client-patch.cjs','client-layout.json','links.cjs','audio-patch.cjs','rendering.cjs','BlitzAudio.as','BlitzDisplay.as','BlitzFrameCounter.as'])assert.deepEqual(asar.extractFile(legacy,file),fs.readFileSync(path.join(root,'src/legacy',file)));
   assert.equal(JSON.parse(asar.extractFile(legacy,'package.json')).version,version);
-  for(const file of ['NativeHost.exe','game/BlitzGame.exe','game/resources/pepflashplayer64.dll','game/resources/game-window.node','game/resources/audio-delta.json'])
+  for(const file of ['NativeHost.exe','UpdateInstaller.exe','game/BlitzGame.exe','game/resources/pepflashplayer64.dll','game/resources/game-window.node','game/resources/audio-delta.json'])
     assert.equal(hash(path.join(output,'resources/runtime',file)),hash(path.join(root,'runtime',file)),file);
   const files = asar.listPackage(archive);
+  assert(!files.some(file=>file.startsWith('/artifacts/')),'Downloaded research artifacts must not ship');
+  for(const file of ['SandboxHost.exe','projector'])assert(!fs.existsSync(path.join(output,'resources/runtime',file)),'Unfinished projector runtime must not ship');
   assert(!files.some(file=>/neural|cunny|upscaler/i.test(file)),'Retired enhancement source/model must not ship');
   assert(!asar.listPackage(legacy).some(file=>/neural/i.test(file)),'Retired game-host enhancer must not ship');
   for(const file of ['game/resources/neural-window.node','game/resources/NeuralWindow.lib','game/resources/NeuralWindow.exp','game/resources/neural','host-diagnostics.log'])assert(!fs.existsSync(path.join(output,'resources/runtime',file)),'Retired enhancer or diagnostic must not ship: '+file);

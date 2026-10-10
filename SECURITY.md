@@ -2,6 +2,8 @@
 
 The modern local shell uses Electron 44.7.0 / Chromium 152. The separate original Flash host uses Adobe Flash 32.0.0.363 and Electron 11.5.0 / Chromium 87. Flash and that legacy Chromium remain unsupported with unresolved vulnerabilities. This launcher cannot claim to fix all vulnerabilities in those binary runtimes. npm audit covers npm dependencies only.
 
+The projector/AppContainer migration is an unshipped prototype. Actual OS containment tests and an owned AS3 settings/render fixture pass, but Flash shared-object persistence fails. The production launcher still uses the existing game host; 0.10.0 must not be described as a completed projector migration or a fix for Flash CVEs. See docs/PROJECTOR.md.
+
 ## Trust boundaries
 
 - The shell loads only six allowlisted local UI/code/brand assets under blitz://app/. It has a strict content-security policy, Chromium sandbox, context isolation, no remote Node integration, no webviews and no downloads or external navigation. No general browsing view, listener/socket bridge or remote tabs remain.
@@ -46,6 +48,14 @@ FPS visibility defaults to false in both the settings policy and Flash helper. O
 
 The experimental neural enhancer was removed in 0.6.2. Production rendering no longer captures game frames, uploads them to a learned model or creates a second graphics surface. Its native module, model, shaders, command/status handlers and preferences are removed. Build preparation cleans only known retired resources; package verification rejects leftover enhancer files. Original Flash owns the game rendering and input. Test-only game captures remain guarded and never acquire the desktop. The optional offline RIFE research CLI/model stay in ignored .test-tools and never ship.
 
-Modern executable fuses disable RunAsNode, NODE_OPTIONS, command-line inspection and extra file privileges; enable cookie encryption, ASAR integrity and ASAR-only loading. Imported Flash/legacy executable hashes are recorded in runtime/provenance.json. The root launcher verifies the matching versioned executable before starting it. There is no auto-update feed or code-signing certificate.
+Modern executable fuses disable RunAsNode, NODE_OPTIONS, command-line inspection and extra file privileges; enable cookie encryption, ASAR integrity and ASAR-only loading. Imported Flash/legacy executable hashes are recorded in runtime/provenance.json. The root launcher verifies the matching versioned executable before starting it. No Windows Authenticode signing certificate is supplied.
+
+## Signed GitHub updates
+
+The packaged shell checks the fixed Daniel-Prizer/dungeon-blitz-launcher GitHub repository after 10 seconds and every six hours. A strict platform/version manifest is verified using the Ed25519 public key shipped with the installed shell. The private key is outside the repository, with access limited to its owner and SYSTEM. GitHub account or release-asset access alone is insufficient to produce an accepted update. Rollbacks, malformed paths, wrong platforms, duplicate paths, unsupported download origins, unsigned releases and mismatched ZIP/file hashes are rejected.
+
+Downloads use HTTPS, bounded redirects/responses, cancellation and signed byte limits. Staging is private to the user/SYSTEM. The native extractor rejects traversal, Windows device paths, duplicate entries, links and excessive expansion. The exact extracted file set is checked before staging, and the native installer rechecks sizes/hashes and rejects reparse points before copying. This does not protect against malware already executing with the user's full Windows privileges.
+
+Only the validated versioned ZIP layout is updated, with a writable-folder preflight. Updates never elevate privileges or request game-controlled executable paths. Hash verification streams files asynchronously. Installation waits for the launcher, game host and native controller to exit, copies into a fresh directory on the destination volume, moves the completed build into its version folder and atomically replaces the root shim, retaining its previous version. The installer never kills those processes. An interrupted shim replacement can retry only when the installed version exactly matches the signed files. Automatic updates are optional; an explicit Install & restart action is also available. No account/profile files are in a signed payload. Older builds without this updater require one manual upgrade.
 
 The imported Adobe runtime is from the user's existing official Dungeon Blitz R installation for local use. Review third-party distribution rights before sharing. An obsolete Flash engine remains a material security limit despite process separation and reduced surface area.

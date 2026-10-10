@@ -1,7 +1,7 @@
 {
   "name": "dungeon-blitz-launcher",
   "productName": "Dungeon Blitz Launcher",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "A dedicated Dungeon Blitz launcher with an isolated original Flash game host.",
   "main": "src/main.cjs",
   "private": true,
@@ -17,7 +17,10 @@
     "test:margins": "node scripts/test-native.cjs --margins",
     "test:window": "node scripts/test-native.cjs --window",
     "test:render": "node scripts/test-native.cjs --render",
-    "test:fps": "node scripts/test-native.cjs --fps"
+    "test:fps": "node scripts/test-native.cjs --fps",
+    "test:projector": "node scripts/test-projector.cjs",
+    "test:projector:storage": "node scripts/test-projector.cjs --storage",
+    "release:sign": "node scripts/sign-release.cjs"
   },
   "devDependencies": {
     "@electron/fuses": "2.1.3",
