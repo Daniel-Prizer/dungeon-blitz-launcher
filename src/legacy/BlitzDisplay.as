@@ -1,10 +1,14 @@
 package {
  import flash.external.ExternalInterface;
  import flash.display.DisplayObject;
+ import flash.display.DisplayObjectContainer;
  import flash.display.Sprite;
  import flash.display.MovieClip;
+ import flash.display.Shape;
+ import flash.display.Bitmap;
  import flash.events.Event;
  import flash.geom.Rectangle;
+ import flash.geom.Point;
  import flash.system.ApplicationDomain;
  import flash.utils.Dictionary;
  // Rendering only. Keep the game's own resize/cache-invalidation path; never
@@ -17,7 +21,10 @@ package {
   private static var wideGame:Game;
   private static var offsets:Dictionary=new Dictionary(true);
   private static var edges:Dictionary=new Dictionary(true);
+  private static var backdrops:Dictionary=new Dictionary(true);
+  private static var matteScans:Dictionary=new Dictionary(true);
   private static var frame:Sprite;
+  private static var hudFrame:Sprite;
   private static var frameStyle:String="";
   private static const ORIGINAL_WIDTH:Number=1152;
   private static const WIDE_WIDTH:Number=768*16/9;
@@ -47,18 +54,70 @@ package {
    // A game-owned animation/reposition replaces the baseline. Never accumulate
    // our own offset, nor overwrite a later game-owned position on restoration.
    if(Math.abs(object.x-saved.last)>0.001)saved.base=object.x;
-   if(Math.abs(object.x-(saved.base+amount))>0.026)object.x=saved.base+amount;
+   if(Math.abs(object.x-(saved.base+amount))>0.051)object.x=saved.base+amount;
    saved.last=object.x;
   }
   private static function screenOffset(screen:class_32,amount:Number):void {
    if(screen&&screen.mWindow&&screen.mWindow.mMovieClip&&
-    screen.mWindow.mMovieClip.parent==wideGame.var_89)offset(screen.mWindow.mMovieClip,amount);
+    (screen.mWindow.mMovieClip.parent==wideGame.var_89||screen.mWindow.mMovieClip.parent==wideGame.var_245))offset(screen.mWindow.mMovieClip,amount);
+  }
+  private static function stretchBackdrop(root:DisplayObjectContainer,half:Number,container:DisplayObjectContainer=null,depth:int=0):void {
+   // Only a screen's own full-view matte, never its panel, text or gameplay
+   // artwork. Retain the original shape/alpha/handlers and cover both sides.
+   if(!container){
+    var movie:MovieClip=root as MovieClip;var current:int=movie?movie.currentFrame:0;var previous:Object=matteScans[root];
+    if(!root.visible){if(previous)previous.visible=false;return;}
+    if(previous&&previous.visible&&previous.frame==current&&previous.children==root.numChildren)return;
+    matteScans[root]={visible:true,frame:current,children:root.numChildren};container=root;
+   }
+   for(var i:int=0;i<container.numChildren;i++){
+    var child:DisplayObject=container.getChildAt(i);
+    // Composite backgrounds can also contain the trove pedestal or other
+    // art. Recurse to a passive drawing leaf; never scale that whole group.
+    if(child is DisplayObjectContainer){if(depth<3)stretchBackdrop(root,half,child as DisplayObjectContainer,depth+1);continue;}
+    if(!(child is Shape)&&!(child is Bitmap))continue;
+    var saved:Object=backdrops[child];
+    if(!saved){var bounds:Rectangle=child.getBounds(root);
+     if(Math.abs(bounds.width-ORIGINAL_WIDTH)>4||Math.abs(bounds.height-Camera.PLAY_SCREEN_HEIGHT)>4||Math.abs(bounds.y)>4||Math.abs(bounds.x)>4)continue;
+     var origin:Point=root.globalToLocal(child.parent.localToGlobal(new Point()));var unit:Point=root.globalToLocal(child.parent.localToGlobal(new Point(1,0)));
+     var parentScale:Number=unit.x-origin.x;if(!isFinite(parentScale)||parentScale<=0||Math.abs(unit.y-origin.y)>0.001)continue;
+     saved={scale:child.scaleX,width:bounds.width,left:child.getBounds(child).x,parentScale:parentScale};backdrops[child]=saved;
+    }
+    child.scaleX=saved.scale*(1+half*2/saved.width);
+    offset(child,-half/saved.parentScale-saved.left*(child.scaleX-saved.scale));
+   }
+  }
+  private static function layoutScreens(game:Game,half:Number):void {
+   if(game.mUIManager&&game.mUIManager.var_1240)for each(var screen:class_32 in game.mUIManager.var_1240){
+    if(!screen||!screen.mWindow||!screen.mWindow.mMovieClip)continue;
+    var amount:Number=half;
+    // These roots contain mouse/world-positioned content rather than centered
+    // panels. Moving their parent misplaces NPC names, loot and tooltips.
+    if(screen.var_1173.indexOf("Floater")>=0||screen==game.screenHudTooltip||screen==game.screenNotification)amount=0;
+    if(screen==game.var_2306)amount=half; // centered room/dungeon title
+    if(screen==game.screenHud||screen==game.screenLinkBar||screen==game.var_1828)amount=0;
+    if(screen==game.screenChat||screen==game.screenHudTopRight)amount=half*2;
+    screenOffset(screen,amount);
+    if(amount==half)stretchBackdrop(screen.mWindow.mMovieClip,half);
+   }
+   // A mixed asset: party controls live at the upper left, utility buttons at
+   // the bottom center. Move the individual party controls within that root.
+   screenOffset(game.screenHudTop,half);
+   if(game.screenHudTop&&game.screenHudTop.var_2){
+    var top:MovieClip=game.screenHudTop.var_2;
+    for each(var name:String in ["am_LeaveGroup","am_GroupLocked","am_GroupUnlocked"])offset(top.getChildByName(name),-half);
+   }
+   screenOffset(game.screenLinkBar,0);screenOffset(game.screenHudTopRight,half*2);
+   screenOffset(game.screenHud,0);screenOffset(game.screenChat,half*2);screenOffset(game.screenQuestTracker,half);
+   if(game.screenChat&&game.screenChat.var_230)offset(game.screenChat.var_230,half*2);
   }
   private static function restore():void {
    for(var object:Object in offsets){if(Math.abs(object.x-offsets[object].last)<0.001)object.x=offsets[object].base;}
    for(var edge:Object in edges)edge.visible=edges[edge];
-   offsets=new Dictionary(true);edges=new Dictionary(true);wideGame=null;
+   for(var backdrop:Object in backdrops)backdrop.scaleX=backdrops[backdrop].scale;
+   offsets=new Dictionary(true);edges=new Dictionary(true);backdrops=new Dictionary(true);matteScans=new Dictionary(true);wideGame=null;
    if(frame&&frame.parent)frame.parent.removeChild(frame);frame=null;frameStyle="";
+   if(hudFrame&&hudFrame.parent)hudFrame.parent.removeChild(hudFrame);hudFrame=null;
   }
   private static function hideEdge(object:DisplayObject):void {
    if(!object)return;if(edges[object]===undefined)edges[object]=object.visible;object.visible=false;
@@ -82,13 +141,36 @@ package {
    if(!game){PositionCounter();return;}
    wideGame=game;
    var half:Number=(WIDE_WIDTH-ORIGINAL_WIDTH)*0.5;
-   offset(game.var_89,half*main.overallScale);offset(game.var_245,half*main.overallScale);
-   // Keep the original bottom HUD/chat/quest grouping intact and centered.
-   // Move only the independent top controls, including their hit-test roots.
-   screenOffset(game.screenHudTop,-half);screenOffset(game.screenLinkBar,-half);
-   screenOffset(game.screenHudTopRight,half);
+   // Leave both shared roots at their original world-coordinate origin.
+   // Anchor independent screens; otherwise world labels, skull/party HUD and
+   // menu hit testing all inherit an unrelated half-width translation.
+   layoutScreens(game,half);
    if(game.edgeLayer){hideEdge(game.edgeLayer.getChildByName("am_EdgeFull"));hideEdge(game.edgeLayer.getChildByName("am_EdgeNarrow"));}
-   DrawFrame(game);PositionCounter();
+   DrawFrame(game);DrawHudFrame(game);PositionCounter();
+  }
+  private static function DrawHudFrame(game:Game):void {
+   if(!game.screenHud||!game.screenHud.mWindow||!game.screenHud.mWindow.mMovieClip||game.screenHud.mWindow.mMovieClip.parent!=game.var_89)return;
+   var base:DisplayObject=game.screenHud.mWindow.mMovieClip.getChildByName("am_CacheIcon");
+   if(!base||!ApplicationDomain.currentDomain.hasDefinition("a_Hud"))return;
+   if(!hudFrame){
+    var type:Class=ApplicationDomain.currentDomain.getDefinition("a_Hud") as Class;
+    var source:MovieClip=new type() as MovieClip;source.stop();var original:DisplayObjectContainer=source.getChildByName("am_CacheIcon") as DisplayObjectContainer;
+    if(!original)return;var bounds:Rectangle=original.getBounds(original);if(bounds.width<1100||bounds.height>150)return;
+    var originX:Number=original.x;var originY:Number=original.y;
+    var cuts:Array=[bounds.x,440-originX,680-originX,bounds.right];var delta:Number=WIDE_WIDTH-ORIGINAL_WIDTH;
+    hudFrame=new Sprite();hudFrame.name="blitz-wide-hud-frame";hudFrame.mouseEnabled=false;hudFrame.mouseChildren=false;
+    // Extend only the neutral center of the original decorative HUD plate.
+    // Health/power artwork and the chat end keep their original proportions.
+    for(var i:int=0;i<3;i++){
+     var asset:MovieClip=i==0?source:new type() as MovieClip;asset.stop();
+     var clip:DisplayObjectContainer=asset.getChildByName("am_CacheIcon") as DisplayObjectContainer;clip.x=0;clip.y=0;
+     var slice:Sprite=new Sprite();slice.mouseEnabled=false;slice.mouseChildren=false;slice.addChild(clip);
+     slice.scrollRect=new Rectangle(cuts[i],bounds.y,cuts[i+1]-cuts[i],bounds.height);
+     slice.x=originX+cuts[i]+(i==2?delta:0);slice.y=originY+bounds.y;
+     if(i==1)slice.scaleX=(cuts[i+1]-cuts[i]+delta)/(cuts[i+1]-cuts[i]);hudFrame.addChild(slice);
+    }
+   }
+   hideEdge(base);if(hudFrame.parent!=game.var_89)game.var_89.addChildAt(hudFrame,0);
   }
   private static function DrawFrame(game:Game):void {
    if(!game.edgeLayer||game.edgeLayer.parent!=main)return;
