@@ -1,4 +1,14 @@
-# Current validation: 0.14.0 (minor)
+# Current validation: 0.15.0 (minor)
+
+Adds windowless latest-release Setup using the existing signed update pipeline. Unit integration installs a signed dummy release through the real native bootstrap helper, rejects an outside/zero caller PID and an active game stand-in without killing it, preserves the prior shim and unrelated files, then repeats a current-version check with no payload rewrite or download. All fixtures are disposable and non-game executables. No player settings/profile is opened by bootstrap mode.
+
+## Included verification fix: 0.14.1 (patch)
+
+Reproduced the user's installed 0.12.0 update failure: only the two physical app.asar files remained after failed-stage cleanup. Actual Electron 44.7.0 rejects a correct synthetic signed ASAR payload with the old verifier, because normal fs presents ASAR files as virtual directories. The previous public-update test ran under Node and did not establish Electron filesystem correctness.
+
+The updater now uses original-fs for physical staging/verification/cleanup, preserving normal bundled-key access and all signature/path/hash checks. Verification reports progress and uses an abortable two-minute limit. `npm run test:updater` runs the complete signed pipeline under Electron on a guarded inactive desktop with a dummy key and disposable installation; it exercises raw ASAR bytes, changed bytes, unexpected files, progress, bundled-key access and failed-stage removal. No window, game, user profile, clipboard or OS input is used.
+
+## Included validation: 0.14.0 (minor)
 
 Adds an optional Left Shift mount alias and restores game-owned Escape behavior. The compatibility/cursor work below, developed as 0.13.0, is included in this release.
 
@@ -204,3 +214,8 @@ Installer 0.12.0 adds a separate installation regression (`npm run test:installe
 Authenticated dungeon movement, combat, inventory, region transfer, audio quality and long-session stability have not been independently established. No saved credentials were extracted, no account was created, and no progress was modified. The current automated checks must not be described as a completed live dungeon test. No additional desktop testing or player retry was requested after the user asked us to leave the desktop alone.
 
 Additional display scales, multi-monitor transitions, GPU vendors, accessibility auditing and an independent security review are still outstanding. No benchmark demonstrates a performance improvement.
+# 0.15.0 installer and updater verification
+
+The production installer compiled successfully. Its separate test identity passed fresh install and all payload hashes, both shortcut targets, Windows registration, same-version payload timestamp preservation, newer-version preservation, busy-process refusal, traversal/junction rejection, and full managed uninstall. Tests ran on the guarded inactive desktop without player profiles or OS input.
+
+Actual Electron 44.7.0 tests passed against both source and packaged updater: signed extraction including physical ASAR files, progress, tamper rejection, unexpected files, and failed-stage cleanup. All 29 unit test groups passed, including native bootstrap caller validation and active-game refusal. The real installation was manually upgraded from 0.12.0 to interim 0.14.1; settings stayed byte-identical and all 156 installed payload hashes matched. No running game was terminated.

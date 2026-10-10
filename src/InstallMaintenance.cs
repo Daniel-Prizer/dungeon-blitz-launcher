@@ -31,12 +31,13 @@ public static class ManagedInstallation {
   NoLink(file);
   return file;
  }
- public static void Check(string root){
+ public static void Check(string root,int allowed=0){
   root=Root(root);
+  NoLink(Path.Combine(root,"Dungeon Blitz Launcher.exe"));
   foreach(var process in Process.GetProcesses())using(process){
    string executable=null;IntPtr handle=OpenProcess(0x1000,false,process.Id);
    if(handle!=IntPtr.Zero)try{var buffer=new StringBuilder(32768);int length=buffer.Capacity;if(QueryFullProcessImageName(handle,0,buffer,ref length))executable=buffer.ToString();}finally{CloseHandle(handle);}
-   if(executable!=null&&Path.GetFullPath(executable).StartsWith(root+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase)&&!Regex.IsMatch(executable.Substring(root.Length),@"^\\\.launcher-install\\unins\d+\.exe$",RegexOptions.IgnoreCase))throw new Exception("Close the installed Dungeon Blitz Launcher before installing or uninstalling. Your game will not be closed automatically.");
+   if(process.Id!=allowed&&(allowed==0||process.Id!=Process.GetCurrentProcess().Id)&&executable!=null&&Path.GetFullPath(executable).StartsWith(root+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase)&&!Regex.IsMatch(executable.Substring(root.Length),@"^\\\.launcher-install\\unins\d+\.exe$",RegexOptions.IgnoreCase))throw new Exception("Close the installed Dungeon Blitz Launcher before installing or uninstalling. Your game will not be closed automatically.");
   }
  }
  public static void Record(string root,string version,System.Collections.IEnumerable files){
@@ -83,8 +84,11 @@ public static class ManagedInstallation {
 }
 public static class InstallMaintenance {
  public static int Main(string[] args){try{
-  if(args.Length!=3||(args[0]!="check"&&args[0]!="cleanup"))throw new Exception("Invalid installation operation");
-  if(args[0]=="check")ManagedInstallation.Check(args[1]);else ManagedInstallation.Cleanup(args[1]);
+  if(args.Length!=3||(args[0]!="check"&&args[0]!="cleanup"&&args[0]!="refresh"))throw new Exception("Invalid installation operation");
+  if(args[0]=="check")ManagedInstallation.Check(args[1]);else if(args[0]=="cleanup")ManagedInstallation.Cleanup(args[1]);else {
+   string root=ManagedInstallation.Root(args[1]);var info=FileVersionInfo.GetVersionInfo(Path.Combine(root,"Dungeon Blitz Launcher.exe"));
+   ManagedInstallation.RefreshVersion(root,info.FileMajorPart+"."+info.FileMinorPart+"."+info.FileBuildPart);
+  }
   File.WriteAllText(args[2],"");return 0;
  }catch(Exception error){if(args.Length==3)try{File.WriteAllText(args[2],error.Message);}catch{}return 1;}}
 }
