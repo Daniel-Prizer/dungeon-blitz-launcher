@@ -26,13 +26,23 @@ public static class UpdateInstaller {
   }
  }
  static string Hash(string file){using(var sha=SHA256.Create())using(var stream=File.OpenRead(file))return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-","").ToLowerInvariant();}
- static void Install(string configFile,bool restart){
+ static void BootstrapCheck(string root,int allowed){
+  root=ManagedInstallation.Root(root);if(allowed<=0)throw new Exception("Invalid setup update process");
+  using(var process=Process.GetProcessById(allowed)){
+   string executable=Path.GetFullPath(process.MainModule.FileName);
+   ManagedInstallation.Root(Path.GetDirectoryName(executable));
+   if(!executable.StartsWith(root+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase)||!Regex.IsMatch(executable.Substring(root.Length),@"^\\release\\\d{1,5}\.\d{1,5}\.\d{1,5}\\Dungeon Blitz Launcher-win32-x64\\Dungeon Blitz Launcher\.exe$",RegexOptions.IgnoreCase))throw new Exception("Setup update process is outside the installed build");
+  }
+  ManagedInstallation.Check(root,allowed);
+ }
+ static void Install(string configFile,bool restart,int bootstrap=0){
   var config=new JavaScriptSerializer{MaxJsonLength=4000000}.Deserialize<Dictionary<string,object>>(File.ReadAllText(configFile));string version=(string)config["version"];
   if(!Regex.IsMatch(version,@"^\d{1,5}\.\d{1,5}\.\d{1,5}$"))throw new Exception("Invalid update version");
   string source=CheckedRoot((string)config["source"]),destination=CheckedRoot((string)config["destination"]);
   var files=(System.Collections.IEnumerable)config["files"];
   foreach(var item in files){var file=(Dictionary<string,object>)item;string relative=(string)file["path"];if(relative!="Dungeon Blitz Launcher.exe"&&!relative.StartsWith("release/"+version+"/Dungeon Blitz Launcher-win32-x64/",StringComparison.Ordinal))throw new Exception("Unexpected installation file");string full=Resolve(source,relative);if((File.GetAttributes(full)&FileAttributes.ReparsePoint)!=0||new FileInfo(full).Length!=Convert.ToInt64(file["size"])||Hash(full)!=(string)file["sha256"])throw new Exception("Staged file changed");}
-  var waits=config.ContainsKey("pids")?(System.Collections.IEnumerable)config["pids"]:new object[]{config["pid"]};
+  if(bootstrap!=0)BootstrapCheck(destination,bootstrap);
+  var waits=bootstrap!=0?new object[0]:config.ContainsKey("pids")?(System.Collections.IEnumerable)config["pids"]:new object[]{config["pid"]};
   DateTime deadline=DateTime.UtcNow.AddSeconds(120);
   foreach(var value in waits){int pid=Convert.ToInt32(value);if(pid<=0)throw new Exception("Invalid update wait process");try{using(var parent=Process.GetProcessById(pid)){int remaining=Math.Max(0,(int)(deadline-DateTime.UtcNow).TotalMilliseconds);if(!parent.WaitForExit(remaining))throw new Exception("Launcher or game has not closed; update was not installed");}}catch(ArgumentException){}}
   string releases=Path.Combine(destination,"release");Directory.CreateDirectory(releases);CheckedRoot(releases);string final=Path.Combine(releases,version);
@@ -49,5 +59,5 @@ public static class UpdateInstaller {
   ManagedInstallation.RefreshVersion(destination,version);
   if(restart)Process.Start(new ProcessStartInfo(rootExe){UseShellExecute=false,WorkingDirectory=destination});
  }
- public static int Main(string[] args){try{if(args.Length==2&&args[0]=="protect")Protect(args[1]);else if(args.Length==2&&args[0]=="preflight")Preflight(args[1]);else if(args.Length==3&&args[0]=="extract")Extract(args[1],args[2]);else if(args.Length==3&&args[0]=="install"&&(args[2]=="restart"||args[2]=="close"))Install(args[1],args[2]=="restart");else throw new Exception("Invalid updater operation");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);if(args.Length>1&&File.Exists(args[1])&&args[0]=="install")try{File.WriteAllText(Path.Combine(Path.GetDirectoryName(args[1]),"install-error.txt"),e.Message);}catch{}return 1;}}
+ public static int Main(string[] args){try{if(args.Length==2&&args[0]=="protect")Protect(args[1]);else if(args.Length==2&&args[0]=="preflight")Preflight(args[1]);else if(args.Length==3&&args[0]=="extract")Extract(args[1],args[2]);else if(args.Length==3&&args[0]=="install"&&(args[2]=="restart"||args[2]=="close"))Install(args[1],args[2]=="restart");else if(args.Length==3&&args[0]=="install-bootstrap"){int pid=int.Parse(args[2]);if(pid<=0)throw new Exception("Invalid setup update process");Install(args[1],false,pid);}else throw new Exception("Invalid updater operation");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);if(args.Length>1&&File.Exists(args[1])&&(args[0]=="install"||args[0]=="install-bootstrap"))try{File.WriteAllText(Path.Combine(Path.GetDirectoryName(args[1]),"install-error.txt"),e.Message);}catch{}return 1;}}
 }

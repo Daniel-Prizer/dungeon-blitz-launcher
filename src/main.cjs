@@ -1,5 +1,8 @@
 'use strict';
 const { app, BrowserWindow, ipcMain, protocol, session, Menu, screen, powerSaveBlocker, nativeTheme, shell } = require('electron');
+// Setup invokes this local, windowless mode directly. It never creates the
+// game/UI, reads player settings or acquires the normal launcher's profile lock.
+if(process.argv.includes('--setup-update')){void require('./setup-update.cjs').run(app);return;}
 const fs = require('node:fs'), path = require('node:path');
 const { gameURL, validSettings, AUDIO_BUSES } = require('./policy.cjs');
 const { loadStore } = require('./store.cjs');

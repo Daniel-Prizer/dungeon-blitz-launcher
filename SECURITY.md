@@ -4,6 +4,10 @@ The modern local shell uses Electron 44.7.0 / Chromium 152. The separate origina
 
 The projector/AppContainer migration is an unshipped prototype. Actual OS containment tests and an owned AS3 settings/render fixture pass, but Flash shared-object persistence fails. The production launcher still uses the existing game host; the shipped launcher must not be described as a completed projector migration or a fix for Flash CVEs. See docs/PROJECTOR.md.
 
+The updater reads and verifies staging files through Electron's original-fs, treating app.asar as signed physical bytes rather than virtual contents. The pinned key alone is loaded from the trusted application bundle with normal fs. ASAR support is never globally disabled. Signature, exact-file, size/hash and path checks remain required; verification has an abortable two-minute limit and failed stages are removed as physical files. An actual Electron regression covers valid/tampered ASAR files and failure cleanup. Earlier builds require a manual upgrade because their filesystem verification can reject valid updates and remain in cleanup.
+
+Setup's local --setup-update mode uses the same pinned signed ZIP pipeline. It requires a packaged versioned installation, uses a disposable profile, creates no game/window and never reads player settings. The native bootstrap installer checks that its allowed caller is the installed core executable, rejects reparse paths and blocks every other installed process; only that caller and the installer helper may remain running. No process is killed or restarted and no elevation is requested. Current/newer installed payloads remain intact on repeat Setup. An unavailable online check retains a bundled/current build instead of accepting an unsigned download or downgrading a newer installation.
+
 ## Trust boundaries
 
 - The shell loads only six allowlisted local UI/code/brand assets under blitz://app/. It has a strict content-security policy, Chromium sandbox, context isolation, no remote Node integration, no webviews and no downloads or external navigation. No general browsing view, listener/socket bridge or remote tabs remain.

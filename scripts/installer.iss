@@ -9,7 +9,7 @@
 AppId={{#AppIdentity}
 AppName={#AppName}
 AppVerName={#AppName}
-AppVersion={#AppVersion}
+AppVersion={code:EffectiveVersion}
 AppPublisher=Daniel Prizer
 AppPublisherURL=https://github.com/Daniel-Prizer/dungeon-blitz-launcher
 AppSupportURL=https://github.com/Daniel-Prizer/dungeon-blitz-launcher/issues
@@ -43,11 +43,11 @@ VersionInfoProductName={#AppName}
 Name: desktopicon; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"
 
 [Files]
-Source: "{#SourceRoot}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SourceRoot}\{#BuildFolder}\*"; DestDir: "{app}\{#BuildFolder}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#Maintenance}"; DestDir: "{app}\.launcher-install"; DestName: "maintenance.exe"; Flags: ignoreversion
-Source: "{#Ledger}"; DestDir: "{app}\.launcher-install"; DestName: "files-{#AppVersion}.txt"; Flags: ignoreversion
-Source: "{#IdentityFile}"; DestDir: "{app}\.launcher-install"; DestName: "app-id.txt"; Flags: ignoreversion
+Source: "{#SourceRoot}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion; Check: CopyPayload
+Source: "{#SourceRoot}\{#BuildFolder}\*"; DestDir: "{app}\{#BuildFolder}"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: CopyPayload
+Source: "{#Maintenance}"; DestDir: "{app}\.launcher-install"; DestName: "maintenance.exe"; Flags: ignoreversion; Check: CopyPayload
+Source: "{#Ledger}"; DestDir: "{app}\.launcher-install"; DestName: "files-{#AppVersion}.txt"; Flags: ignoreversion; Check: CopyPayload
+Source: "{#IdentityFile}"; DestDir: "{app}\.launcher-install"; DestName: "app-id.txt"; Flags: ignoreversion; Check: CopyPayload
 Source: "{#Maintenance}"; DestName: "setup-maintenance.exe"; Flags: dontcopy
 
 [Icons]
@@ -68,6 +68,38 @@ Type: dirifempty; Name: "{app}\release"
 Type: dirifempty; Name: "{app}\.launcher-install"
 
 [Code]
+var
+  KeepPayload: Boolean;
+  CurrentVersion: String;
+
+function EffectiveVersion(Param: String): String;
+begin
+  if CurrentVersion = '' then Result := '{#AppVersion}' else Result := CurrentVersion;
+end;
+
+function CopyPayload: Boolean;
+begin
+  Result := not KeepPayload;
+end;
+
+function InstalledVersion: String;
+var MS, LS: Cardinal;
+begin
+  Result := '';
+  if GetVersionNumbers(ExpandConstant('{app}\{#AppExe}'), MS, LS) then
+    Result := Format('%d.%d.%d', [MS shr 16, MS and $FFFF, LS shr 16]);
+end;
+
+function CheckLatest: Boolean;
+var ExitCode: Integer; Core: String;
+begin
+  Core := ExpandConstant('{app}\release\') + InstalledVersion + '\Dungeon Blitz Launcher-win32-x64\{#AppExe}';
+  Result := Exec(Core, '--setup-update', '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+  if Result then Result := ExitCode = 0;
+  CurrentVersion := InstalledVersion;
+  if Result then Log('Latest signed release checked; installed version ' + CurrentVersion)
+  else Log('Latest release check unavailable; existing/bundled build retained.');
+end;
 function Maintenance(Operation, Folder, Helper: String): String;
 var
   ExitCode: Integer;
@@ -90,13 +122,28 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ExistingMS, ExistingLS, SetupMS, SetupLS: Cardinal;
 begin
+  KeepPayload := False;
   ExtractTemporaryFile('setup-maintenance.exe');
   Result := Maintenance('check', ExpandConstant('{app}'), ExpandConstant('{tmp}\setup-maintenance.exe'));
   if Result <> '' then Exit;
   if GetVersionNumbers(ExpandConstant('{app}\{#AppExe}'), ExistingMS, ExistingLS) and
      GetVersionNumbers(ExpandConstant('{srcexe}'), SetupMS, SetupLS) then
-    if (ExistingMS > SetupMS) or ((ExistingMS = SetupMS) and (ExistingLS > SetupLS)) then
-      Result := 'A newer Dungeon Blitz Launcher is already installed. Use the latest installer.';
+    if (ExistingMS > SetupMS) or ((ExistingMS = SetupMS) and (ExistingLS >= SetupLS)) then begin
+      CurrentVersion := InstalledVersion;
+      KeepPayload := CheckLatest;
+      if not KeepPayload and ((ExistingMS > SetupMS) or ((ExistingMS = SetupMS) and (ExistingLS > SetupLS))) then
+        Result := 'A newer launcher is installed. Its update check could not finish; the installation was kept unchanged.';
+    end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var ErrorMessage: String;
+begin
+  if CurStep = ssPostInstall then begin
+    if not KeepPayload then CheckLatest;
+    ErrorMessage := Maintenance('refresh', ExpandConstant('{app}'), ExpandConstant('{tmp}\setup-maintenance.exe'));
+    if ErrorMessage <> '' then Log('Version registration: ' + ErrorMessage);
+  end;
 end;
 
 function InitializeUninstall: Boolean;
