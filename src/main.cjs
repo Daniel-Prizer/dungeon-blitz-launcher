@@ -115,6 +115,7 @@ async function action(name, value) {
       if ('volume' in value && (!Number.isInteger(value.volume) || value.volume < 0 || value.volume > 100)) throw new Error('Volume must be a whole number from 0 to 100.');
       if('renderResolution' in value&&![.5,.75,1].includes(value.renderResolution))throw new Error('Choose 100%, 75% or 50% rendering resolution.');
       if('showFPS' in value&&typeof value.showFPS!=='boolean')throw new Error('Show FPS counter must be on or off.');
+      if('experimentalWidescreen' in value&&typeof value.experimentalWidescreen!=='boolean')throw new Error('Experimental 16:9 must be on or off.');
       if('autoUpdates' in value&&typeof value.autoUpdates!=='boolean')throw new Error('Automatic updates must be on or off.');
       if('audioMix' in value&&(!value.audioMix||Array.isArray(value.audioMix)||!AUDIO_BUSES.every(key=>Number.isInteger(value.audioMix[key])&&value.audioMix[key]>=0&&value.audioMix[key]<=100)))throw new Error('Sound volumes must be whole numbers from 0 to 100.');
       const previous = store.data.settings, next = validSettings({ ...previous, ...value }); store.data.settings = next;

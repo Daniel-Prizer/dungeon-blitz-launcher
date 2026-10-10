@@ -7,6 +7,7 @@ execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo
 if(process.argv.includes('--focus'))process.env.BLITZ_PRIVATE_TEST='focus';
 if(process.argv.includes('--render'))process.env.BLITZ_PRIVATE_TEST='render';
 if(process.argv.includes('--fps'))process.env.BLITZ_PRIVATE_TEST='fps';
+if(process.argv.includes('--transition')){process.env.BLITZ_PRIVATE_TEST='transition';execFileSync(process.execPath,[path.join(__dirname,'prepare-transition-fixture.cjs')],{windowsHide:true,stdio:'inherit'});}
 if(process.argv.includes('--window'))process.env.BLITZ_PRIVATE_TEST='window';
 if(process.argv.includes('--margins')){process.env.BLITZ_PRIVATE_TEST='margins';execFileSync(process.execPath,[path.join(__dirname,'prepare-margin-fixture.cjs')],{windowsHide:true,stdio:'inherit'});}
 try{execFileSync(helper,[process.execPath,path.join(__dirname,'private-desktop-test.cjs')],{stdio:'inherit',windowsHide:true,timeout:245000})}

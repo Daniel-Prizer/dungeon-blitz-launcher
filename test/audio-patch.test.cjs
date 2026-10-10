@@ -13,6 +13,7 @@ test('October 10 audio/display adapter exactly reconstructs its separately compi
  const presentation=patchClient(fs.readFileSync(current));assert(presentation);
  const audio=patchAudio(presentation,JSON.parse(fs.readFileSync(currentDelta)));assert(audio);
  assert.deepEqual(zlib.inflateSync(audio.subarray(8)),zlib.inflateSync(fs.readFileSync(currentCompiled).subarray(8)));
+ const body=zlib.inflateSync(audio.subarray(8));assert(!body.includes(Buffer.from('BlitzTransitionFixtureControl')));assert(!body.includes(Buffer.from('FPSFixtureControl')));
  assert.equal(patchAudio(presentation,JSON.parse(fs.readFileSync(delta))),null,'Historical adapter must never be applied to the new client');
  const changed=Buffer.from(presentation);changed[changed.length-1]^=1;assert.equal(patchAudio(changed,JSON.parse(fs.readFileSync(currentDelta))),null);
 });
@@ -20,7 +21,7 @@ test('reviewed audio delta matches the independently compiled client',{skip:![li
  const presentation=patchClient(fs.readFileSync(live));assert(presentation);
  const audio=patchAudio(presentation,JSON.parse(fs.readFileSync(delta)));assert(audio);
  assert.deepEqual(zlib.inflateSync(audio.subarray(8)),zlib.inflateSync(fs.readFileSync(compiled).subarray(8)));
- const body=zlib.inflateSync(audio.subarray(8));assert(body.includes(Buffer.from('BlitzFrameCounter')),'Production counter must be in the reviewed adapter');
+ const body=zlib.inflateSync(audio.subarray(8));assert(!body.includes(Buffer.from('BlitzTransitionFixtureControl')));assert(body.includes(Buffer.from('BlitzFrameCounter')),'Production counter must be in the reviewed adapter');
  assert(!body.includes(Buffer.from('FPSFixtureControl')),'Test clock/stall controls must not enter the production client delta');
  const changed=Buffer.from(presentation);changed[changed.length-1]^=1;assert.equal(patchAudio(changed,JSON.parse(fs.readFileSync(delta))),null);
 });

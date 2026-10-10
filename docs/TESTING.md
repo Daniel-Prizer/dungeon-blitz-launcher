@@ -1,3 +1,13 @@
+# Current validation: 0.11.0 (minor)
+
+The older sections below are historical evidence, not current browser features or a completed Flash security audit.
+
+- `npm test`: 20 groups covering typed settings/defaults, revision-pinned adapters, strict URLs/links, dummy paste, native cursor policy, bounded raster planning and signed update validation/extraction/install behavior.
+- `npm run test:transition`: real Game.method_1947 allocation in baseline/corrected fixtures reproduces and fixes the fixed-canvas mismatch at 1080p/1440p. A synthetic play/HUD fixture uses the actual client layout, UI-root classes and input conversion to check 16:9 geometry, edge clicks, offset stability, off/menu restoration, 50/75/100% rendering resolution, bounded 50/100/150/300% zoom and fullscreen. Test control callbacks are absent from production adapters. The real live unauthenticated title renders without aspect changes when widescreen is requested.
+- `npm run test:native`, `test:input` and `test:render` provide the separate current shell/input/native-raster regressions. Package verification checks matching source, version, runtime hashes, fuses, omitted test/prototype data and root executable resolution.
+
+All native integration tests use the guarded inactive desktop and test-only profile. They never switch desktops, send OS pointer/keyboard input, acquire the input-desktop image, call ClipCursor, read the real clipboard, log in or extract credentials. Captures are only test WebContents. Actual player combat, every live widescreen overlay, long sessions and Explorer taskbar visibility have not been independently established. The generated frame is visually inspected in those test images. See [widescreen limitations](WIDESCREEN.md) and [security limits](../SECURITY.md).
+
 # Dungeon Blitz Launcher test record — 10 October 2026
 
 Version 0.10.1, patch release restoring native rendering for Minesa's October 10 client. Source stays in Downloads/BlitzBrowser. Projector migration is still gated by the failing persistence test.

@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import java.security.MessageDigest;
 import com.jpexs.decompiler.flash.SWF;
 import com.jpexs.decompiler.flash.abc.ABC;
 import com.jpexs.decompiler.flash.abc.types.MethodBody;
@@ -10,6 +11,23 @@ import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 // Same-size substitutions preserve every original branch and exception offset.
 public class DisplayPatchBuilder {
  static AVM2Instruction ins(int op,int... args){return new AVM2Instruction(0,op,args);}
+ static boolean restoreTransition(ABC abc)throws Exception {
+  MethodBody body=abc.findBodyByClassAndName("Game","method_1947");if(body==null)throw new IllegalStateException("Missing reviewed transition canvas allocator");
+  String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes()));
+  if(hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))return false;
+  if(!hash.equals("baf51368e22c568f758efda185540460f7d39b5384b3ff3d6792821838fae506"))throw new IllegalStateException("Unreviewed transition allocation method");
+  // The new live client replaced precisely these 38 bytes with fixed 2048x1152
+  // dimensions and padding. Restore the original Camera-size * native-scale
+  // allocation; retain all branches, fade state, input, clocks and gameplay.
+  byte[] code=body.getCodeBytes().clone();
+  byte[] original=HexFormat.of().parseHex("602160c70166fa01d0665666e701a246b90201602160c701668904d0665666e701a246b90201");
+  System.arraycopy(original,0,code,436,original.length);
+  if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(code)).equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))throw new IllegalStateException("Transition allocation restoration mismatch");
+  body.setCodeBytes(code);body.getCode().checkValidOffsets(body);
+  // JPEXS normalizes an unreachable obfuscator jump to the method end when
+  // checking offsets. Keep the reviewed raw body, including that original jump.
+  body.setCodeBytes(code);return true;
+ }
  public static void main(String[] args)throws Exception {
   SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;
   for(ABCContainerTag tag:swf.getAbcList()){
@@ -37,11 +55,19 @@ public class DisplayPatchBuilder {
     Arrays.fill(code,position,position+4,(byte)2);code[position]=(byte)(position==513?0xd1:0xd2);
    }
    layout.setCodeBytes(code);layout.getCode();layout.max_stack=Math.max(layout.max_stack,4);layout.setModified();layout.getCode().checkValidOffsets(layout);
-   for(MethodBody b:abc.bodies)if(b!=layout&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
+   boolean transition=restoreTransition(abc);MethodBody allocation=abc.findBodyByClassAndName("Game","method_1947");
+   for(MethodBody b:abc.bodies)if(b!=layout&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
-   System.out.println("Verified native raster layout; untouched method bodies: "+(abc.bodies.size()-1));
+   System.out.println("Verified native raster layout and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?2:1)));
   }
   if(changed!=1)throw new IllegalStateException("Expected exactly one reviewed layout method");
   try(OutputStream out=new FileOutputStream(args[1])){swf.saveTo(out);}
+  SWF saved=new SWF(new FileInputStream(args[1]),false);int verified=0;
+  for(ABCContainerTag tag:saved.getAbcList()){
+   MethodBody allocation=tag.getABC().findBodyByClassAndName("Game","method_1947");if(allocation==null)continue;
+   String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(allocation.getCodeBytes()));
+   if(!hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))throw new IllegalStateException("Serialized transition body changed");verified++;
+  }
+  if(verified!=1)throw new IllegalStateException("Serialized allocator missing");
  }
 }
