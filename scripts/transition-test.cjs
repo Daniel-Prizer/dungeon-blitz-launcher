@@ -150,7 +150,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   for(const menu of ['barn','tome','social']){
    await cmd({type:'test-transition-control',play:true,transition:false,menu});await wait(350);
    const shown=(await sample('wide-menu-'+menu,true)).renderProbe.fixture;
-   if(menu==='social')assert(Math.abs(shown.social.x+(shown.social.bx+shown.social.width/2)*shown.social.scaleX-p.widescreen.logicalWidth/2)<.1,'Social panel must center from its actual bounds');
+   if(menu==='social'){const panel=shown.social.children.find(c=>c.name==='am_ZonePanel');assert(panel);assert(Math.abs(shown.social.x+(panel.x+(panel.bx+panel.width/2)*panel.scaleX)*shown.social.scaleX-p.widescreen.logicalWidth/2)<.1,'Social panel must center its persistent panel rather than hidden tabs/popups');}
    if(menu!=='social'){
     assert.equal(shown.hudTree.children.find(c=>c.name==='blitz-companion-frame').visible,false,'Upgrade strips must hide the companion decoration without leaving gold fragments');
     assert.equal(shown.hudTree.children.find(c=>c.name==='am_PowerButtons').visible,false,'Building strips must leave no partial companion buttons or active hit fragments');
@@ -161,6 +161,19 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    if(menu!=='social')assert(Math.abs(shown.quest-Math.max(154.5,10+strip.width-439.25))<.1,'Quest must retain padding beside the actual building strip');
    else assert.equal(shown.quest,154.5);
   }
+  for(const menu of ['store','settings']){
+   await cmd({type:'test-transition-control',play:true,transition:false,menu});await wait(350);
+   const shown=(await sample('wide-menu-'+menu,true)).renderProbe.fixture;
+   const root=shown[menu],panel=root.children.find(c=>c.name===(menu==='store'?'am_Panel':'am_MenuWrapper'));
+   assert(panel,'Actual native menu panel must exist');
+   if(menu==='store'){assert(Math.abs(root.x-half)<.1,'On-demand native store must receive the same centered offset as the native book');continue;}
+   const center=root.x+(panel.x+(panel.bx+panel.width/2)*panel.scaleX)*root.scaleX;
+   assert(Math.abs(center-p.widescreen.logicalWidth/2)<1,'Native '+menu+' panel must center without moving the shared root');
+  }
+  await cmd({type:'test-transition-control',play:true,transition:false,menu:'companion-commands'});await wait(350);
+  const commands=(await sample('wide-companion-commands',true)).renderProbe.fixture.commandIcons;
+  assert.equal(commands.length,2);
+  for(const icon of commands){assert(Math.abs(icon.x-2)<.16&&Math.abs(icon.y-2)<.16&&Math.abs(icon.width-44)<.16&&Math.abs(icon.height-44)<.16,'Native dismiss/dismount artwork must fill the companion inset within Flash twip quantization');}
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(250);
   await cmd({type:'test-transition-control',play:true,transition:false,menu:'map'});await wait(350);
   const mapCover=(await sample('wide-map-cover',true)).renderProbe.fixture.questTree.children.find(item=>item.name==='am_InitialMapCover');

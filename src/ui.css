@@ -9,3 +9,41 @@ footer{display:flex;align-items:center;gap:16px;padding:13px 22px;border-top:1px
 
 /* Match the native stone/sage panels and restrained gold button trim. */
 .waiting{border:3px solid #879477;border-radius:7px;outline-color:#252d26;outline-offset:1px;box-shadow:inset 0 0 0 1px #b3bda1,0 8px 24px #0002;background:linear-gradient(#434b40,#30372f);color:#e2d9ad}.panel-heading{background:linear-gradient(#626e59,#454f40);box-shadow:inset 0 1px #aab59666}h1{font-weight:700;color:#ece1b3;text-shadow:0 1px 1px #151e12}.settings-nav button{border:1px solid transparent;border-radius:5px}.settings-nav button[aria-pressed=true]{border-color:#b8a565;box-shadow:inset 0 1px #d8cb8055,0 0 0 1px #1c241b;background:linear-gradient(#5c644f,#414936);color:#fff0b8}.panel-heading button{border:2px solid #cab55c;box-shadow:0 0 0 1px #20251c,inset 0 0 0 1px #c8ce9c44}.primary{box-shadow:0 0 0 1px #24291f,inset 0 1px #d7cc8055}
+
+/* The launcher follows the game's sage bevels, charcoal wells and gold trim. */
+.wordmark,.loading-wordmark{filter:brightness(1.7) saturate(.85) drop-shadow(0 1px 1px #101116) drop-shadow(0 0 2px #171920)}
+#titlebar{padding-right:max(150px,calc(100vw - env(titlebar-area-width,100vw) + 8px))}
+#overlay{background:#484955}
+.panel{width:min(800px,100%);height:min(660px,calc(100dvh - 80px));max-height:100%;padding:7px;background:#a4b39c;border:3px solid #c2ceb6;border-radius:12px;color:#ede7c8;box-shadow:0 0 0 2px #515b4d,inset 0 0 0 2px #7f8e76,inset 0 0 0 4px #b3c0aa,0 14px 40px #0005}
+.fullscreen .panel{height:min(660px,calc(100dvh - 48px))}
+.panel-heading{padding:9px 15px 12px;background:transparent;border:0;box-shadow:none}
+.panel-heading>div{background:linear-gradient(#454b3f,#353a30);padding:7px 16px;border:2px solid #7c8a71;border-radius:9px;box-shadow:inset 0 2px #20251c,0 1px #d3dcc5;flex:1}
+.eyebrow{color:#bdc8ae;font-size:10px;letter-spacing:0}
+h1{margin:0;font-size:24px;line-height:1.25;color:#f2e5b4;text-shadow:1px 2px #191e17}
+.panel button{border:2px solid #d3b941;border-radius:9px;background:linear-gradient(#6d7080 0,#393c4b 48%,#343744 52%,#535664 100%);box-shadow:0 0 0 1px #22261c,inset 0 0 0 1px #eee09766,inset 0 2px #d2d5b233; color:#f4e9b9;text-shadow:0 1px 1px #151814;font-weight:700}
+.panel button:hover{border-color:#f2d766;background:linear-gradient(#818594,#454857 48%,#3e4250 52%,#646878)}
+.panel button:active{box-shadow:0 0 0 1px #22261c,inset 0 2px 5px #12151ba0}
+.panel-heading #dismiss{width:34px;height:34px;border-radius:10px;padding:6px;flex-shrink:0}
+.panel-heading #dismiss svg{width:20px;height:20px;stroke-width:3}
+.settings-nav{padding:0 15px 12px;gap:7px;background:transparent;border:0;flex-wrap:nowrap;flex-shrink:0}
+.settings-nav button{flex:1;padding:6px 10px;font-size:14px;border-color:#a89e52}
+.settings-nav button[aria-pressed=true]{border-color:#39c9de;box-shadow:0 0 0 1px #19231f,inset 0 0 0 1px #90eef088;background:linear-gradient(#747d82,#343d41 50%,#414a4d);color:#fff0bf}
+#settings-content{flex:1;min-height:0;margin:0 15px;padding:0 19px;overflow:auto;border:3px solid #7c8c73;border-radius:9px;background:#42483d;box-shadow:inset 0 2px 4px #242a2055,0 1px #c6d1b8;scrollbar-gutter:stable;scrollbar-color:#a7b297 #353b30}
+.setting{padding:19px 0;border-bottom:1px solid #6e7b63}
+.setting:last-child,.setting:has(+.setting[hidden]){border-bottom:0}
+h2{font-size:18px;color:#efd781;font-weight:700;text-shadow:0 1px #1e241a;margin-bottom:14px}
+.hint{color:#c5ceb9;font-size:12px;line-height:1.55;max-width:70ch}
+.row,.audio-row{color:#eee9d3}
+.audio-row{grid-template-columns:106px 1fr 48px;margin:17px 0}
+.audio-row output{color:#eee9d3;font-weight:700;font-size:13px}
+.panel input[type=url],.panel input[type=number],.panel select{background:#282e25;color:#f0ead2;border:2px solid #7b896f;border-radius:6px;box-shadow:inset 0 2px #20251c,0 1px #abb99e;padding:6px 8px}
+.panel input[type=range]{appearance:none;height:13px;background:#252c24;border:2px solid #7a876d;border-radius:7px;box-shadow:inset 0 2px 2px #171d16,0 1px #acb69a;cursor:pointer}
+.panel input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:22px;border:2px solid #e0c450;border-radius:6px;background:linear-gradient(#787e87,#3b4149);box-shadow:0 0 0 1px #262a22,inset 0 0 0 1px #dedab177}
+.panel .check input{appearance:none;width:21px;height:21px;display:grid;place-content:center;border:2px solid #bca74e;border-radius:5px;background:#292f25;box-shadow:0 0 0 1px #252b22,inset 0 1px #171c16;cursor:pointer}
+.panel .check input:checked::after{content:"";width:11px;height:6px;border-left:3px solid #e7d56c;border-bottom:3px solid #e7d56c;transform:translateY(-1px) rotate(-45deg)}
+footer{background:transparent;border:0;padding:14px 15px 8px}
+#feedback,#version{color:#3b4932;text-shadow:0 1px #c5d0b5}
+.compatibility{color:#403f23;background:#c9c095;border:1px solid #7c865a;border-radius:6px;margin:8px 15px 0;padding:9px 12px}
+#error-content{flex:1;margin:0 15px;background:#42483d;border:3px solid #7c8c73;border-radius:9px}
+@media(max-height:720px){.panel{height:min(660px,calc(100dvh - 56px))}.fullscreen .panel{height:min(660px,calc(100dvh - 24px))}.panel-heading{padding-top:4px;padding-bottom:8px}.settings-nav{padding-bottom:8px}.setting{padding:14px 0}footer{padding-top:10px}}
+@media(max-width:650px){.settings-nav{gap:4px;padding-left:8px;padding-right:8px}.settings-nav button{font-size:12px;padding:6px 5px}#settings-content{margin:0 8px;padding:0 12px}}

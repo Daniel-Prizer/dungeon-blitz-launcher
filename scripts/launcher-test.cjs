@@ -76,6 +76,18 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     await call('save-settings',{audioMix:{player:100,music:100,environment:100,creatures:100}});
     checks.push('All four category sliders start at 100, step by 1, and reach the actual live Flash audio adapter');
     assert.equal(await page.locator('#titlebar').evaluate(el=>el.getBoundingClientRect().height),32);
+    const settingsRects=[];
+    for(const name of ['Audio','Controls','Display','Connection','Updates']){
+      await section(name);settingsRects.push(await page.locator('.panel').boundingBox());
+      await page.screenshot({path:path.join(out,'settings-'+name.toLowerCase()+'.png')});
+    }
+    assert(settingsRects.every(rect=>rect.width===settingsRects[0].width&&rect.height===settingsRects[0].height&&rect.x===settingsRects[0].x&&rect.y===settingsRects[0].y),'Settings frame must not move or resize across panes');
+    checks.push('All five rendered Settings panes retain the same frame and scroll longer content');
+    if(privateDesktop){
+      const owner=await app.evaluate(({BrowserWindow})=>({handle:BrowserWindow.getAllWindows()[0].getNativeWindowHandle().readBigUInt64LE().toString(),pid:process.pid}));
+      execFileSync(path.join(root,'.test-tools/WindowCapture.exe'),[owner.handle,String(owner.pid),path.join(out,'settings-native-window.png')],{windowsHide:true});
+    }
+    await section('Audio');
     assert(await page.locator('.wordmark').evaluate(el=>el.complete&&el.naturalWidth>0),'Actual titlebar wordmark loads');
     async function bind(code){await section('Controls');await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Shortcut capture must arm');await page.locator('#unlock-key').press(code);await until(async()=> !(await call('state')).capturingShortcut,'Shortcut capture must finish');}
     if(privateDesktop)assert.equal((await measure('hidden-in-settings')).visible,false);
@@ -165,6 +177,14 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     assert(!fixtureRequests.includes('/game-link'),'Game links must not replace the game page');
     assert.equal((await measure('after-links')).windows,1);assert.equal((await opened()).length,2,'Reload must not forward its unsolicited popup');
     checks.push('Clicked HTML popup/self links hand off exact web URLs; game links reload; unsolicited popups stay blocked; no OS browser launched');
+    const characterReloads=fixtureRequests.filter(u=>u==='/').length;
+    await call('save-settings',{gameURL:fixture+'pending-server'});
+    await page.locator('#change-character').click();
+    await until(()=>fixtureRequests.filter(u=>u==='/').length>characterReloads,'Change Character must reload the active game');
+    await until(async()=>!(await call('state')).loading,'Character reload must finish');
+    assert.equal((await call('state')).gameURL,fixture);assert(!fixtureRequests.includes('/pending-server'),'Change Character must not switch to a pending server URL');
+    await call('save-settings',{gameURL:fixture});
+    checks.push('Actual Change Character button reloads the current origin without changing profile, preferences or pending server');
     if(privateDesktop){
       const actuals=[];
       console.log('Fixture audio state',JSON.stringify((await call('state')).audio));

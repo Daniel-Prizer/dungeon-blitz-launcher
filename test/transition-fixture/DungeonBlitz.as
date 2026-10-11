@@ -3,6 +3,7 @@ package {
  import flash.display.DisplayObject;
  import flash.display.DisplayObjectContainer;
  import flash.display.MovieClip;
+ import flash.display.Bitmap;
  import flash.display.BitmapData;
  import flash.display.Loader;
  import flash.display.StageScaleMode;
@@ -98,6 +99,11 @@ package {
    game.screenBuyIdols=new class_63(game);attach(game.screenBuyIdols,"a_MammothIdolWindow");game.screenBuyIdols.mWindow.mMovieClip.visible=false;
    game.screenLockBox=new class_73(game);attach(game.screenLockBox,"a_ScreenLockBoxAD");game.screenLockBox.mWindow.mMovieClip.visible=false;
    game.screenBarn=new class_99(game);attach(game.screenBarn,"a_ScreenBarn");extraMenus.push(game.screenBarn);
+   game.screenMenu=new class_124(game);attach(game.screenMenu,"a_Menu");game.screenMenu.mWindow.mMovieClip.visible=false;
+   var store:class_32=new class_32(game,"a_StoreFrontWindow","am_Panel");attach(store,"a_StoreFrontWindow");extraMenus.push(store);
+   store.var_2.alpha=1;store.var_2.am_SplashHolder.visible=false;
+   // Reproduce the live on-demand store: active, but not registered.
+   game.mUIManager.var_1240.splice(game.mUIManager.var_1240.indexOf(store),1);game.mUIManager.mActiveScreens.push(store);
    game.screenForge=new class_75(game);attach(game.screenForge,"a_ScreenMagicForge");extraMenus.push(game.screenForge);
    game.screenTome=new class_50(game);attach(game.screenTome,"a_ScreenTome");extraMenus.push(game.screenTome);
    for each(var menuScreen:class_32 in extraMenus)menuScreen.mWindow.mMovieClip.visible=false;
@@ -150,7 +156,15 @@ package {
    if(transfer){pending=new Game(main);pending.gameState="Login";main.var_523.push(pending);}
    if(!transition)worldEnabled=false;
    game.screenBuyIdols.mWindow.mMovieClip.visible=menu=="idols";game.screenLockBox.mWindow.mMovieClip.visible=menu=="trove";
-   for(var n:int=0;n<extraMenus.length;n++)extraMenus[n].mWindow.mMovieClip.visible=menu==["barn","forge","tome"][n];
+   for(var n:int=0;n<extraMenus.length;n++)extraMenus[n].mWindow.mMovieClip.visible=menu==["barn","store","forge","tome"][n];
+   game.screenMenu.mWindow.mMovieClip.visible=menu=="settings";
+   if(menu=="companion-commands")for(var commandIndex:int=6;commandIndex<=7;commandIndex++){
+    var command:class_153=game.screenHud.mPowerButtons[commandIndex];
+    if(command.var_220&&command.var_220.parent)command.var_220.parent.removeChild(command.var_220);
+    command.method_431();command.var_434=new PowerType();command.var_434.powerName=commandIndex==6?"DismissPet":"Dismount";
+    command.var_434.iconName=commandIndex==6?"a_PetIcon_Dismiss":"a_MountIcon_Dismount";
+    command.var_220=class_4.method_639(game,command.var_434.iconName,command.keyClip.scaleX);command.buttonClip.addChild(command.var_220);
+   }
    game.screenFriend.var_26.visible=menu=="social";
    if(menu=="map")game.screenQuestTracker.var_1990.Show(true);else game.screenQuestTracker.var_1990.Hide(true);
    game.screenQuestTracker.var_2.am_ContactMatte.alpha=1;
@@ -253,9 +267,17 @@ package {
     hotbar:game.screenHud.mWindow.mMovieClip.x,chat:game.screenChat.mWindow.mMovieClip.x,quest:game.screenQuestTracker.mWindow.mMovieClip.x,party:game.var_89.getChildByName("fixture-party").x,nameX:game.var_89.getChildByName("NPC name").x,
     idols:game.screenBuyIdols.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),trove:game.screenLockBox.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),
     idolPanelWidth:game.screenBuyIdols.mWindow.mMovieClip.getChildByName("am_Panel").getBounds(game.var_89).width,trovePedestalWidth:MovieClip(game.screenLockBox.mWindow.mMovieClip.getChildAt(0)).getChildAt(1).getBounds(game.var_89).width,
-    scene:sceneTree,roomInRootDomain:ApplicationDomain.currentDomain.hasDefinition("a_Room_GreatHall"),labels:labelProbes,social:tree(game.screenFriend.var_26,0),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,2),hudTree:tree(game.screenHud.var_2,2),
-    mountLabel:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.text,mountLabelWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.width,mountTextWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.textWidth,
+    scene:sceneTree,roomInRootDomain:ApplicationDomain.currentDomain.hasDefinition("a_Room_GreatHall"),labels:labelProbes,social:tree(game.screenFriend.var_26,1),settings:tree(game.screenMenu.mWindow.mMovieClip,2),store:tree(extraMenus[1].mWindow.mMovieClip,1),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,2),hudTree:tree(game.screenHud.var_2,2),
+    commandIcons:commandBounds(),mountLabel:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.text,mountLabelWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.width,mountTextWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.textWidth,
     worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
+  }
+  private function commandBounds():Array {
+   var result:Array=[];
+   for(var index:int=6;index<=7;index++){
+    var button:class_153=game.screenHud.mPowerButtons[index];
+    if(button&&button.var_220)result.push(button.var_220.getBounds(button.keyClip));
+   }
+   return result;
   }
  }
 }

@@ -34,6 +34,7 @@ package {
   private static var buttonTransforms:Dictionary=new Dictionary(true);
   private static var questFrames:Dictionary=new Dictionary(true);
   private static var companionFrames:Dictionary=new Dictionary(true);
+  private static var companionIcons:Dictionary=new Dictionary(true);
   private static var upgradePowers:Dictionary=new Dictionary(true);
   private static var buildingInspection:Boolean=false;
   private static var hudStraightBands:Array=[];
@@ -130,7 +131,15 @@ package {
    var questRightInset:Number=10;
    var directionCenter:Number=0;
    var upgradeVisible:Boolean=false;
-   if(game.mUIManager&&game.mUIManager.var_1240)for each(var screen:class_32 in game.mUIManager.var_1240){
+   // Some live screens (notably the stable store) are constructed on demand
+   // and never enter the manager's registered-screen list. Include its active
+   // screens without changing the native collection or moving a screen twice.
+   var screens:Array=[];
+   if(game.mUIManager){
+    for each(var registeredScreen:class_32 in game.mUIManager.var_1240)screens.push(registeredScreen);
+    for each(var activeScreen:class_32 in game.mUIManager.mActiveScreens)if(screens.indexOf(activeScreen)<0)screens.push(activeScreen);
+   }
+   for each(var screen:class_32 in screens){
     if(!screen||!screen.mWindow||!screen.mWindow.mMovieClip)continue;
     var amount:Number=half;
     // These roots contain mouse/world-positioned content rather than centered
@@ -220,6 +229,7 @@ package {
      // Rebuild native icon rasters once at the new button scale, using the
      // original rendering-only resize path. Preserve power/cooldown handlers.
      if(changed&&game.clientEnt&&game.screenHud.mPowerButtons)game.screenHud.method_1505();
+     FitCompanionCommands(game);
      DrawCompanionFrame(game.screenHud.var_2);
      if(companionFrames[game.screenHud.var_2])companionFrames[game.screenHud.var_2].visible=!upgradeVisible;
     }
@@ -261,9 +271,22 @@ package {
     offset(quest.getChildByName("am_InitialMapCover"),questGrowth/2);
    }
    if(game.screenFriend&&game.screenFriend.var_26&&game.screenFriend.var_26.visible&&game.screenFriend.var_26.parent==game.var_89){
-    var friend:MovieClip=game.screenFriend.var_26;var friendBounds:Rectangle=friend.getBounds(friend);
+    var friend:MovieClip=game.screenFriend.var_26;
+    // Center its persistent panel, excluding the extra World tab and hidden
+    // popup/tooltip bounds which can extend beyond the actual window.
+    var friendPanel:DisplayObject=friend.getChildByName("am_ZonePanel");
+    var friendBounds:Rectangle=friendPanel?friendPanel.getBounds(friend):friend.getBounds(friend);
     var friendBase:Number=offsets[friend]?offsets[friend].base:friend.x;
     offset(friend,(WIDE_WIDTH-friendBounds.width*friend.scaleX)/2-friendBounds.x*friend.scaleX-friendBase);
+   }
+   if(game.screenMenu&&game.screenMenu.var_2&&game.screenMenu.mWindow){
+    var menuRoot:MovieClip=game.screenMenu.mWindow.mMovieClip;
+    if(menuRoot.parent==game.var_89||menuRoot.parent==game.var_245){
+     var menuPanel:DisplayObject=game.screenMenu.var_2;
+     var menuBounds:Rectangle=menuPanel.getBounds(menuRoot);
+     var menuBase:Number=offsets[menuRoot]?offsets[menuRoot].base:menuRoot.x;
+     if(menuBounds.width>100&&menuBounds.width<ORIGINAL_WIDTH)offset(menuRoot,WIDE_WIDTH/2-(menuBounds.x+menuBounds.width/2)*menuRoot.scaleX-menuBase);
+    }
    }
    if(game.screenChat&&game.screenChat.var_230&&game.screenChat.var_2){
     // Chat's own controller already includes the shifted root in this matte's
@@ -273,6 +296,7 @@ package {
    }
   }
   private static function restore():void {
+   for(var commandIcon:Object in companionIcons)commandIcon.transform.matrix=companionIcons[commandIcon];companionIcons=new Dictionary(true);
    for(var object:Object in offsets){if(Math.abs(object.x-offsets[object].last)<0.001)object.x=offsets[object].base;}
    for(var edge:Object in edges)edge.visible=edges[edge];
    for(var backdrop:Object in backdrops)backdrop.scaleX=backdrops[backdrop].scale;
@@ -333,6 +357,23 @@ package {
    button.y=top;
    var base:Number=offsets[button]?offsets[button].base:button.x;
    offset(button,center-faceCenter*button.scaleX-base);
+  }
+  private static function FitCompanionCommands(game:Game):void {
+   if(!game.screenHud||!game.screenHud.mPowerButtons)return;
+   for(var index:int=6;index<=7;index++){
+    var button:class_153=game.screenHud.mPowerButtons[index];
+    if(!button||!button.var_434||!button.var_220||!button.var_220.bitmapData||!button.var_220.parent||!button.keyClip)continue;
+    if(button.var_434.powerName!="DismissPet"&&button.var_434.powerName!="Dismount")continue;
+    var icon:Bitmap=button.var_220;var parent:DisplayObjectContainer=icon.parent;
+    // Generic command icons use a different native raster path from portrait
+    // icons. Fit that existing bitmap to the key's native 44px inset, keeping
+    // the border, key label and click/cooldown handlers untouched.
+    var start:Point=parent.globalToLocal(button.keyClip.localToGlobal(new Point(2,2)));
+    var end:Point=parent.globalToLocal(button.keyClip.localToGlobal(new Point(46,46)));
+    if(end.x<=start.x||end.y<=start.y)continue;
+    if(!companionIcons[icon])companionIcons[icon]=icon.transform.matrix.clone();
+    icon.x=start.x;icon.y=start.y;icon.width=end.x-start.x;icon.height=end.y-start.y;icon.smoothing=true;
+   }
   }
   private static function PlaceBadge(badge:DisplayObject,x:Number,y:Number,factor:Number=1):void {
    if(!badge)return;if(!buttonTransforms[badge])buttonTransforms[badge]={x:badge.scaleX,y:badge.scaleY,top:badge.y};
@@ -544,12 +585,20 @@ package {
     // Normal play retains the native open silhouette around the health orb.
     // Only inspection replaces that region with a rectangular backing.
     var inspection:Sprite=new Sprite();inspection.name="blitz-inspection-backing";inspection.mouseEnabled=false;inspection.mouseChildren=false;
-    inspection.graphics.beginFill(0xa4b39c);inspection.graphics.drawRect(0,Camera.PLAY_SCREEN_HEIGHT+8,440,102);inspection.graphics.endFill();
+    // Mirror only the native chat's outer cap. Its transparent corners retain
+    // the original silhouette; no rectangular fill sits behind them.
+    var capWidth:Number=12;
+    inspection.graphics.beginFill(0xa4b39c);inspection.graphics.drawRect(capWidth,Camera.PLAY_SCREEN_HEIGHT+8,440-capWidth,102);inspection.graphics.endFill();
+    var capAsset:MovieClip=new type() as MovieClip;StopArtwork(capAsset);
+    var capClip:DisplayObjectContainer=capAsset.getChildByName("am_CacheIcon") as DisplayObjectContainer;capClip.x=0;capClip.y=0;
+    var cap:Sprite=new Sprite();cap.name="blitz-inspection-left-cap";cap.mouseEnabled=false;cap.mouseChildren=false;cap.addChild(capClip);
+    cap.scrollRect=new Rectangle(bounds.right-capWidth,bounds.y+3,capWidth,bounds.height-3);
+    cap.scaleX=-1;cap.x=capWidth;cap.y=originY+bounds.y+3;inspection.addChild(cap);
     var inspectionAsset:MovieClip=new type() as MovieClip;StopArtwork(inspectionAsset);
     var inspectionClip:DisplayObjectContainer=inspectionAsset.getChildByName("am_CacheIcon") as DisplayObjectContainer;inspectionClip.x=0;inspectionClip.y=0;
     var inspectionPlate:Sprite=new Sprite();inspectionPlate.mouseEnabled=false;inspectionPlate.mouseChildren=false;inspectionPlate.addChild(inspectionClip);
     inspectionPlate.scrollRect=new Rectangle(cuts[1],bounds.y+3,cuts[2]-cuts[1],bounds.height-3);
-    inspectionPlate.y=originY+bounds.y+3;inspectionPlate.scaleX=440/(cuts[2]-cuts[1]);inspection.addChild(inspectionPlate);hudFrame.addChild(inspection);
+    inspectionPlate.x=capWidth;inspectionPlate.y=originY+bounds.y+3;inspectionPlate.scaleX=(440-capWidth)/(cuts[2]-cuts[1]);inspection.addChild(inspectionPlate);hudFrame.addChild(inspection);
     // The original health curve keeps its complete contour, independently
     // of the straight power section which disappears during inspection.
     var asset:MovieClip=source;var clip:DisplayObjectContainer=asset.getChildByName("am_CacheIcon") as DisplayObjectContainer;clip.x=0;clip.y=0;
