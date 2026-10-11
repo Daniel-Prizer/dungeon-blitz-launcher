@@ -15,7 +15,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     if(req.url==='/assets/UI_0.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.resolve(root,'../db r/dungeon-blitz-r/src/client/content/localhost/p/cbp/UI_0.swf')));return;}
     if(req.url==='/shortcut-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/input-shortcuts/fixture.swf')));return;}
     if(req.url==='/shortcuts'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/shortcut-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
-    if(req.url==='/audio-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/audio-oct11/fixture.swf')));return;}
+    if(req.url==='/audio-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/audio-adaptive/fixture.swf')));return;}
     if(req.url==='/audio-fixture'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/audio-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
     if(req.url==='/link-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/focus/link-probe.swf')));return;}
     if(req.url==='/flash-links'){
@@ -50,7 +50,8 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     const live=await measure(privateDesktop?'native-live':'hidden-live',true);
     await until(()=>fs.existsSync(live.file),'Live capture missing');assert(fs.statSync(live.file).size>100000,'Real Flash login screen must render');
     assert(live.clientIntegration,'Reviewed live client integration must be active');
-    assert.equal(live.testClientHash,require('../src/legacy/client-layout-oct11.json').inputHash,'Fresh network must exercise the latest deployed client');
+    assert.equal(live.testClientHash,require('../src/legacy/client-deployment.json').inputHash,'Fresh network must exercise the latest deployed client');
+    assert.equal(live.testAdapterMode,'contract','Live deployment must reuse the previous reviewed hooks without its own exact-revision delta');
     assert(live.audioIntegration&&live.audioProbe?.initialized,'Live Flash client must expose its reviewed audio adapter');
     assert.deepEqual(live.audioProbe.levels,{player:1,music:1,environment:1,creatures:1});
     assert(live.geometry.rect&&Math.abs(live.geometry.rect.width*live.scale-live.size[0])<2&&Math.abs(live.geometry.rect.height*live.scale-live.size[1])<2,'Flash stage covers the complete game window');
@@ -90,6 +91,29 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       execFileSync(path.join(root,'.test-tools/WindowCapture.exe'),[owner.handle,String(owner.pid),path.join(out,'settings-native-window.png')],{windowsHide:true});
     }
     await section('Audio');
+    async function purplePixels(slider){
+      const png=await slider.screenshot();return app.evaluate(({nativeImage},data)=>{
+        const image=nativeImage.createFromBuffer(Buffer.from(data,'base64')),size=image.getSize(),pixels=image.toBitmap();let purple=0;
+        for(let x=0;x<size.width;x++){const offset=(Math.floor(size.height/2)*size.width+x)*4,b=pixels[offset],g=pixels[offset+1],r=pixels[offset+2];if(b>g*1.8&&b>r*1.3)purple++;}
+        return {purple,width:size.width};
+      },png.toString('base64'));
+    }
+    const fillCounts=[];
+    for(const value of [0,25,50,100]){
+      await page.locator('#volume-number').fill(String(value));await until(async()=>(await call('state')).settings.volume===value,'Master fill value must save');
+      const fill=await purplePixels(page.locator('#volume'));fillCounts.push(fill.purple);
+      assert(Math.abs(fill.purple-fill.width*value/100)<24,'Rendered purple width must follow the actual master slider value');
+      await page.locator('.panel').screenshot({path:path.join(out,'settings-volume-'+value+'.png')});
+    }
+    assert.equal(fillCounts[0],0,'Zero volume must have no purple track');assert(fillCounts.every((count,n)=>!n||count>fillCounts[n-1]),'Purple fill must grow from zero to full');
+    for(const bus of ['player','music','environment','creatures']){
+      const slider=page.locator('#audio-'+bus);await slider.press('Home');await until(async()=>(await call('state')).settings.audioMix[bus]===0,'Category zero must save');assert.equal((await purplePixels(slider)).purple,0);
+      await slider.press('End');await until(async()=>(await call('state')).settings.audioMix[bus]===100,'Category full must save');const full=await purplePixels(slider);assert(full.purple>full.width-24);
+    }
+    await page.locator('#volume-number').fill('37');await until(async()=>(await call('state')).settings.volume===37,'Restored master fill must save');
+    await page.locator('#done').click();await page.getByRole('button',{name:'Settings',exact:true}).click();await section('Audio');
+    assert.equal(await page.locator('#volume').inputValue(),'37');const restored=await purplePixels(page.locator('#volume'));assert(Math.abs(restored.purple-restored.width*.37)<24,'Reopened Settings must restore the persisted fill');
+    checks.push('Actual rendered purple slider fill at 0/25/50/100%, all category endpoints and saved-value restoration');
     assert(await page.locator('.wordmark').evaluate(el=>el.complete&&el.naturalWidth>0),'Actual titlebar wordmark loads');
     async function bind(code){await section('Controls');await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Shortcut capture must arm');await page.locator('#unlock-key').press(code);await until(async()=> !(await call('state')).capturingShortcut,'Shortcut capture must finish');}
     if(privateDesktop)assert.equal((await measure('hidden-in-settings')).visible,false);
