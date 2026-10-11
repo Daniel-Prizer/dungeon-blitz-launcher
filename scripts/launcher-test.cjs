@@ -57,14 +57,15 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     if(privateDesktop)assert(live.focused&&live.contentFocused&&live.geometry.focused,'Native game must be focused');
     checks.push('Original Flash renders live game; full-window input stage'+(privateDesktop?' and native input focus':''));
     await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
+    const section=name=>page.getByRole('button',{name,exact:true}).click();
     assert.equal(await page.locator('#volume').getAttribute('min'),'0');assert.equal(await page.locator('#volume').getAttribute('max'),'100');assert.equal(await page.locator('#volume').getAttribute('step'),'1');
     assert.equal(await page.locator('#volume').inputValue(),'100');assert.equal(await page.locator('#unlock-key').getAttribute('data-code'),'AltLeft');assert.equal(await page.locator('#cursor-lock').isChecked(),false);
-    assert.equal(await page.locator('#auto-updates').isChecked(),true);
+    await section('Updates');assert.equal(await page.locator('#auto-updates').isChecked(),true);
     await page.locator('#auto-updates').uncheck();await until(async()=> (await call('state')).settings.autoUpdates===false,'Update opt-out not saved');
     await page.locator('#auto-updates').check();await until(async()=> (await call('state')).settings.autoUpdates===true,'Updates not re-enabled');
     assert.equal((await call('save-settings',{autoUpdates:'yes'})).ok,false);
     checks.push('Actual automatic-update checkbox saves both choices and rejects malformed values');
-    for(const bus of ['player','music','environment','creatures']){
+    await section('Audio');for(const bus of ['player','music','environment','creatures']){
       const slider=page.locator('#audio-'+bus);assert.equal(await slider.inputValue(),'100');assert.equal(await slider.getAttribute('step'),'1');assert.equal(await slider.isEnabled(),true);
       await slider.press('Home');await until(async()=> (await call('state')).settings.audioMix[bus]===0,'Sound bus zero not saved');
       await slider.press('ArrowRight');await until(async()=> (await call('state')).settings.audioMix[bus]===1,'Sound bus one-step increment not saved');
@@ -76,12 +77,12 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     checks.push('All four category sliders start at 100, step by 1, and reach the actual live Flash audio adapter');
     assert.equal(await page.locator('#titlebar').evaluate(el=>el.getBoundingClientRect().height),32);
     assert(await page.locator('.wordmark').evaluate(el=>el.complete&&el.naturalWidth>0),'Actual titlebar wordmark loads');
-    async function bind(code){await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Shortcut capture must arm');await page.locator('#unlock-key').press(code);await until(async()=> !(await call('state')).capturingShortcut,'Shortcut capture must finish');}
+    async function bind(code){await section('Controls');await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Shortcut capture must arm');await page.locator('#unlock-key').press(code);await until(async()=> !(await call('state')).capturingShortcut,'Shortcut capture must finish');}
     if(privateDesktop)assert.equal((await measure('hidden-in-settings')).visible,false);
     await page.locator('#volume').focus();await page.locator('#volume').press('Home');await until(async()=> (await call('state')).settings.volume===0,'Volume zero not saved');
     await page.locator('#volume').press('ArrowRight');await until(async()=> (await call('state')).settings.volume===1,'Volume increment not saved');
     await page.locator('#volume-number').fill('37');await until(async()=> (await call('state')).settings.volume===37,'Volume 37 not saved');
-    await page.locator('#cursor-lock').check();await until(async()=> (await call('state')).settings.cursorLock,'Cursor checkbox not saved');
+    await section('Controls');await page.locator('#cursor-lock').check();await until(async()=> (await call('state')).settings.cursorLock,'Cursor checkbox not saved');
     await bind('F8');await until(async()=> (await call('state')).settings.unlockKey==='F8','Shortcut not saved');
     await bind('g');await until(async()=> (await call('state')).settings.unlockKey==='KeyG','Letter shortcut not saved');
     await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Capture arm');await page.locator('#unlock-key').press('F11');assert.equal((await call('state')).fullscreen,false,'Reserved F11 during capture must not enter fullscreen');await page.locator('#unlock-key').press('Escape');await until(async()=> !(await call('state')).capturingShortcut,'Escape cancels capture');assert.equal((await call('state')).settings.unlockKey,'KeyG');
@@ -107,6 +108,23 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     }
     checks.push('Actual settings controls, 0/1/37 volume, checkbox, shortcut selection and release button');
     await page.screenshot({path:path.join(out,privateDesktop?'settings-native.png':'settings.png')});
+    const initialSize=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentSize());
+    for(const size of [[800,600],[1440,900]]){
+      await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),size);await wait(300);
+      for(const section of ['Audio','Controls','Display','Connection','Updates']){
+        await page.getByRole('button',{name:section,exact:true}).click();await wait(350);
+        const layout=await page.evaluate(()=>{
+          const rect=id=>{const r=document.querySelector(id).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
+          return {height:innerHeight,width:innerWidth,panel:rect('.panel'),nav:rect('.settings-nav'),done:rect('#done'),content:rect('#settings-content'),horizontal:document.documentElement.scrollWidth>innerWidth};
+        });
+        assert.equal(layout.horizontal,false);assert(layout.panel.bottom<=layout.height&&layout.panel.top>=32);assert(layout.done.bottom<=layout.height&&layout.done.top>layout.nav.bottom,'Heading, navigation and Back to game must remain reachable');
+      }
+      await page.screenshot({path:path.join(out,`settings-${size[0]}x${size[1]}.png`)});
+    }
+    await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),initialSize);await wait(300);
+    await call('dismiss');await until(async()=>{const frame=await measure('settings-resize-restored');return frame.geometry.width===frame.viewport.width&&frame.geometry.height===frame.viewport.height;},'Returning from resized Settings must synchronize the native viewport');
+    await call('settings');await section('Display');await wait(350);
+    checks.push('Settings navigation at 800x600 and 1440x900 preserves heading/footer, fits horizontally and scrolls each section');
     await page.locator('#game-zoom').selectOption('1.5');await wait(400);const enlarged=await measure('scale-150');
     assert(enlarged.renderProbe&&live.renderProbe,'Reviewed native raster adapter must be active');
     assert.equal(enlarged.renderProbe.zoom,1.5);
@@ -127,7 +145,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     assert.equal((await call('state')).modal,null,'Escape closes launcher Settings');assert.equal((await call('state')).fullscreen,true,'Closing Settings preserves fullscreen');
     await call('exit-fullscreen');await wait(400);
     checks.push('Rendered game scale, native focus restoration, fullscreen button/F11, Escape reaches game and keeps fullscreen, Escape closes Settings without exiting fullscreen');
-    await page.getByRole('button',{name:'Settings',exact:true}).click();await page.locator('#game-url').fill('file:///C:/Windows/system.ini');await page.locator('#apply-url').click();await wait(200);assert.equal((await call('state')).settings.gameURL,LIVE);
+    await page.getByRole('button',{name:'Settings',exact:true}).click();await section('Connection');await page.locator('#game-url').fill('file:///C:/Windows/system.ini');await page.locator('#apply-url').click();await wait(200);assert.equal((await call('state')).settings.gameURL,LIVE);
     await page.locator('#game-url').fill(fixture);await page.locator('#apply-url').click();await until(async()=> (await call('state')).pendingURL,'New URL not saved');assert.equal((await call('state')).gameURL,LIVE,'URL edit must not navigate current game');
     await page.locator('#reconnect').click();await until(async()=> !(await call('state')).loading,'Fixture did not start');await wait(1000);assert.equal((await call('state')).gameURL,fixture);assert.equal((await call('state')).error,'');
     const fixtureFrame=await measure('fixture-boundaries');assert.equal(fixtureFrame.windows,1,'Popup attempt must not create another native window');assert.deepEqual({...fixtureFrame.geometry.fixture,popup:undefined},{node:'undefined',process:'undefined',launcher:'undefined',popup:undefined,blocked:true});assert(!fixtureRequests.includes('/blocked'),'Cross-origin fetch must be denied before it reaches the server');
@@ -184,7 +202,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       await clickGame(600,300);await wait(200);
       await control('play');assert.equal((await probe()).key,56,'Actual reviewed client defaults Mount to 8');assert.equal((await probe()).mountCommand,12);
       await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,'Disabled alias must do nothing');
-      await call('settings');const checkbox=page.locator('#shift-mount');await checkbox.check();await until(async()=>(await call('state')).settings.shiftMount,'Mount checkbox saves');
+      await call('settings');await section('Controls');const checkbox=page.locator('#shift-mount');await checkbox.check();await until(async()=>(await call('state')).settings.shiftMount,'Mount checkbox saves');
       assert.equal(JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'))).settings.shiftMount,true);
       assert.equal((await call('save-settings',{shiftMount:'yes'})).ok,false);assert.equal((await call('save-settings',{unlockKey:'ShiftLeft'})).ok,false,'Shortcut conflict must be explained');
       await call('dismiss');await wait(500);await control('play');await key('Shift',['left']);

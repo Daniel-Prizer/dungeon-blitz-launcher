@@ -158,8 +158,8 @@ async function start() {
   ses.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith('blitz://app/') }));
   const saved = store.data.window, display = screen.getPrimaryDisplay().workArea;
   win = new BrowserWindow({ width: Math.max(800, Math.min(saved.width || 1280, display.width)), height: Math.max(600, Math.min(saved.height || 900, display.height)),
-    minWidth: 800, minHeight: 600, show: !smoke, title: 'Dungeon Blitz Launcher', backgroundColor: '#15171c',
-    icon:path.join(__dirname,'../assets/icon.ico'),titleBarStyle: 'hidden', titleBarOverlay: { color: '#191c23', symbolColor: '#cbd1db', height: TITLEBAR_HEIGHT },
+    minWidth: 800, minHeight: 600, show: !smoke, title: 'Dungeon Blitz Launcher', backgroundColor: '#484955',
+    icon:path.join(__dirname,'../assets/icon.ico'),titleBarStyle: 'hidden', titleBarOverlay: { color: '#292e2c', symbolColor: '#d1d3bf', height: TITLEBAR_HEIGHT },
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, preload: path.join(__dirname, 'preload.cjs') } });
   Menu.setApplicationMenu(null); win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', event => event.preventDefault()); win.webContents.on('will-attach-webview', event => event.preventDefault()); win.webContents.on('before-input-event', keyboard);

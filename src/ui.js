@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-let state, settingsOpen = false, pending = Promise.resolve(), volumeTimer, recording=false;
+let state, settingsOpen = false, pending = Promise.resolve(), volumeTimer, recording=false, selectedSection=0;
 const audioBuses=['player','music','environment','creatures'];
 async function call(name, value) {
   const result = await window.blitz.action(name, value);
@@ -14,9 +14,10 @@ function save(patch) {
 function render(next) {
   state = next; const s = state.settings;
   document.body.classList.toggle('fullscreen', state.fullscreen);
-  $('waiting-text').textContent = state.error || 'Starting your game…';
+  $('waiting-text').textContent = state.error || 'Opening Dungeon Blitz…';
   $('overlay').hidden = !state.modal;
   $('settings-content').hidden = state.modal !== 'settings'; $('error-content').hidden = state.modal !== 'error';
+  document.querySelector('.settings-nav').hidden=state.modal!=='settings';
   $('panel-title').textContent = state.modal === 'error' ? 'Could not connect' : 'Settings'; $('error-text').textContent = state.error;
   $('version').textContent = `v${state.version}`;
   $('compatibility').hidden = state.clientIntegration !== false && state.audioIntegration !== false;
@@ -29,7 +30,7 @@ function render(next) {
     $('experimental-widescreen').checked=s.experimentalWidescreen;
     $('auto-updates').checked=s.autoUpdates;
     $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
-    $('dismiss').focus();
+    selectSection(selectedSection);$('dismiss').focus();
   }
   settingsOpen = state.modal === 'settings';
   if(!settingsOpen)recording=false;
@@ -54,6 +55,13 @@ function render(next) {
   $('reconnect').textContent = state.pendingURL ? 'Apply URL & reconnect' : 'Reconnect game';
 }
 $('settings').onclick = () => call('settings'); $('fullscreen').onclick = () => call('fullscreen');
+function selectSection(index){
+  selectedSection=index;
+  document.querySelectorAll('.setting').forEach((section,n)=>{section.hidden=n!==index&&!(index===1&&n===2);});
+  for(const button of document.querySelectorAll('[data-section]'))button.setAttribute('aria-pressed',String(Number(button.dataset.section)===index));
+  $('settings-content').scrollTop=0;
+}
+for(const button of document.querySelectorAll('[data-section]'))button.onclick=()=>selectSection(Number(button.dataset.section));
 for (const id of ['dismiss', 'done']) $(id).onclick = async () => { if(settingsOpen){clearTimeout(volumeTimer);await save({ volume: Number($('volume-number').value) });}await call('dismiss'); };
 $('retry').onclick = () => call('restart-game'); $('reconnect').onclick = async () => { await pending; await call('restart-game'); };
 $('apply-url').onclick = async () => { await save({ gameURL: $('game-url').value.trim() }); };

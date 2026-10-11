@@ -37,7 +37,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    assert.equal(counter.text.replace(/\r\n?/g,'\n'),Math.round(counter.fps)+' FPS\nLow '+Math.round(counter.lowFPS)+'\nHigh '+Math.round(counter.highFPS));return counter;
   }
   const hidden=await sample('live-default-hidden',true);assert.equal(hidden.renderProbe.frameCounter.shown,false);assert.equal(hidden.renderProbe.frameCounter.visible,false);
-  await call('settings');const fpsCheckbox=page.getByRole('checkbox',{name:'Show FPS counter',exact:true});assert.equal(await fpsCheckbox.isChecked(),false);
+  await call('settings');await page.getByRole('button',{name:'Display',exact:true}).click();const fpsCheckbox=page.getByRole('checkbox',{name:'Show FPS counter',exact:true});assert.equal(await fpsCheckbox.isChecked(),false);
   await fpsCheckbox.check();await until(async()=>(await call('state')).settings.showFPS);await call('dismiss');await wait(1200);
   const live=await sample('live-1080p',true),counter=measured(live);assert(counter.visible);
   await call('settings');await fpsCheckbox.uncheck();await until(async()=>!(await call('state')).settings.showFPS);await call('dismiss');await wait(700);

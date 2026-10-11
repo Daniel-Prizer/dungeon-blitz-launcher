@@ -46,7 +46,7 @@ async function until(fn){for(let i=0;i<150;i++){const v=await fn();if(v)return v
    console.log('Native raster',JSON.stringify({width,height,old:old.renderProbe,native:native.renderProbe}));
    console.log('Title-screen diagnostic timings',JSON.stringify({width,old:old.responsiveness,native:native.responsiveness}));
    for(const resolution of [.75,.5,1]){
-    await call('settings');await page.locator('#render-resolution').selectOption(String(resolution));
+    await call('settings');await page.getByRole('button',{name:'Display',exact:true}).click();await page.locator('#render-resolution').selectOption(String(resolution));
     await until(async()=>(await call('state')).settings.renderResolution===resolution);await call('dismiss');await wait(2400);
     const reduced=await capture(width+'-detail-'+resolution),probe=reduced.renderProbe;
     assert.equal(reduced.renderResolution,resolution);assert.equal(probe.animationRate,100);

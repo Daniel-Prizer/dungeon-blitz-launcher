@@ -69,8 +69,20 @@ public class DisplayPatchBuilder {
   // Change one operand only, preserving all branch/exception addresses.
   code[312]=6;body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
  }
+ static MethodBody correctCrop(ABC abc)throws Exception {
+  MethodBody body=abc.findBodyByClassAndName("SuperAnimData","method_200");
+  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("c587e8238e1571a12664a441d153dbcbacff303069dc6740c8b7ba192cbff28e"))throw new IllegalStateException("Unreviewed raster crop transform");
+  byte[] code=body.getCodeBytes().clone();
+  // Consume the clone already on the stack, then mutate that same inverse
+  // matrix through the launcher-owned helper. Keep every branch address.
+  ByteArrayOutputStream replacement=new ByteArrayOutputStream();
+  for(AVM2Instruction i:new AVM2Instruction[]{ins(0x29),ins(0x60,abc.constants.getPublicQnameId("BlitzDisplay",true)),ins(0x62,27),ins(0x62,24),ins(0x4f,abc.constants.getPublicQnameId("CorrectCrop",true),2)})replacement.write(i.getBytes());
+  if(replacement.size()>12)throw new IllegalStateException("Crop fix exceeds reviewed call range");
+  Arrays.fill(code,2415,2427,(byte)2);System.arraycopy(replacement.toByteArray(),0,code,2415,replacement.size());
+  body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
+ }
  public static void main(String[] args)throws Exception {
-  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null;
+  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null,correctedCropHash=null;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();MethodBody layout=abc.findBodyByClassAndName("Main","method_561");if(layout==null)continue;
    reviewInput(abc);
@@ -99,11 +111,12 @@ public class DisplayPatchBuilder {
    layout.setCodeBytes(code);layout.getCode();layout.max_stack=Math.max(layout.max_stack,4);layout.setModified();layout.getCode().checkValidOffsets(layout);
    boolean transition=restoreTransition(abc);MethodBody allocation=abc.findBodyByClassAndName("Game","method_1947");
    MethodBody cache=correctCacheCheck(abc);
+   MethodBody crop=correctCrop(abc);correctedCropHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(crop.getCodeBytes()));
    MethodBody reuse=correctTileReuse(abc);correctedReuseHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(reuse.getCodeBytes()));
    correctedCacheHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes()));
-   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
+   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&b!=crop&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
-   System.out.println("Verified native raster layout, rounded texture-cache check, visible tile protection and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?4:3)));
+   System.out.println("Verified native raster layout, cache, crop transform and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?5:4)));
   }
   if(changed!=1)throw new IllegalStateException("Expected exactly one reviewed layout method");
   try(OutputStream out=new FileOutputStream(args[1])){swf.saveTo(out);}
@@ -116,6 +129,8 @@ public class DisplayPatchBuilder {
    if(cache==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes())).equals(correctedCacheHash))throw new IllegalStateException("Serialized terrain cache check changed");
    MethodBody reuse=tag.getABC().findBodyByClassAndName("class_23","method_1389");
    if(reuse==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(reuse.getCodeBytes())).equals(correctedReuseHash))throw new IllegalStateException("Serialized terrain protection changed");
+   MethodBody crop=tag.getABC().findBodyByClassAndName("SuperAnimData","method_200");
+   if(crop==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(crop.getCodeBytes())).equals(correctedCropHash))throw new IllegalStateException("Serialized crop transform changed");
   }
   if(verified!=1)throw new IllegalStateException("Serialized allocator missing");
  }
