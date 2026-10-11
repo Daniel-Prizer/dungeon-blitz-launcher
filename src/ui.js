@@ -14,6 +14,7 @@ function save(patch) {
 function render(next) {
   state = next; const s = state.settings;
   document.body.classList.toggle('fullscreen', state.fullscreen);
+  $('change-character').disabled=state.loading||!!state.error;
   $('waiting-text').textContent = state.error || 'Opening Dungeon Blitz…';
   $('overlay').hidden = !state.modal;
   $('settings-content').hidden = state.modal !== 'settings'; $('error-content').hidden = state.modal !== 'error';
@@ -55,6 +56,7 @@ function render(next) {
   $('reconnect').textContent = state.pendingURL ? 'Apply URL & reconnect' : 'Reconnect game';
 }
 $('settings').onclick = () => call('settings'); $('fullscreen').onclick = () => call('fullscreen');
+$('change-character').onclick=async()=>{clearTimeout(volumeTimer);if(settingsOpen)await save({volume:Number($('volume-number').value)});await pending;await call('change-character');};
 function selectSection(index){
   selectedSection=index;
   document.querySelectorAll('.setting').forEach((section,n)=>{section.hidden=n!==index&&!(index===1&&n===2);});

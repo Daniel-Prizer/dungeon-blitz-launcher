@@ -113,6 +113,11 @@ async function action(name, value) {
     case 'fullscreen': setFullscreen(!win.isFullScreen()); break;
     case 'exit-fullscreen': setFullscreen(false); break;
     case 'restart-game': modal = null; startGame(); break;
+    case 'change-character':
+      // Reload the active origin through the game host. The original game's
+      // saved account session survives; a pending server URL is not applied.
+      if(game&&!loading){capturingShortcut=false;modal=null;error='';loading=true;game.send({type:'reload'});layout();focusGame();}
+      break;
     case 'toggle-cursor': return action('save-settings',{cursorLock:!store.data.settings.cursorLock});
     case 'check-updates': if(updater)void updater.check();break;
     case 'install-update': if(updater?.installAfterExit(true)){updater.installAfterExit=()=>false;win.close();}break;
@@ -159,7 +164,7 @@ async function start() {
   const saved = store.data.window, display = screen.getPrimaryDisplay().workArea;
   win = new BrowserWindow({ width: Math.max(800, Math.min(saved.width || 1280, display.width)), height: Math.max(600, Math.min(saved.height || 900, display.height)),
     minWidth: 800, minHeight: 600, show: !smoke, title: 'Dungeon Blitz Launcher', backgroundColor: '#484955',
-    icon:path.join(__dirname,'../assets/icon.ico'),titleBarStyle: 'hidden', titleBarOverlay: { color: '#484955', symbolColor: '#e3dba6', height: TITLEBAR_HEIGHT },
+    icon:path.join(__dirname,'../assets/icon.ico'),titleBarStyle: 'hidden', titleBarOverlay: { color: '#00000000', symbolColor: '#e3dba6', height: TITLEBAR_HEIGHT },
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, preload: path.join(__dirname, 'preload.cjs') } });
   Menu.setApplicationMenu(null); win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', event => event.preventDefault()); win.webContents.on('will-attach-webview', event => event.preventDefault()); win.webContents.on('before-input-event', keyboard);

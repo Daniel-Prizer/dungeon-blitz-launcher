@@ -10,6 +10,7 @@ for(const file of fs.readdirSync(path.join(root,'src/legacy'))){if(fs.statSync(p
 if(!process.argv.some(value=>['--focus','--render','--fps','--transition','--window','--margins'].includes(value)))execFileSync(process.execPath,[path.join(__dirname,'prepare-shortcut-fixture.cjs')],{stdio:'inherit',windowsHide:true});
 fs.writeFileSync(path.join(root,'docs/private-desktop-test.log'),'');
 execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:exe','/platform:x64',`/out:${helper}`,path.join(__dirname,'PrivateDesktop.cs')],{stdio:'inherit',windowsHide:true});
+execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:exe','/platform:x64','/reference:System.Drawing.dll','/out:'+path.join(root,'.test-tools/WindowCapture.exe'),path.join(__dirname,'WindowCapture.cs')],{stdio:'inherit',windowsHide:true});
 if(process.argv.includes('--focus'))process.env.BLITZ_PRIVATE_TEST='focus';
 if(process.argv.includes('--render'))process.env.BLITZ_PRIVATE_TEST='render';
 if(process.argv.includes('--fps'))process.env.BLITZ_PRIVATE_TEST='fps';
