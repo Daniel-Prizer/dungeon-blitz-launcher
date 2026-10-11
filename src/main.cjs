@@ -152,11 +152,11 @@ async function start() {
   const ses = session.defaultSession;
   ses.protocol.handle('blitz', request => {
     const u = new URL(request.url), name = u.pathname.slice(1);
-    if (u.hostname !== 'app' || !['index.html', 'ui.js', 'ui.css','shortcuts.js','icon.png','wordmark.png','titlebar-stone.svg'].includes(name)) return new Response('Not found', { status: 404 });
-    const file=/\.(png|svg)$/.test(name)?path.join(__dirname,'../assets',name):path.join(__dirname,name);
+    if (u.hostname !== 'app' || !['index.html', 'ui.js', 'ui.css','shortcuts.js','icon.png','wordmark.png','titlebar-stone.svg','settings-frame.svg','settings-inset.svg','nunito.ttf'].includes(name)) return new Response('Not found', { status: 404 });
+    const file=/\.(png|svg|ttf)$/.test(name)?path.join(__dirname,'../assets',name):path.join(__dirname,name);
     return new Response(fs.readFileSync(file), { headers: {
-      'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':name.endsWith('.svg')?'image/svg+xml':'text/html',
-      'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff' } });
+      'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':name.endsWith('.svg')?'image/svg+xml':name.endsWith('.ttf')?'font/ttf':'text/html',
+      'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff' } });
   });
   ses.setPermissionRequestHandler((_wc, _p, callback) => callback(false)); ses.setPermissionCheckHandler(() => false); ses.setDevicePermissionHandler(() => false);
   ses.on('will-download', event => event.preventDefault());

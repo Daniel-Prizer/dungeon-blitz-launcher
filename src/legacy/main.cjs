@@ -10,7 +10,7 @@ const {patchAudio}=require('./audio-patch.cjs');
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
 const audioDeltas=[];
-for(const name of ['audio-delta.json','audio-delta-current.json','audio-delta-latest.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
+for(const name of ['audio-delta.json','audio-delta-current.json','audio-delta-latest.json','audio-delta-oct11.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
 const LIVE = process.env.BLITZ_GAME_URL;
 function validGameAddress(value) {
   try { const u=new URL(value);return !u.username&&!u.password&&(u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname))); } catch(_){return false;}

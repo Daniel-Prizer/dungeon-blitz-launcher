@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="40" viewBox="0 0 64 40">
+  <!-- Original recessed label groove, with fixed angled ends. -->
+  <path fill="#a0b18f" d="M8 0h48l8 8v24l-8 8H8l-8-8V8z"/>
+  <path fill="#617452" d="M8 2h48l6 6v23l-6 6H8l-6-6V8z"/>
+  <path fill="#849976" d="M10 6h44l5 5v18l-5 5H10l-5-5V11z"/>
+  <path fill="none" stroke="#bac9a8" stroke-width="2" d="m3 30 5 6h48l5-6"/>
+</svg>

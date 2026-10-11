@@ -2,6 +2,16 @@
 
 The audio adapter remains available. Version 0.6.1 removes the experimental live neural enhancer because its visible benefit was too small for its capture/GPU overhead. Original native Flash rendering is the only shipped path. Neural controls, preferences, modules and models are removed; frame generation remains outside the live launcher.
 
+## Modern browser recheck (11 October 2026)
+
+Version 0.18.1 keeps the existing Flash host. A fresh unauthenticated check of [Minesa's official game page](https://dungeonblitzr.theminesa.studio/) in isolated headless Edge 155.0.4283.45 displayed **Adobe Flash Player Required**. The page still creates a Flash object; no Ruffle player, canvas or modern engine was detected. Minesa deployed another revision during this check: the final public SWF URL requests `clientrev=swf-19ac6ed7930f`, with SHA-256 `6ef9fcfc5514d5ffa9a5ef1fd008eaccbfcabf2051d2dd31a3a4629500837366`. This checks the public page, not an authenticated multiplayer session.
+
+The current [Ruffle Graphics implementation](https://github.com/ruffle-rs/ruffle/blob/master/core/src/avm2/globals/flash/display/graphics.rs) still marks `read_graphics_data` as an unimplemented method and returns an empty graphics-data vector. The reviewed game's `SuperAnimData` calls `graphics.readGraphicsData(true)` when preparing artwork. That missing API blocks a reliable migration even if the title screen renders. The [Dungeon Blitz Ruffle artwork issue](https://github.com/ruffle-rs/ruffle/issues/23938) also remains open. No new Ruffle runtime, socket bridge or experimental backend is included in this release.
+
+Run `npm run check:modern-web` for a repeatable fresh public-page probe. It uses a disposable headless browser context, no saved account/profile, and blocks local bridges, login/presence endpoints and non-read requests. Results and screenshots go to ignored `docs/modern-web-check/`. A changed page or visible modern player is a reason to investigate, not automatic proof that multiplayer works. Before changing the shipped host, separately verify artwork, sockets, saved sessions, input, category sound, native rendering and all launcher enhancements with explicitly authorized private game QA. A generic compatibility score or rendered title alone is insufficient.
+
+Settings in 0.18.1 follows the native Options menu: a chamfered sage stone frame, recessed outlined cream labels, purple sliders, gold knobs and black/gold controls. Original local SVG decorations and a bundled SIL-OFL Nunito font preserve the theme without redistributing the game's embedded proprietary font or artwork. The five panes retain a fixed frame and internal scrolling; the local protocol permits only the named assets and the CSP permits only local fonts.
+
 ## Audio
 
 The exact reviewed client SHA-256 is `7f3f40180f5d00f528c99ef7603eebdb89000dbef6ce154e2fb6695deb7c78ae`. Headless FFDec export of that client confirms `SoundManager.SetSoundVolume`, named embedded effects in `SoundManager.Play`, and separately indexed MP3 streams with individual volume controls in `method_218`, `method_103` and `method_748`. The dated 7 October live-source capture additionally identifies the music channel through `Game`'s `dbMusicVolumeInverted` setting, and another streaming channel used by `DayNightManager`.

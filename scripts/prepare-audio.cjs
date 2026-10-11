@@ -1,12 +1,12 @@
 const fs=require('node:fs'),path=require('node:path'),zlib=require('node:zlib');
 const {execFileSync}=require('node:child_process');
-const latest=process.argv.includes('--latest'),current=process.argv.includes('--current');
-if(latest&&current)throw Error('Choose one reviewed client revision');
-const suffix=latest?'-latest':current?'-current':'';
+const latest=process.argv.includes('--latest'),current=process.argv.includes('--current'),oct11=process.argv.includes('--oct11');
+if([latest,current,oct11].filter(Boolean).length>1)throw Error('Choose one reviewed client revision');
+const suffix=oct11?'-oct11':latest?'-latest':current?'-current':'';
 const root=path.resolve(__dirname,'..'),dir=path.join(root,'.test-tools/audio'+suffix),focus=path.join(root,'.test-tools/focus');fs.mkdirSync(dir,{recursive:true});
-const sourceFile=path.join(focus,latest?'latest.swf':current?'current.swf':'live.swf');
+const sourceFile=path.join(focus,oct11?'oct11.swf':latest?'latest.swf':current?'current.swf':'live.swf');
 if(!fs.existsSync(path.join(focus,'live.swf'))||!fs.existsSync(path.join(focus,'ffdec/ffdec.jar')))execFileSync(process.execPath,[path.join(__dirname,'prepare-margin-fixture.cjs')],{stdio:'inherit',windowsHide:true});
-if(current||latest)execFileSync(process.execPath,[path.join(__dirname,'prepare-margin-fixture.cjs'),'--'+(latest?'latest':'current')],{stdio:'inherit',windowsHide:true});
+if(current||latest||oct11)execFileSync(process.execPath,[path.join(__dirname,'prepare-margin-fixture.cjs'),'--'+(oct11?'oct11':latest?'latest':'current')],{stdio:'inherit',windowsHide:true});
 const crypto=require('node:crypto');
 const stamp=crypto.createHash('sha256');for(const file of [__filename,path.join(__dirname,'AudioPatchBuilder.java'),path.join(__dirname,'DisplayPatchBuilder.java'),path.join(__dirname,'audio-delta.cjs'),path.join(root,'src/legacy/BlitzAudio.as'),path.join(root,'src/legacy/BlitzFrameCounter.as'),path.join(root,'src/legacy/BlitzDisplay.as'),path.join(root,'src/legacy/client-patch.cjs'),path.join(root,'test/audio-fixture/DungeonBlitz.as'),path.join(root,'test/fps-fixture/DungeonBlitz.as'),path.join(focus,'live.swf')])stamp.update(fs.readFileSync(file));
 stamp.update(fs.readFileSync(sourceFile));stamp.update(fs.readFileSync(path.join(root,'src/legacy/client-layout'+suffix+'.json')));

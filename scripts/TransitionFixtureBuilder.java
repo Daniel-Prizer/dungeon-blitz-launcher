@@ -17,7 +17,7 @@ public class TransitionFixtureBuilder {
    ABC abc=tag.getABC();int index=abc.findClassByName("Game");if(index<0)continue;
    MethodBody allocator=abc.findBodyByClassAndName("Game","method_1947");
    String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(allocator.getCodeBytes()));
-   if(!hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))throw new IllegalStateException("Unexpected corrected allocator");
+   if(!hash.equals("87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc"))throw new IllegalStateException("Unexpected reviewed upstream allocator");
    int main=0;
    for(AVM2Instruction i:allocator.getCode().code)if(i.definition.instructionName.equals("getproperty")&&name(abc,i.operands[0]).equals("main")){main=i.operands[0];break;}
    if(main==0)throw new IllegalStateException("Missing internal main field");
@@ -40,9 +40,14 @@ public class TransitionFixtureBuilder {
     }
     if(originalCrop==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(originalCrop)).equals("c587e8238e1571a12664a441d153dbcbacff303069dc6740c8b7ba192cbff28e"))throw new IllegalStateException("Unreviewed crop baseline");
     MethodBody cropBaseline=abc.findBodyByClassAndName("SuperAnimData","method_200");cropBaseline.setCodeBytes(originalCrop);cropBaseline.getCode();
-    byte[] original=allocator.getCodeBytes().clone();Arrays.fill(original,436,474,(byte)2);
-    byte[] fixed={0x25,(byte)0x80,0x10,0x25,(byte)0x80,9};System.arraycopy(fixed,0,original,436,fixed.length);
-    if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals("baf51368e22c568f758efda185540460f7d39b5384b3ff3d6792821838fae506"))throw new IllegalStateException("Baseline reconstruction mismatch");
+    // Retain the preceding revision's actual fixed-size allocator only in
+    // this unshipped negative control. Production preserves the upstream fix.
+    MethodBody previous=null;
+    for(ABCContainerTag previousTag:new SWF(new FileInputStream(args[4]),false).getAbcList()){
+     MethodBody candidate=previousTag.getABC().findBodyByClassAndName("Game","method_1947");if(candidate!=null)previous=candidate;
+    }
+    if(previous==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(previous.getCodeBytes())).equals("baf51368e22c568f758efda185540460f7d39b5384b3ff3d6792821838fae506"))throw new IllegalStateException("Unreviewed preceding allocator baseline");
+    byte[] original=previous.getCodeBytes().clone();allocator.max_stack=previous.max_stack;
     allocator.setCodeBytes(original);allocator.getCode().checkValidOffsets(allocator);allocator.setCodeBytes(original);
    }
    if(args.length>2&&args[2].equals("cache-baseline")){

@@ -29,6 +29,7 @@ const target = path.join(root, 'runtime/game');
   execFileSync(process.execPath,[path.join(__dirname,'prepare-audio.cjs')],{stdio:'inherit',windowsHide:true});
   execFileSync(process.execPath,[path.join(__dirname,'prepare-audio.cjs'),'--current'],{stdio:'inherit',windowsHide:true});
   execFileSync(process.execPath,[path.join(__dirname,'prepare-audio.cjs'),'--latest'],{stdio:'inherit',windowsHide:true});
+  execFileSync(process.execPath,[path.join(__dirname,'prepare-audio.cjs'),'--oct11'],{stdio:'inherit',windowsHide:true});
   await asar.createPackage(path.join(root, 'src/legacy'), path.join(target, 'resources/app.asar'));
   execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe', ['/nologo', '/target:exe', '/platform:x64', '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.Web.Extensions.dll', `/out:${path.join(root, 'runtime/NativeHost.exe')}`, ...['NativeHost.cs','CursorLock.cs','GameAudio.cs','AccessibilityShortcuts.cs'].map(name=>path.join(root,'src',name))], { stdio: 'inherit' });
   const hashes = {};

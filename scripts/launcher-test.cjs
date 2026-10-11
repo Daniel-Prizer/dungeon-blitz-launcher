@@ -15,7 +15,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     if(req.url==='/assets/UI_0.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.resolve(root,'../db r/dungeon-blitz-r/src/client/content/localhost/p/cbp/UI_0.swf')));return;}
     if(req.url==='/shortcut-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/input-shortcuts/fixture.swf')));return;}
     if(req.url==='/shortcuts'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/shortcut-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
-    if(req.url==='/audio-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/audio/fixture.swf')));return;}
+    if(req.url==='/audio-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/audio-oct11/fixture.swf')));return;}
     if(req.url==='/audio-fixture'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/audio-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
     if(req.url==='/link-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/focus/link-probe.swf')));return;}
     if(req.url==='/flash-links'){
@@ -50,7 +50,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     const live=await measure(privateDesktop?'native-live':'hidden-live',true);
     await until(()=>fs.existsSync(live.file),'Live capture missing');assert(fs.statSync(live.file).size>100000,'Real Flash login screen must render');
     assert(live.clientIntegration,'Reviewed live client integration must be active');
-    assert.equal(live.testClientHash,require('../src/legacy/client-layout-latest.json').inputHash,'Fresh network must exercise the latest deployed client');
+    assert.equal(live.testClientHash,require('../src/legacy/client-layout-oct11.json').inputHash,'Fresh network must exercise the latest deployed client');
     assert(live.audioIntegration&&live.audioProbe?.initialized,'Live Flash client must expose its reviewed audio adapter');
     assert.deepEqual(live.audioProbe.levels,{player:1,music:1,environment:1,creatures:1});
     assert(live.geometry.rect&&Math.abs(live.geometry.rect.width*live.scale-live.size[0])<2&&Math.abs(live.geometry.rect.height*live.scale-live.size[1])<2,'Flash stage covers the complete game window');
@@ -77,6 +77,8 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     checks.push('All four category sliders start at 100, step by 1, and reach the actual live Flash audio adapter');
     assert.equal(await page.locator('#titlebar').evaluate(el=>el.getBoundingClientRect().height),32);
     const settingsRects=[];
+    await page.evaluate(()=>document.fonts.ready);
+    assert(await page.evaluate(()=>[...document.fonts].some(face=>face.family==='BlitzRounded'&&face.status==='loaded')),'Bundled rounded Settings font must load under the local CSP');
     for(const name of ['Audio','Controls','Display','Connection','Updates']){
       await section(name);settingsRects.push(await page.locator('.panel').boundingBox());
       await page.screenshot({path:path.join(out,'settings-'+name.toLowerCase()+'.png')});

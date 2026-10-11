@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Original vector drawing: fixed chamfered corners and layered sage stone. -->
+  <path fill="#46543e" d="M14 1h100l13 13v101l-12 12H13L1 115V14z"/>
+  <path fill="#788c6e" d="M15 4h98l11 11v98l-11 11H15L4 113V15z"/>
+  <path fill="#c1ccb5" d="M15 4h98l11 11-7 6-10-10H21L11 21l-7-6z"/>
+  <path fill="#aebda1" d="m4 15 7 6v86l10 10-6 7L4 113z"/>
+  <path fill="#5d7353" d="m124 15-7 6v86l-10 10 6 7 11-11z"/>
+  <path fill="#637858" d="m15 124 6-7h86l6 7z"/>
+  <path fill="#9caf8f" d="M21 11h86l10 10v86l-10 10H21l-10-10V21z"/>
+  <path fill="#6f8363" d="M23 15h82l8 8v82l-8 8H23l-8-8V23z"/>
+  <path fill="#b4c3a7" d="M25 18h78l7 7v78l-7 7H25l-7-7V25z"/>
+  <path fill="#879b78" d="M27 22h74l5 5v74l-5 5H27l-5-5V27z"/>
+  <path fill="none" stroke="#dde3cb" stroke-width="1.5" stroke-linecap="round" d="m16 7 5 1h82m-96 18 1 3v70m16 13 4 1h69"/>
+  <path fill="none" stroke="#5b6d51" stroke-width="2" stroke-linejoin="round" d="m7 36 5 3-1 10m105 28 5-5 2 2m-86 45 6-4 5 1m57-104-4 4 1 5"/>
+  <path fill="none" stroke="#c5d0b9" stroke-width="1" stroke-linecap="round" d="m9 38 3 3m107 31 3-3m-85 46 4-2m-94-2 3 3m4-109 2 2m103 8-2 3"/>
+</svg>
