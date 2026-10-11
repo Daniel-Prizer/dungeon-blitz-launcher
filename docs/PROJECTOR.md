@@ -1,6 +1,6 @@
 # Projector migration: experimental, not shipped
 
-The production launcher in 0.15.1 still uses the existing separate Electron 11 / Flash 32.0.0.363 host. The signed updater is a completed feature; the projector migration is not. Do not enable a weaker fallback or widen personal-data access to make a compatibility test pass.
+The production launcher in 0.16.0 still uses the existing separate Electron 11 / Flash 32.0.0.363 host. The signed updater is a completed feature; the projector migration is not. Do not enable a weaker fallback or widen personal-data access to make a compatibility test pass.
 
 ## October 10 re-evaluation
 

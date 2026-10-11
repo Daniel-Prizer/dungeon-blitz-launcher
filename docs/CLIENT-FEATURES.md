@@ -18,6 +18,10 @@ The reviewed SuperAnimData and Game drawing calls explicitly select StageQuality
 
 [Flash Browser v0.81 source](https://github.com/radubirsan/FlashBrowser/blob/e113aa4/index.js) also initializes page zoom to 1. It was inspected for comparison; the friend’s computer and an authenticated Flash Browser combat session were not tested.
 
+## Cached artwork origins in 0.16.0
+
+The reviewed SuperAnimData crop transform incorrectly translated logical coordinates by a pixel crop offset. The separate display helper now transforms that offset through the inverse matrix before translating, preserving both scale axes and rotation/shear terms. Exact original method hashes and serialized corrected bytes are checked for every supported client; all unrelated methods stay unchanged. The isolated original baseline reproduces shifted real NPC text, while corrected cached and direct-vector bounds match at five scales. The existing high-quality native drawing calls, raster budget, original game clocks and input remain intact.
+
 ## Removed neural enhancement: historical results
 
 Versions 0.5.0 and 0.6.0 tried [CuNNy](https://github.com/funnyplanter/CuNNy), a learned model, through a launcher-owned D3D11 overlay. The stronger six-pass 4x16 model reconstructed a 2× texture then fitted it to the same window size. The final display changed roughly 6% of pixels by more than six combined RGB levels, but the average per-channel difference was only about 0.46/255. This did not demonstrate a worthwhile visible upgrade.

@@ -9,6 +9,8 @@ package {
  import flash.events.Event;
  import flash.geom.Rectangle;
  import flash.geom.Point;
+ import flash.geom.Matrix;
+ import flash.utils.getQualifiedClassName;
  import flash.system.ApplicationDomain;
  import flash.utils.Dictionary;
  // Rendering only. Keep the game's own resize/cache-invalidation path; never
@@ -23,11 +25,28 @@ package {
   private static var edges:Dictionary=new Dictionary(true);
   private static var backdrops:Dictionary=new Dictionary(true);
   private static var matteScans:Dictionary=new Dictionary(true);
+  private static var sizes:Dictionary=new Dictionary(true);
+  private static var clips:Dictionary=new Dictionary(true);
+  private static var interiorLimited:Boolean=false;
+  private static var interiorClip:Rectangle;
   private static var frame:Sprite;
   private static var hudFrame:Sprite;
   private static var frameStyle:String="";
   private static const ORIGINAL_WIDTH:Number=1152;
   private static const WIDE_WIDTH:Number=768*16/9;
+  public static function CorrectCrop(matrix:Matrix,crop:Rectangle):void {
+   // Cropped raster pixels must pass through the inverse raster transform.
+   // Adding pixel units directly to logical coordinates shifts cached labels.
+   matrix.tx+=matrix.a*crop.x+matrix.c*crop.y;
+   matrix.ty+=matrix.b*crop.x+matrix.d*crop.y;
+  }
+  private static function widen(object:DisplayObject,delta:Number):void {
+   if(!object)return;var saved:Object=sizes[object];
+   if(!saved){saved={width:object.width,last:object.width};sizes[object]=saved;}
+   if(Math.abs(object.width-saved.last)>0.1)saved.width=object.width;
+   if(Math.abs(object.width-saved.width-delta)>0.1)object.width=saved.width+delta;
+   saved.last=object.width;
+  }
   public static function Attach(value:Main):void {
    main=value;
    BlitzInput.Attach(value);
@@ -78,16 +97,17 @@ package {
     if(!(child is Shape)&&!(child is Bitmap))continue;
     var saved:Object=backdrops[child];
     if(!saved){var bounds:Rectangle=child.getBounds(root);
-     if(Math.abs(bounds.width-ORIGINAL_WIDTH)>4||Math.abs(bounds.height-Camera.PLAY_SCREEN_HEIGHT)>4||Math.abs(bounds.y)>4||Math.abs(bounds.x)>4)continue;
+     if(Math.abs(bounds.width-ORIGINAL_WIDTH)>8||Math.abs(bounds.height-Camera.PLAY_SCREEN_HEIGHT)>8||Math.abs(bounds.y)>8||Math.abs(bounds.x)>8)continue;
      var origin:Point=root.globalToLocal(child.parent.localToGlobal(new Point()));var unit:Point=root.globalToLocal(child.parent.localToGlobal(new Point(1,0)));
      var parentScale:Number=unit.x-origin.x;if(!isFinite(parentScale)||parentScale<=0||Math.abs(unit.y-origin.y)>0.001)continue;
-     saved={scale:child.scaleX,width:bounds.width,left:child.getBounds(child).x,parentScale:parentScale};backdrops[child]=saved;
+     saved={scale:child.scaleX,width:bounds.width,left:child.getBounds(child).x,inset:bounds.x,parentScale:parentScale};backdrops[child]=saved;
     }
-    child.scaleX=saved.scale*(1+half*2/saved.width);
-    offset(child,-half/saved.parentScale-saved.left*(child.scaleX-saved.scale));
+    child.scaleX=saved.scale*(WIDE_WIDTH+4)/saved.width;
+    offset(child,(-half-saved.inset-2)/saved.parentScale-saved.left*(child.scaleX-saved.scale));
    }
   }
   private static function layoutScreens(game:Game,half:Number):void {
+   var upgradeSpace:Number=0;
    if(game.mUIManager&&game.mUIManager.var_1240)for each(var screen:class_32 in game.mUIManager.var_1240){
     if(!screen||!screen.mWindow||!screen.mWindow.mMovieClip)continue;
     var amount:Number=half;
@@ -98,24 +118,47 @@ package {
     if(screen==game.screenHud||screen==game.screenLinkBar||screen==game.var_1828)amount=0;
     if(screen==game.screenChat||screen==game.screenHudTopRight)amount=half*2;
     screenOffset(screen,amount);
-    if(amount==half)stretchBackdrop(screen.mWindow.mMovieClip,half);
+    if(amount==half){
+     stretchBackdrop(screen.mWindow.mMovieClip,half);
+     var upgrade:DisplayObject=screen.mWindow.mMovieClip.getChildByName("am_GlobalUpgradePanel");
+     // Building strips occupy the power section, after the health orb. Their
+     // parent menu centers, but the strip keeps this independent HUD anchor.
+     offset(upgrade,80-half);
+     if(upgrade&&upgrade.visible&&screen.mWindow.mMovieClip.visible)upgradeSpace=80;
+    }
    }
    // A mixed asset: party controls live at the upper left, utility buttons at
    // the bottom center. Move the individual party controls within that root.
-   screenOffset(game.screenHudTop,half);
+   screenOffset(game.screenHudTop,0);
    if(game.screenHudTop&&game.screenHudTop.var_2){
     var top:MovieClip=game.screenHudTop.var_2;
-    for each(var name:String in ["am_LeaveGroup","am_GroupLocked","am_GroupUnlocked"])offset(top.getChildByName(name),-half);
+    var utilities:Array=["am_Inventory","am_GoHome","am_Sigil","am_Spellbook","am_Social"];
+    for(var n:int=0;n<utilities.length;n++)offset(top.getChildByName(utilities[n]),half*2*(n+1)/6);
+    for each(var name:String in ["am_GoLeave","am_GoLeaveDungeon"])offset(top.getChildByName(name),half*2/3);
+    offset(top.getChildByName("am_GearNotify"),half/3);offset(top.getChildByName("am_SocialNotify"),half*5/3);offset(top.getChildByName("am_SocialCount"),half*5/3);
    }
    screenOffset(game.screenLinkBar,0);screenOffset(game.screenHudTopRight,half*2);
-   screenOffset(game.screenHud,0);screenOffset(game.screenChat,half*2);screenOffset(game.screenQuestTracker,half);
+   screenOffset(game.screenHud,0);screenOffset(game.screenChat,half*2);screenOffset(game.screenQuestTracker,upgradeSpace);
+   if(game.screenQuestTracker&&game.screenQuestTracker.var_2){
+    var quest:MovieClip=game.screenQuestTracker.var_2;
+    for each(name in ["am_CacheIcon","am_Selector","am_QuestName","am_QuestDesc","am_ProgressText","am_Progress"])widen(quest.getChildByName(name),half*2-upgradeSpace);
+    var contact:DisplayObjectContainer=quest.getChildByName("am_ContactMatte") as DisplayObjectContainer;
+    if(contact){for(var k:int=0;k<contact.numChildren;k++)if(contact.getChildAt(k) is Shape)widen(contact.getChildAt(k),half*2-upgradeSpace);offset(contact.getChildByName("am_Tooltip"),(half*2-upgradeSpace)/2);}
+    // This cover contains the Map button's lettering. Center it at its native
+    // size; resizing the hit matte and text fields above never scales fonts.
+    offset(quest.getChildByName("am_InitialMapCover"),(half*2-upgradeSpace)/2);
+   }
+   if(game.screenFriend&&game.screenFriend.var_26&&game.screenFriend.var_26.parent==game.var_89)offset(game.screenFriend.var_26,half);
    if(game.screenChat&&game.screenChat.var_230)offset(game.screenChat.var_230,half*2);
   }
   private static function restore():void {
+   for(var clipped:Object in clips)clipped.scrollRect=clips[clipped].original;
+   clips=new Dictionary(true);interiorLimited=false;interiorClip=null;
    for(var object:Object in offsets){if(Math.abs(object.x-offsets[object].last)<0.001)object.x=offsets[object].base;}
    for(var edge:Object in edges)edge.visible=edges[edge];
    for(var backdrop:Object in backdrops)backdrop.scaleX=backdrops[backdrop].scale;
-   offsets=new Dictionary(true);edges=new Dictionary(true);backdrops=new Dictionary(true);matteScans=new Dictionary(true);wideGame=null;
+   for(var sized:Object in sizes)if(Math.abs(sized.width-sizes[sized].last)<0.1)sized.width=sizes[sized].width;
+   offsets=new Dictionary(true);edges=new Dictionary(true);backdrops=new Dictionary(true);matteScans=new Dictionary(true);sizes=new Dictionary(true);wideGame=null;
    if(frame&&frame.parent)frame.parent.removeChild(frame);frame=null;frameStyle="";
    if(hudFrame&&hudFrame.parent)hudFrame.parent.removeChild(hudFrame);hudFrame=null;
   }
@@ -124,10 +167,13 @@ package {
   }
   private static function UpdateWidescreen(event:Event=null):void {
    if(!main||!main.stage)return;
-   // Multiple concurrent Games belong to a connection/scene handover. Keep
-   // the original layout there and on all fixed-size title/login/menu artwork.
-   var game:Game=wideRequested&&main.var_523&&main.var_523.length==1?main.var_523[0]:null;
-   if(game&&game.gameState!=Game.STATE_PLAY)game=null;
+   // Keep the active game's presentation through an actual scene transfer.
+   // A pending second Game must not produce a one-frame original-width flash.
+   var game:Game=null;
+   if(wideRequested&&main.var_523){
+    for each(var candidate:Game in main.var_523)if(candidate.gameState==Game.STATE_PLAY){game=candidate;break;}
+    if(!game&&wideGame&&main.var_523.indexOf(wideGame)>=0&&wideGame.gameState==Game.STATE_TRANSFER)game=wideGame;
+   }
    if(game!=wideGame)restore();
    var width:Number=game?WIDE_WIDTH:ORIGINAL_WIDTH;
    if(Camera.SCREEN_WIDTH!=width){
@@ -145,8 +191,28 @@ package {
    // Anchor independent screens; otherwise world labels, skull/party HUD and
    // menu hit testing all inherit an unrelated half-width translation.
    layoutScreens(game,half);
+   LimitInterior(game,half);
    if(game.edgeLayer){hideEdge(game.edgeLayer.getChildByName("am_EdgeFull"));hideEdge(game.edgeLayer.getChildByName("am_EdgeNarrow"));}
    DrawFrame(game);DrawHudFrame(game);PositionCounter();
+  }
+  private static function LimitInterior(game:Game,half:Number):void {
+   // Keep the outer frame, HUD, raster budget and clocks stable. Home's rooms
+   // share an outdoor layer; show only a centered original-width scene there
+   // rather than changing the entire window layout or fabricating scenery.
+   var limited:Boolean=Boolean(game.level&&game.level.var_333&&game.clientEnt&&game.clientEnt.currRoom&&game.clientEnt.currRoom.var_150&&
+    getQualifiedClassName(game.clientEnt.currRoom.var_150)!="a_Room_Main");
+   if(limited){
+    // A scene fade replaces the Bitmap itself. Keep each old canvas clipped
+    // through that fade, and restore every saved canvas on leaving this game.
+    if(!clips[main.var_147])clips[main.var_147]={original:main.var_147.scrollRect};
+    var rect:Rectangle=new Rectangle(half*main.overallScale,0,ORIGINAL_WIDTH*main.overallScale,main.var_147.bitmapData.height);
+    if(!main.var_147.scrollRect||!main.var_147.scrollRect.equals(rect))main.var_147.scrollRect=rect;
+    interiorClip=rect;
+    offset(main.var_147,half*main.overallScale);interiorLimited=true;
+   }else if(interiorLimited){
+    for(var clipped:Object in clips){clipped.scrollRect=clips[clipped].original;offset(clipped as DisplayObject,0);}
+    clips=new Dictionary(true);interiorLimited=false;interiorClip=null;
+   }
   }
   private static function DrawHudFrame(game:Game):void {
    if(!game.screenHud||!game.screenHud.mWindow||!game.screenHud.mWindow.mMovieClip||game.screenHud.mWindow.mMovieClip.parent!=game.var_89)return;
@@ -154,15 +220,21 @@ package {
    if(!base||!ApplicationDomain.currentDomain.hasDefinition("a_Hud"))return;
    if(!hudFrame){
     var type:Class=ApplicationDomain.currentDomain.getDefinition("a_Hud") as Class;
-    var source:MovieClip=new type() as MovieClip;source.stop();var original:DisplayObjectContainer=source.getChildByName("am_CacheIcon") as DisplayObjectContainer;
+    var source:MovieClip=new type() as MovieClip;StopArtwork(source);var original:DisplayObjectContainer=source.getChildByName("am_CacheIcon") as DisplayObjectContainer;
     if(!original)return;var bounds:Rectangle=original.getBounds(original);if(bounds.width<1100||bounds.height>150)return;
     var originX:Number=original.x;var originY:Number=original.y;
     var cuts:Array=[bounds.x,440-originX,680-originX,bounds.right];var delta:Number=WIDE_WIDTH-ORIGINAL_WIDTH;
     hudFrame=new Sprite();hudFrame.name="blitz-wide-hud-frame";hudFrame.mouseEnabled=false;hudFrame.mouseChildren=false;
+    // The old utility slots leave transparent gaps when spread apart. Keep
+    // that new center space on the original HUD's muted sage backing, beneath
+    // its vector trim and every real button; never paint over game content.
+    hudFrame.graphics.beginFill(0xa4b39c);
+    hudFrame.graphics.drawRect(440,Camera.PLAY_SCREEN_HEIGHT+2,240+delta,108);
+    hudFrame.graphics.endFill();
     // Extend only the neutral center of the original decorative HUD plate.
     // Health/power artwork and the chat end keep their original proportions.
     for(var i:int=0;i<3;i++){
-     var asset:MovieClip=i==0?source:new type() as MovieClip;asset.stop();
+     var asset:MovieClip=i==0?source:new type() as MovieClip;StopArtwork(asset);
      var clip:DisplayObjectContainer=asset.getChildByName("am_CacheIcon") as DisplayObjectContainer;clip.x=0;clip.y=0;
      var slice:Sprite=new Sprite();slice.mouseEnabled=false;slice.mouseChildren=false;slice.addChild(clip);
      slice.scrollRect=new Rectangle(cuts[i],bounds.y,cuts[i+1]-cuts[i],bounds.height);
@@ -177,7 +249,7 @@ package {
    if(!frame){
     if(!ApplicationDomain.currentDomain.hasDefinition("a_EdgeHud"))return;
     var type:Class=ApplicationDomain.currentDomain.getDefinition("a_EdgeHud") as Class;
-    var original:MovieClip=new type() as MovieClip;
+    var original:MovieClip=new type() as MovieClip;StopArtwork(original);
     var bounds:Rectangle=original.getBounds(original);
     if(bounds.width<ORIGINAL_WIDTH||bounds.height<Camera.PLAY_SCREEN_HEIGHT)return;
     frame=new Sprite();frame.name="blitz-wide-frame";frame.mouseEnabled=false;frame.mouseChildren=false;frame.tabEnabled=false;
@@ -187,7 +259,7 @@ package {
     var cuts:Array=[bounds.x,192,ORIGINAL_WIDTH-192,bounds.right];
     var delta:Number=WIDE_WIDTH-ORIGINAL_WIDTH;
     for(var i:int=0;i<3;i++){
-     var clip:MovieClip=i==0?original:new type() as MovieClip;clip.stop();
+     var clip:MovieClip=i==0?original:new type() as MovieClip;StopArtwork(clip);
      var slice:Sprite=new Sprite();slice.mouseEnabled=false;slice.mouseChildren=false;
      slice.addChild(clip);slice.scrollRect=new Rectangle(cuts[i],bounds.y,cuts[i+1]-cuts[i],bounds.height);
      slice.x=cuts[i]+(i==2?delta:0);slice.y=bounds.y;
@@ -199,6 +271,20 @@ package {
    if(frame.parent!=main)main.addChildAt(frame,main.getChildIndex(game.edgeLayer));
    if(frame.scaleX!=main.overallScale)frame.scaleX=main.overallScale;
    if(frame.scaleY!=main.overallScale)frame.scaleY=main.overallScale;
+  }
+  private static function StopArtwork(value:DisplayObject):void {
+   // Decorative clones have no game UI controller. Freeze their nested
+   // timelines too, just as the original game's static cache captures them.
+   // Stopping only the root leaves child timelines running in the live stage.
+   var movie:MovieClip=value as MovieClip;if(movie)movie.stop();
+   var container:DisplayObjectContainer=value as DisplayObjectContainer;
+   if(container)for(var i:int=0;i<container.numChildren;i++)StopArtwork(container.getChildAt(i));
+  }
+  private static function ArtworkPlaying(value:DisplayObject):Boolean {
+   var movie:MovieClip=value as MovieClip;if(movie&&movie.isPlaying)return true;
+   var container:DisplayObjectContainer=value as DisplayObjectContainer;
+   if(container)for(var i:int=0;i<container.numChildren;i++)if(ArtworkPlaying(container.getChildAt(i)))return true;
+   return false;
   }
   public static function SetZoom(value:Number,magnification:Number=1):Boolean {
    if(!isFinite(value)||value<0.5||value>3||!isFinite(magnification)||magnification<0.1||magnification>16||!main||!main.stage)return false;
@@ -227,7 +313,8 @@ package {
     widescreen:{requested:wideRequested,active:wideGame!=null,logicalWidth:Camera.SCREEN_WIDTH,
      logicalHeight:Camera.SCREEN_HEIGHT,uiOffset:wideGame&&wideGame.var_89?wideGame.var_89.x:0,
      frameAttached:Boolean(frame&&frame.parent==main),frameStyle:frameStyle,
-     frameInteractive:frame?frame.mouseEnabled||frame.mouseChildren:false}};
+     frameInteractive:frame?frame.mouseEnabled||frame.mouseChildren:false,decorationAnimating:ArtworkPlaying(frame)||ArtworkPlaying(hudFrame),interiorLimited:interiorLimited,
+     interiorSceneWidth:interiorClip?interiorClip.width/main.overallScale:null}};
   }
  }
 }

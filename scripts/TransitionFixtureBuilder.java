@@ -26,7 +26,20 @@ public class TransitionFixtureBuilder {
    ByteArrayOutputStream code=new ByteArrayOutputStream();
    for(AVM2Instruction i:new AVM2Instruction[]{new AVM2Instruction(0,0xd0,null),new AVM2Instruction(0,0x30,null),new AVM2Instruction(0,0xd0,null),new AVM2Instruction(0,0x49,new int[]{0}),new AVM2Instruction(0,0xd0,null),new AVM2Instruction(0,0xd1,null),new AVM2Instruction(0,0x61,new int[]{main}),new AVM2Instruction(0,0x47,null)})code.write(i.getBytes());
    ctor.setCodeBytes(code.toByteArray());ctor.getCode();ctor.max_stack=2;ctor.setModified();ctor.getCode().checkValidOffsets(ctor);
+   // Owned, unshipped fixture: an empty Entity supplies typed room identity,
+   // without running account/network/player initialization or any game input.
+   int entity=abc.findClassByName("Entity");
+   MethodBody entityCtor=abc.findBody(abc.instance_info.get(entity).iinit_index);
+   entityCtor.setCodeBytes(HexFormat.of().parseHex("d030d0490047"));entityCtor.getCode();entityCtor.exceptions=new com.jpexs.decompiler.flash.abc.types.ABCException[0];entityCtor.max_stack=1;entityCtor.setModified();
    if(args.length>2&&args[2].equals("baseline")){
+    SWF source=new SWF(new FileInputStream(args[3]),false);
+    byte[] originalCrop=null;
+    for(ABCContainerTag sourceTag:source.getAbcList()){
+     MethodBody crop=sourceTag.getABC().findBodyByClassAndName("SuperAnimData","method_200");
+     if(crop!=null)originalCrop=crop.getCodeBytes();
+    }
+    if(originalCrop==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(originalCrop)).equals("c587e8238e1571a12664a441d153dbcbacff303069dc6740c8b7ba192cbff28e"))throw new IllegalStateException("Unreviewed crop baseline");
+    MethodBody cropBaseline=abc.findBodyByClassAndName("SuperAnimData","method_200");cropBaseline.setCodeBytes(originalCrop);cropBaseline.getCode();
     byte[] original=allocator.getCodeBytes().clone();Arrays.fill(original,436,474,(byte)2);
     byte[] fixed={0x25,(byte)0x80,0x10,0x25,(byte)0x80,9};System.arraycopy(fixed,0,original,436,fixed.length);
     if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals("baf51368e22c568f758efda185540460f7d39b5384b3ff3d6792821838fae506"))throw new IllegalStateException("Baseline reconstruction mismatch");
