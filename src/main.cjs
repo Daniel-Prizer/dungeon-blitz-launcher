@@ -147,10 +147,10 @@ async function start() {
   const ses = session.defaultSession;
   ses.protocol.handle('blitz', request => {
     const u = new URL(request.url), name = u.pathname.slice(1);
-    if (u.hostname !== 'app' || !['index.html', 'ui.js', 'ui.css','shortcuts.js','icon.png','wordmark.png'].includes(name)) return new Response('Not found', { status: 404 });
-    const file=name.endsWith('.png')?path.join(__dirname,'../assets',name):path.join(__dirname,name);
+    if (u.hostname !== 'app' || !['index.html', 'ui.js', 'ui.css','shortcuts.js','icon.png','wordmark.png','titlebar-stone.svg'].includes(name)) return new Response('Not found', { status: 404 });
+    const file=/\.(png|svg)$/.test(name)?path.join(__dirname,'../assets',name):path.join(__dirname,name);
     return new Response(fs.readFileSync(file), { headers: {
-      'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':'text/html',
+      'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':name.endsWith('.svg')?'image/svg+xml':'text/html',
       'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff' } });
   });
   ses.setPermissionRequestHandler((_wc, _p, callback) => callback(false)); ses.setPermissionCheckHandler(() => false); ses.setDevicePermissionHandler(() => false);
@@ -159,7 +159,7 @@ async function start() {
   const saved = store.data.window, display = screen.getPrimaryDisplay().workArea;
   win = new BrowserWindow({ width: Math.max(800, Math.min(saved.width || 1280, display.width)), height: Math.max(600, Math.min(saved.height || 900, display.height)),
     minWidth: 800, minHeight: 600, show: !smoke, title: 'Dungeon Blitz Launcher', backgroundColor: '#484955',
-    icon:path.join(__dirname,'../assets/icon.ico'),titleBarStyle: 'hidden', titleBarOverlay: { color: '#292e2c', symbolColor: '#d1d3bf', height: TITLEBAR_HEIGHT },
+    icon:path.join(__dirname,'../assets/icon.ico'),titleBarStyle: 'hidden', titleBarOverlay: { color: '#484955', symbolColor: '#e3dba6', height: TITLEBAR_HEIGHT },
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, preload: path.join(__dirname, 'preload.cjs') } });
   Menu.setApplicationMenu(null); win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', event => event.preventDefault()); win.webContents.on('will-attach-webview', event => event.preventDefault()); win.webContents.on('before-input-event', keyboard);

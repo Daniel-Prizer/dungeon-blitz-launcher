@@ -1,6 +1,10 @@
 package {
  import flash.external.ExternalInterface;
  import flash.events.KeyboardEvent;
+ import flash.events.Event;
+ import flash.display.DisplayObjectContainer;
+ import flash.text.TextFormat;
+ import flash.utils.Dictionary;
  import flash.text.TextField;
  import flash.text.TextFieldType;
  // Opt-in key alias only: use the client's current keymap and original stage
@@ -8,9 +12,30 @@ package {
  public class BlitzInput {
   private static var main:Main;
   private static var registered:Boolean=false;
+  private static var shiftMount:Boolean=false;
+  private static var labels:Dictionary=new Dictionary(true);
   public static function Attach(value:Main):void {
    main=value;
-   if(!registered&&ExternalInterface.available){ExternalInterface.addCallback("BlitzMount",Mount);registered=true;}
+   if(!registered&&ExternalInterface.available){ExternalInterface.addCallback("BlitzMount",Mount);ExternalInterface.addCallback("BlitzSetMountShortcut",SetMountShortcut);registered=true;}
+   main.addEventListener(Event.ENTER_FRAME,UpdateMountLabel,false,-102,true);
+  }
+  public static function SetMountShortcut(enabled:Boolean):Boolean {shiftMount=enabled;UpdateMountLabel();return true;}
+  private static function UpdateMountLabel(event:Event=null):void {
+   if(!main||!main.var_523)return;
+   for each(var game:Game in main.var_523){
+    if(!game.screenHud||!game.screenHud.var_2)continue;
+    var powers:DisplayObjectContainer=game.screenHud.var_2.getChildByName("am_PowerButtons") as DisplayObjectContainer;
+    var mount:DisplayObjectContainer=powers?powers.getChildByName("am_Key8") as DisplayObjectContainer:null;
+    var label:TextField=mount?mount.getChildByName("am_KeyBindText") as TextField:null;
+    if(!label)continue;
+    var saved:Object=labels[label];
+    if(shiftMount){
+     if(!saved){saved={html:label.htmlText,width:label.width,format:label.defaultTextFormat};labels[label]=saved;}
+     if(label.text!="L Shift"){
+      var format:TextFormat=label.defaultTextFormat;format.size=11;label.defaultTextFormat=format;label.width=50;label.text="L Shift";label.setTextFormat(format);
+     }
+    }else if(saved){label.defaultTextFormat=saved.format;label.width=saved.width;label.htmlText=saved.html;delete labels[label];}
+   }
   }
   public static function MountKey(game:Game):int {
    if(!game||!game.mKeybindManager||game.mKeybindManager.mbStatePickKey)return 0;

@@ -185,6 +185,7 @@ public static class NativeHost {
         audioChanged.WaitOne(1000);
       }
     });audioThread.SetApartmentState(ApartmentState.MTA);audioThread.IsBackground=true;audioThread.Start();
+    var accessibility=new AccessibilityShortcuts(dryRun);
     var timer=new System.Windows.Forms.Timer();timer.Interval=15;
     timer.Tick+=(sender,eventArgs)=>{
       string line;int budget=100;
@@ -224,13 +225,14 @@ public static class NativeHost {
       if(!IsWindow(parent)||!IsWindow(child)){visible=false;UpdateCursor();Application.Exit();return;}
       IntPtr currentForeground=GetForegroundWindow();
       bool gameForeground=visible&&(currentForeground==child||IsChild(child,currentForeground));
+      accessibility.Update(gameForeground);
       if(gameForeground&&!wasGameForeground&&fullscreen)MarkGameFullscreen(taskbar,true,initResult);
       wasGameForeground=gameForeground;
       UpdateCursor();
     };
     timer.Start();
     try { Application.Run(); } finally {
-      timer.Stop();timer.Dispose();visible=false;UpdateCursor();audioRunning=false;audioChanged.Set();
+      timer.Stop();timer.Dispose();accessibility.Dispose();visible=false;UpdateCursor();audioRunning=false;audioChanged.Set();
       if(marked==true && IsWindow(child))MarkGameFullscreen(taskbar,false,initResult);
       if(taskbar!=null)Marshal.FinalReleaseComObject(taskbar);
       if(IsWindow(child))ShowWindow(child,0);
