@@ -35,7 +35,7 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
   for(const factor of [.5,.75,1,1.5]) {
    await call('save-settings',{gameZoom:factor});await wait(1300);
    const frame=await measure('scale-'+factor,true);assert(frame.clientIntegration);assert(frame.focused&&frame.contentFocused);
-   assert.equal(frame.testClientHash,require('../src/legacy/client-layout-latest.json').inputHash,'Margin focus must be tested on the newly deployed live client');
+   assert.equal(frame.testClientHash,require('../src/legacy/client-layout-oct11.json').inputHash,'Margin focus must be tested on the newly deployed live client');
    await app.evaluate(()=>{const g=global.__blitzTest.runtime();g.windowTest=null;g.testHost('TESTWINDOW');});
    const nativeWindow=await until(()=>app.evaluate(()=>global.__blitzTest.runtime().windowTest));
    assert.deepEqual(nativeWindow.actual,nativeWindow.expected,'Actual game HWND must match the viewport at every picture scale');

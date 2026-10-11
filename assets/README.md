@@ -9,6 +9,21 @@ the production PNGs trim transparent padding and the ICO contains 16, 24, 32,
 - `wordmark.png`: long Dungeon Blitz logo used in the 32px titlebar.
 - `brand-icon-source.png` and `brand-wordmark-source.png`: generated source images.
 
+## Settings controls
+
+`settings-frame.svg` and `settings-inset.svg` are original vector drawings matching
+the in-game Options menu's chamfered sage bevels and recessed label grooves. They
+are code assets, not screenshots, exported game symbols or generated bitmaps.
+
+`nunito.ttf` provides rounded, bold local UI text. It is Nunito from the Google
+Fonts repository, distributed with its unmodified SIL Open Font License in
+`Nunito-OFL.txt`. It is not the game's proprietary embedded Helvetica Rounded.
+No external font request is made by the launcher.
+
+- Source: https://github.com/google/fonts/tree/main/ofl/nunito
+- Font SHA-256: `bb55a5ca5c2042335b3991af27c4d0705d0ef41cac6164ac737fd8f2a1e85207`
+- Retrieved 11 October 2026.
+
 ## Final icon prompt
 
 Create a restrained, distinctive DB monogram logo for a Dungeon Blitz launcher. This must look like a deliberately designed small app mark, not generic AI fantasy cover art. Exact letters DB, clearly readable. Flat hand-lettered chunky angular serif shapes inspired by the old Dungeon Blitz lettering, with a little irregular character. Dark muted burnt-copper lettering, subtle desaturated deep-teal offset edge and thin charcoal outline. Low saturation, low brightness, matte colors; no pure white or bright gold. Two or three solid colors, crisp silhouette, very little detail, no texture or shiny lighting. No bevels, no gems, no swords, no shields, no crowns, no glowing effect, no decorative surround, no 3D. Only the compact DB lettering, centered and generously filling a square canvas. Transparent background. Must remain recognizable and tasteful at 24px in a slim dark titlebar and as a Windows icon.

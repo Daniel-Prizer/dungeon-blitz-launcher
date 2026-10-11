@@ -43,6 +43,10 @@ public class DisplayPatchBuilder {
   MethodBody body=abc.findBodyByClassAndName("Game","method_1947");if(body==null)throw new IllegalStateException("Missing reviewed transition canvas allocator");
   String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes()));
   if(hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))return false;
+  // October 11 upstream now sizes the transition from the preceding real
+  // canvas bitmap. Keep its complete method intact; the exact source/method
+  // hashes and real transition fixture establish compatibility separately.
+  if(hash.equals("87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc"))return false;
   if(!hash.equals("baf51368e22c568f758efda185540460f7d39b5384b3ff3d6792821838fae506"))throw new IllegalStateException("Unreviewed transition allocation method");
   // The new live client replaced precisely these 38 bytes with fixed 2048x1152
   // dimensions and padding. Restore the original Camera-size * native-scale
@@ -139,7 +143,7 @@ public class DisplayPatchBuilder {
   for(ABCContainerTag tag:saved.getAbcList()){
    MethodBody allocation=tag.getABC().findBodyByClassAndName("Game","method_1947");if(allocation==null)continue;
    String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(allocation.getCodeBytes()));
-   if(!hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"))throw new IllegalStateException("Serialized transition body changed");verified++;
+   if(!hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768")&&!hash.equals("87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc"))throw new IllegalStateException("Serialized transition body changed");verified++;
    MethodBody cache=tag.getABC().findBodyByClassAndName("class_23","method_1753");
    if(cache==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes())).equals(correctedCacheHash))throw new IllegalStateException("Serialized terrain cache check changed");
    MethodBody reuse=tag.getABC().findBodyByClassAndName("class_23","method_1389");

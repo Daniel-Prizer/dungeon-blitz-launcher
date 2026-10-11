@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.18.0** (minor: Change Character launcher button, fixed-size game-themed Settings, readable wordmark, continuous stone titlebar and native menu/icon/corner fixes).
+Version **0.18.1** (patch: Settings matches the in-game Options menu's stone frame, rounded outlined labels, purple sliders and black/gold controls; modern-browser support rechecked and October 11 game-client compatibility added).
 
 For new failures after a Minesa deployment, start with [the game-update repair guide](docs/MINESA-UPDATES.md). It explains revision checks, asset changes, private visual testing and release validation. Unknown game bytes run unchanged; saved preferences survive.
 
@@ -11,6 +11,8 @@ Rerunning this Setup checks the latest release through the same pinned signature
 The portable option remains available: run **Dungeon Blitz Launcher.exe** in this source folder, keeping the matching release folder beside it. Both root executables always correspond to the latest packaged build. Source stays in Downloads/BlitzBrowser; the historical folder name is retained. [Download the Windows installer](https://github.com/Daniel-Prizer/dungeon-blitz-launcher/releases/latest).
 
 The launcher automatically opens Minesa's live Dungeon Blitz in one isolated original Flash session. Tabs, address/search bar, homepage, bookmarks, history, downloads, browser navigation and the experimental Ruffle/socket bridge have been removed.
+
+Modern-browser playback was rechecked on 11 October 2026. Minesa's current page still renders its Flash-required fallback in current Edge; Ruffle still lacks the graphics-data API used by the game. The verified Flash host remains in use. See [the modern-web check](docs/CLIENT-FEATURES.md#modern-browser-recheck-11-october-2026).
 
 **Change Character** in the top bar reloads the current game page and returns to the original character screen using the saved game login. It retains launcher preferences and does not apply a pending server change. Settings uses a fixed frame across all five panes; longer content scrolls inside it.
 

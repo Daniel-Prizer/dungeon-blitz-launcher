@@ -4,9 +4,9 @@ test('client compatibility rejects unreviewed, malformed and oversized input',()
  for(const input of [null,'text',Buffer.alloc(0),Buffer.from('CWSnotaswf'),Buffer.alloc(3*1024*1024)])assert.equal(patchClient(input),null);
 });
 
-test('latest deployed client edits only the two reviewed presentation methods',{skip:!fs.existsSync(path.join(__dirname,'../.test-tools/focus/latest.swf'))},()=>{
- const input=fs.readFileSync(path.join(__dirname,'../.test-tools/focus/latest.swf')),out=patchClient(input);assert(out);
- const r=require('../src/legacy/client-layout-latest.json'),before=zlib.inflateSync(input.subarray(8)),after=zlib.inflateSync(out.subarray(8));
+for(const suffix of ['latest','oct11'])test(suffix+' client edits only the two reviewed presentation methods',{skip:!fs.existsSync(path.join(__dirname,'../.test-tools/focus/'+suffix+'.swf'))},()=>{
+ const input=fs.readFileSync(path.join(__dirname,'../.test-tools/focus/'+suffix+'.swf')),out=patchClient(input);assert(out);
+ const r=require('../src/legacy/client-layout-'+suffix+'.json'),before=zlib.inflateSync(input.subarray(8)),after=zlib.inflateSync(out.subarray(8));
  assert.equal(after.length,before.length+6);assert.equal(out.readUInt32LE(4),after.length+8);
  assert.equal(after[r.focus.start],0x47);assert(after.subarray(r.focus.start+1,r.focus.start+r.focus.length).every(b=>b===2));
  const normal=Buffer.concat([after.subarray(0,r.layout.start),before.subarray(r.layout.start,r.layout.start+r.layout.length),after.subarray(r.layout.start+r.layout.length+6)]);

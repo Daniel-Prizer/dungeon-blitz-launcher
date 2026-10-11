@@ -1,4 +1,6 @@
-# Experimental widescreen (0.18.0, minor)
+# Experimental widescreen (0.18.1, patch)
+
+The 11 October deployment (`clientrev=swf-19ac6ed7930f`, source SHA-256 `6ef9fcfc5514d5ffa9a5ef1fd008eaccbfcabf2051d2dd31a3a4629500837366`) has a fourth exact-hash adapter. Its Main/focus methods, semantic multiname and numeric pool prefix and required display/input/audio methods remain compatible. The upstream transition allocator now uses the preceding real bitmap's dimensions; that entire new method is preserved, rather than restoring the older allocator. New Guild Hall, dye and other upstream code/assets stay intact. Earlier reviewed revisions retain their separate adapters.
 
 Compatibility restored in 0.13.0 for the subsequently deployed live revision (`clientrev=swf-7a3486bf928a`, source SHA-256 `fdc215711de56246ce9188b71494c8b00664db66b530e9aabd51a760f9898255`). It has its own reviewed absolute offsets and independently compiled audio/display delta; both prior supported revisions remain supported. Main's layout and the focus-presentation method are whole-hash identical to the earlier client. Offline review also checks the semantic multiname and numeric constant-pool prefix, so equal instruction bytes are not accepted with different symbol bindings. The display builder separately validates terrain-cache and transition-allocator hashes and verifies unrelated method bodies remain unchanged. No upstream gameplay changes are reverted. Future unknown revisions stay unchanged and trigger a bounded signed-update check, rather than applying guessed patches.
 
