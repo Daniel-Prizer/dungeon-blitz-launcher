@@ -9,7 +9,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
  execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
  let mode='fixed';
  const server=http.createServer((req,res)=>{
-  if(['/assets/UI_0.swf','/assets/UI_0_1.swf','/assets/UI_0_2.swf','/assets/UI_0_3.swf','/assets/UI_1.swf','/assets/UI_2.swf','/assets/UI_4.swf','/assets/LevelsHome.swf','/assets/LevelsJC.swf'].includes(req.url)){
+  if(['/assets/UI_0.swf','/assets/UI_0_1.swf','/assets/UI_0_2.swf','/assets/UI_0_3.swf','/assets/UI_1.swf','/assets/UI_2.swf','/assets/UI_4.swf','/assets/UI_Library.swf','/assets/UI_Seasonal.swf','/assets/LevelsHome.swf','/assets/LevelsJC.swf'].includes(req.url)){
    // The current client's controllers require current UI assets. Falling back
    // to the archived server checkout can silently test mismatched artwork.
    const assets=process.env.BLITZ_TEST_ASSET_DIR||path.join(root,'.test-tools/wide-live-assets');
@@ -29,7 +29,10 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   async function sample(name,image=false){
    const file=path.join(out,name+'.png');if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');if(image&&fs.existsSync(file))fs.unlinkSync(file);
    await cmd({type:image?'capture':'test-geometry',path:file});await until(()=>fs.existsSync(file+'.json')&&(!image||fs.existsSync(file)));
-   const record=JSON.parse(fs.readFileSync(file+'.json'));records.push({name,...record});return record;
+   // The native writer creates the file before completing it. Existence alone
+   // races its JSON write, especially during rapid camera/transition sampling.
+   let record;await until(()=>{try{record=JSON.parse(fs.readFileSync(file+'.json'));return true;}catch{return false;}});
+   records.push({name,...record});return record;
   }
   for(mode of ['baseline','fixed']){
    await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:false});await call('restart-game');
@@ -84,21 +87,56 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   assert.equal(p.widescreen.decorationAnimating,false,'Decorative clones must not run uncontrolled child timelines');
   assert.equal(p.fixture.left,0);assert(Math.abs(p.fixture.right-(p.widescreen.logicalWidth-1152))<.051);
   assert.equal(p.widescreen.uiOffset,0);assert.equal(p.fixture.hotbar,0);assert.equal(p.fixture.nameX,600);assert.equal(p.fixture.party,174);
-  assert(Math.abs(p.fixture.chat-(p.widescreen.logicalWidth-1152))<.051);assert.equal(p.fixture.quest,0);
-  assert(Math.abs(p.fixture.social.x-370-(p.widescreen.logicalWidth-1152)/2)<.051);
+  assert(Math.abs(p.fixture.chat-(p.widescreen.logicalWidth-1152))<.051);assert.equal(p.fixture.quest,154.5);
   assert.equal(p.fixture.questTree.children.find(item=>item.name==='am_QuestName').scaleX,1,'Widen text fields without stretching fonts');
   assert.equal(p.fixture.questTree.children.find(item=>item.name==='am_InitialMapCover').scaleX,1,'Map label must preserve native proportions');
   assert.equal(p.fixture.questTree.children.find(item=>item.name==='am_ContactMatte').scaleX,1,'Widen only the contact shape, never the tooltip group');
   assert.equal(p.fixture.edgeVisible,false);
   const half=(p.widescreen.logicalWidth-1152)/2;
+  const originalEvent=originalUI.presentation.games[0].news.children;
+  const wideEvent=p.presentation.games[0].news.children;
+  for(const name of ['am_HallowsEveBadge','am_HallowsEveKeys','am_Title'])assert(Math.abs(wideEvent.find(c=>c.name===name).x-originalEvent.find(c=>c.name===name).x-half*2)<.051,'Seasonal event controls anchor right independently');
+  assert.equal(wideEvent.find(c=>c.name==='am_IconHolder').x,originalEvent.find(c=>c.name==='am_IconHolder').x,'Studio/news icon retains its left anchor');
   const left=p.fixture.left;
-  for(let i=0;i<8;i++){await wait(80);assert.equal((await sample('no-drift-'+i)).renderProbe.fixture.left,left);}
+  for(let i=0;i<8;i++){
+   await cmd({type:'test-transition-control',play:true,transition:false});await wait(80);
+   const stable=(await sample('no-drift-'+i)).renderProbe.fixture;
+   assert.equal(stable.left,left);
+   assert(Math.abs(stable.questTree.children.find(c=>c.name==='am_CacheIcon').width-240)<2,'Re-caching must preserve the original quest cache within native raster rounding');
+  }
   const startX=(p.stageWidth-p.widescreen.logicalWidth*p.nativeScale)/2,startY=(p.stageHeight-768*p.nativeScale)/2;
   const hudGap=await app.evaluate(({nativeImage},v)=>{
    const im=nativeImage.createFromPath(v.file),bytes=im.toBitmap(),w=im.getSize().width,n=(v.y*w+v.x)*4;
    return Array.from(bytes.subarray(n,n+4));
-  },{file:path.join(out,'wide-play-1440p.png'),x:Math.round(startX+600*p.nativeScale),y:Math.round(startY+760*p.nativeScale)});
-  assert.deepEqual(hudGap,[156,179,164,255],'Utility spacing must expose HUD backing rather than gray stage holes');
+  },{file:path.join(out,'wide-play-1440p.png'),x:Math.round(startX+637*p.nativeScale),y:Math.round(startY+779*p.nativeScale)});
+  assert.equal(hudGap[3],255);assert.notDeepEqual(hudGap,[85,73,72,255],'Shared quest/utility panel must cover spacing with its native backing');
+  const hud=p.fixture.hudTree.children;
+  const xpBar=hud.find(c=>c.name==='am_XPBar');assert(Math.abs(xpBar.width*xpBar.scaleX-548.5)<1,'XP continues beneath the full companion ornament');
+  const companion=hud.find(c=>c.name==='blitz-companion-frame').children.find(c=>c.type==='flash.display::Bitmap');assert(companion.x>=441&&companion.x+companion.width*companion.scaleX<439.25+p.fixture.quest,'Companion ornament must clear both the ability recess and quest panel');
+  const companionLip=hud.find(c=>c.name==='blitz-companion-frame').children.find(c=>c.name==='blitz-companion-lower-lip');assert(companionLip&&companionLip.height<=4,'Companion underside must be a slim bevel including its one-pixel Flash stroke, not another meter');
+  const powerButtons=hud.find(c=>c.name==='am_PowerButtons').children;
+  const buttonWidth=c=>c.width*c.scaleX;assert(Math.abs(buttonWidth(powerButtons[6])-buttonWidth(powerButtons[0]))<1&&Math.abs(buttonWidth(powerButtons[7])-buttonWidth(powerButtons[0]))<1,'Pet and mount match native ability size');
+  assert.equal(powerButtons[6].y,0);assert.equal(powerButtons[7].y,0);
+  const utility=p.fixture.topTree.children.find(c=>c.name==='am_Inventory');
+  assert(utility.y>747&&utility.y<748,'Utilities clear the quest progress line');
+  await cmd({type:'test-transition-control',play:true,transition:false,menu:'no-direction'});await wait(150);
+  const noDirectionUI=(await sample('wide-direction-placeholder',true)).renderProbe.fixture;
+  const noDirection=noDirectionUI.questTree.children;
+  const dash=noDirection.find(c=>c.name==='blitz-direction-placeholder');
+  assert.equal(dash.visible,true);
+  const rowFaces=[{left:noDirectionUI.quest+dash.x+dash.bx*dash.scaleX,width:dash.width*dash.scaleX}];
+  for(const name of ['am_Inventory','am_GoHome','am_Sigil','am_Spellbook','am_Social']){
+    const button=noDirectionUI.topTree.children.find(c=>c.name===name),face=button.children.find(c=>c.name==='am_CacheIcon');
+    rowFaces.push({left:button.x+(face.x+face.bx*face.scaleX)*button.scaleX,width:face.width*face.scaleX*button.scaleX});
+  }
+  const rowGaps=rowFaces.slice(1).map((face,i)=>face.left-rowFaces[i].left-rowFaces[i].width);
+  assert(Math.max(...rowGaps)-Math.min(...rowGaps)<.15,'Direction placeholder and five native button faces must have equal visible spacing; tooltips must not affect the row');
+  const beforeResource=hud.find(c=>c.name==='am_ManaBar').width;
+  await call('save-settings',{shiftMount:true});await wait(1200);
+  const shortcut=(await sample('wide-shift-mount',true)).renderProbe.fixture;
+  assert.equal(shortcut.mountLabel,'L Shift');assert(shortcut.mountTextWidth<shortcut.mountLabelWidth-2,'Mount key hint must fit without clipping');
+  assert.equal(shortcut.hudTree.children.find(c=>c.name==='am_ManaBar').width,beforeResource,'Resource bars remain unchanged');
+  await call('save-settings',{shiftMount:false});await wait(500);assert.equal((await sample('wide-original-mount-label')).renderProbe.fixture.mountLabel,'8');
   for(const menu of ['idols','trove']){
    await cmd({type:'test-transition-control',play:true,transition:false,menu});await wait(350);const shown=(await sample('wide-menu-'+menu,true)).renderProbe.fixture;
    assert.equal(shown.idolsVisible,menu==='idols');assert.equal(shown.troveVisible,menu==='trove');assert(shown[menu].x<2);assert(shown[menu].x+shown[menu].width>p.widescreen.logicalWidth-2,'Original menu matte must cover the entire widened view');assert(Math.abs(shown.idolPanelWidth-originalUI.fixture.idolPanelWidth)<.061);assert(Math.abs(shown.trovePedestalWidth-originalUI.fixture.trovePedestalWidth)<.061,'Widening a matte must not stretch the trove pedestal artwork');
@@ -112,10 +150,16 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   for(const menu of ['barn','tome','social']){
    await cmd({type:'test-transition-control',play:true,transition:false,menu});await wait(350);
    const shown=(await sample('wide-menu-'+menu,true)).renderProbe.fixture;
-   assert(Math.abs(shown.social.x-370-half)<.051);
+   if(menu==='social')assert(Math.abs(shown.social.x+(shown.social.bx+shown.social.width/2)*shown.social.scaleX-p.widescreen.logicalWidth/2)<.1,'Social panel must center from its actual bounds');
+   if(menu!=='social'){
+    assert.equal(shown.hudTree.children.find(c=>c.name==='blitz-companion-frame').visible,false,'Upgrade strips must hide the companion decoration without leaving gold fragments');
+    assert.equal(shown.hudTree.children.find(c=>c.name==='am_PowerButtons').visible,false,'Building strips must leave no partial companion buttons or active hit fragments');
+    for(const name of ['am_HPBar','am_HPText','am_LevelText','am_ManaBar','am_ClassManaBar','am_ManaText','am_ClassManaText','am_XPBar','am_XPContact'])assert.equal(shown.hudTree.children.find(c=>c.name===name).visible,false,'Building inspection replaces the complete combat/XP panel: '+name);
+   }else for(const name of ['am_PowerButtons','am_HPBar','am_HPText','am_LevelText','am_ManaBar','am_ClassManaBar','am_ManaText','am_ClassManaText','am_XPBar','am_XPContact'])assert.equal(shown.hudTree.children.find(c=>c.name===name).visible,true,'The native combat HUD restores when a building strip closes: '+name);
    const strip=shown.barn.children.find(item=>item.name==='am_GlobalUpgradePanel');
-   assert(strip);assert(Math.abs(strip.x+half+16-80)<.2,'Mixed building upgrade strip must clear the health orb');
-   assert.equal(shown.quest,menu==='social'?0:80,'Quest panel must reserve the building strip without moving chat');
+   assert(strip);assert(Math.abs(strip.x+shown.barn.x)<.2,'Mixed building upgrade strip must start at the left edge of the HUD');
+   if(menu!=='social')assert(Math.abs(shown.quest-Math.max(154.5,10+strip.width-439.25))<.1,'Quest must retain padding beside the actual building strip');
+   else assert.equal(shown.quest,154.5);
   }
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(250);
   await cmd({type:'test-transition-control',play:true,transition:false,menu:'map'});await wait(350);
@@ -127,6 +171,12 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    await wait(60);const transferring=(await sample('actual-transfer-'+i)).renderProbe;
    assert.equal(transferring.widescreen.logicalWidth,p.widescreen.logicalWidth,'A pending login Game cannot narrow the active transfer frame');
    assert.equal(transferring.widescreen.active,true);
+  }
+  for(const phase of ['Login','None','Transfer']){
+   await cmd({type:'test-transition-control',play:false,transition:true,phase});await wait(150);
+   const loading=(await sample('loading-phase-'+phase,true)).renderProbe;
+   assert.equal(loading.widescreen.logicalWidth,p.widescreen.logicalWidth,'Every live loading phase must preserve the wide frame');
+   assert.equal(loading.widescreen.active,true);
   }
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(250);
   for(const logical of [20,p.widescreen.logicalWidth/2,p.widescreen.logicalWidth-20]){
@@ -176,12 +226,24 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await call('save-settings',{gameZoom:1});await wait(800);
   await call('fullscreen');await wait(800);assert((await sample('wide-fullscreen',true)).renderProbe.widescreen.active);
   await call('exit-fullscreen');await wait(800);
-  for(const art of ['a_Room_Library','a_Room_Stables']){
+  for(const art of ['a_Room_GreatHall','a_Room_Library','a_Room_Armory','a_Room_Stables']){
    await cmd({type:'test-world-control',pan:0,vertical:0,scene:true,oldCoverage:false,art});await wait(1000);
    const inside=(await sample('safe-interior-'+art,true)).renderProbe;
    assert.equal(inside.fixture.worldError,'');assert(inside.fixture.worldFrames>=3);
    assert.equal(inside.widescreen.requested,true);assert.equal(inside.widescreen.active,true);assert.equal(inside.widescreen.logicalWidth,p.widescreen.logicalWidth,'Home interiors must preserve the outer frame/HUD dimensions');
-   assert.equal(inside.widescreen.interiorLimited,true);assert.equal(inside.widescreen.interiorSceneWidth,1152);
+   assert.equal(inside.widescreen.interiorLimited,false,'No world clipping may conceal the player at either room edge');
+   assert.equal(inside.presentation.canvas.width,inside.bitmapWidth);
+   assert.equal(inside.fixture.roomInRootDomain,false,'Level art must live in a separate child asset domain, as in multiplayer');
+   assert.equal(inside.fixture.worldError,'','Room rendering must not throw when its symbol is absent from the UI domain');
+   if(['a_Room_GreatHall','a_Room_Library'].includes(art)){
+    assert(inside.widescreen.roomWings?.visible,'Room backing must resolve its artwork from the owning level domain');
+    const uncovered=await app.evaluate(({nativeImage},v)=>{
+     const im=nativeImage.createFromPath(v.file),bytes=im.toBitmap(),width=im.getSize().width;
+     const originX=(v.stageWidth-v.logicalWidth*v.scale)/2,originY=(v.stageHeight-768*v.scale)/2;
+     return [200,335,600].map(row=>{let count=0;const y=Math.round(originY+row*v.scale);for(let x=Math.ceil(originX+8*v.scale);x<originX+(v.logicalWidth-8)*v.scale;x++){const n=(y*width+x)*4;if(bytes[n]===189&&bytes[n+1]===214&&bytes[n+2]===180)count++;}return count;});
+    },{file:path.join(out,'safe-interior-'+art+'.png'),stageWidth:inside.stageWidth,stageHeight:inside.stageHeight,logicalWidth:inside.widescreen.logicalWidth,scale:inside.nativeScale});
+    assert(uncovered.every(count=>count<3),'Passive room wings must cover transparent edge bands, not leave outdoor fixture color');
+   }
   }
   await cmd({type:'test-world-control',pan:0,vertical:0,scene:true,oldCoverage:false,art:'a_Room_Main'});await wait(1000);
   assert((await sample('wide-resumes-outdoors',true)).renderProbe.widescreen.active);
@@ -190,7 +252,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await call('settings');await checkbox.uncheck();await until(async()=>!(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1000);
   p=(await sample('restored-original',true)).renderProbe;assert.equal(p.widescreen.logicalWidth,1152);assert.equal(p.fixture.left,0);assert.equal(p.fixture.right,0);assert.equal(p.fixture.hotbar,0);assert.equal(p.fixture.chat,0);assert(Math.abs(p.fixture.idols.width-1154.9)<.061,'Restored matte geometry must agree within Flash twip quantization');assert.equal(p.fixture.edgeVisible,true);
   await call('save-settings',{experimentalWidescreen:true});await wait(1100);await cmd({type:'test-transition-control',play:false,transition:false});await wait(1000);
-  assert.equal((await sample('return-to-menu',true)).renderProbe.widescreen.logicalWidth,1152);
+  assert.equal((await sample('return-to-menu',true)).renderProbe.widescreen.logicalWidth,1152+half*2,'Loading Login phases after play keep their viewport');
   // An unmodified live title screen validates revision compatibility/menu art.
   await call('save-settings',{gameURL:'https://dungeonblitzr.theminesa.studio/',gameZoom:1,renderResolution:1});await call('restart-game');
   await until(async()=>!(await call('state')).loading&&(await call('state')).clientIntegration);await wait(5000);
@@ -198,7 +260,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await call('save-settings',{experimentalWidescreen:false});
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:(await call('state')).version,records,limits:'Inactive desktop/software rendering. Actual original class_23 terrain cache and Game.method_1946 with an owned striped scene and original Home/UI vector assets; test-only UI wiring skips network and player initialization. Live unauthenticated title only. Small disposable cache pool; tied timestamps belong to the owned fixture clock only. No authenticated combat, credentials, desktop switching or pointer confinement.'},null,2));
   console.log('PASS Actual transition allocator baseline reproduces fixed 2048x1152 mismatch; corrected dimensions match native view at 1080p/1440p');
-  console.log('PASS Experimental setting defaults off, validates booleans, widens logical view to 16:9 only in play, preserves clocks and restores menu/HUD geometry');
+  console.log('PASS Experimental setting defaults off, validates booleans, retains 16:9 through all travel phases, preserves clocks and restores original HUD geometry on opt-out');
   console.log('PASS Widescreen input coordinates at left/center/right, no HUD drift, click-through frame, 50/75/100% raster and transitions; live title unaffected');
   console.log('PASS Baseline rebuilds terrain cache every frame; fixed renderer reuses it. Old column coverage reproduces right-edge gaps; six columns paint every sampled pixel across six camera offsets and three detail levels');
   console.log('PASS Original ornate border vector assets and offline Home art render through the actual terrain-cache/Game drawing path');

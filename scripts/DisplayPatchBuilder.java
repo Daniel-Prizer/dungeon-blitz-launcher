@@ -81,8 +81,22 @@ public class DisplayPatchBuilder {
   Arrays.fill(code,2415,2427,(byte)2);System.arraycopy(replacement.toByteArray(),0,code,2415,replacement.size());
   body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
  }
+ static MethodBody prepareCanvas(ABC abc)throws Exception {
+  MethodBody body=abc.findBodyByClassAndName("Game","method_1946");
+  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("b4b11cb421ae24a79159618ae97677525949be0d0ac8da653ed2b0349f1946c9"))throw new IllegalStateException("Unreviewed final-canvas draw method");
+  byte[] code=body.getCodeBytes().clone();
+  if(!Arrays.equals(Arrays.copyOfRange(code,4,21),HexFormat.of().parseHex("100b00009207d20805c20c6310920f6312")))throw new IllegalStateException("Canvas entry guard mismatch");
+  // The original entry pushes false/true, stores true in local 17, jumps
+  // across dead obfuscator instructions and stores false in local 18. Keep
+  // both locals and every later address; add only a presentation callback.
+  ByteArrayOutputStream call=new ByteArrayOutputStream();
+  for(AVM2Instruction i:new AVM2Instruction[]{ins(0x63,18),ins(0x60,abc.constants.getPublicQnameId("BlitzDisplay",true)),ins(0xd0),ins(0x4f,abc.constants.getPublicQnameId("PrepareFrame",true),1)})call.write(i.getBytes());
+  if(call.size()>17)throw new IllegalStateException("Canvas entry call exceeds reviewed range");
+  Arrays.fill(code,4,21,(byte)2);System.arraycopy(call.toByteArray(),0,code,4,call.size());
+  body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
+ }
  public static void main(String[] args)throws Exception {
-  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null,correctedCropHash=null;
+  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null,correctedCropHash=null,canvasHash=null;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();MethodBody layout=abc.findBodyByClassAndName("Main","method_561");if(layout==null)continue;
    reviewInput(abc);
@@ -111,12 +125,13 @@ public class DisplayPatchBuilder {
    layout.setCodeBytes(code);layout.getCode();layout.max_stack=Math.max(layout.max_stack,4);layout.setModified();layout.getCode().checkValidOffsets(layout);
    boolean transition=restoreTransition(abc);MethodBody allocation=abc.findBodyByClassAndName("Game","method_1947");
    MethodBody cache=correctCacheCheck(abc);
+   MethodBody canvas=prepareCanvas(abc);canvasHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canvas.getCodeBytes()));
    MethodBody crop=correctCrop(abc);correctedCropHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(crop.getCodeBytes()));
    MethodBody reuse=correctTileReuse(abc);correctedReuseHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(reuse.getCodeBytes()));
    correctedCacheHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes()));
-   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&b!=crop&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
+   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&b!=crop&&b!=canvas&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
-   System.out.println("Verified native raster layout, cache, crop transform and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?5:4)));
+   System.out.println("Verified native raster layout, cache, crop transform, canvas preparation and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?6:5)));
   }
   if(changed!=1)throw new IllegalStateException("Expected exactly one reviewed layout method");
   try(OutputStream out=new FileOutputStream(args[1])){swf.saveTo(out);}
@@ -131,6 +146,8 @@ public class DisplayPatchBuilder {
    if(reuse==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(reuse.getCodeBytes())).equals(correctedReuseHash))throw new IllegalStateException("Serialized terrain protection changed");
    MethodBody crop=tag.getABC().findBodyByClassAndName("SuperAnimData","method_200");
    if(crop==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(crop.getCodeBytes())).equals(correctedCropHash))throw new IllegalStateException("Serialized crop transform changed");
+   MethodBody canvas=tag.getABC().findBodyByClassAndName("Game","method_1946");
+   if(canvas==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canvas.getCodeBytes())).equals(canvasHash))throw new IllegalStateException("Serialized final-canvas entry changed");
   }
   if(verified!=1)throw new IllegalStateException("Serialized allocator missing");
  }

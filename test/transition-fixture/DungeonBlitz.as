@@ -44,16 +44,22 @@ package {
   private var extraMenus:Array=[];
   private var labelProbes:Array=[];
   private var sceneTree:Object;
+ private var levelDomains:Object={};
   public function DungeonBlitz(){if(stage)setup();else addEventListener(Event.ADDED_TO_STAGE,setup);}
   private function setup(event:Event=null):void {
    stage.scaleMode=StageScaleMode.NO_SCALE;stage.align=StageAlign.TOP_LEFT;stage.frameRate=30;
    graphics.beginFill(0x484955);graphics.drawRect(0,0,10000,10000);graphics.endFill();
-   for each(var asset:String in ["UI_0.swf","UI_0_1.swf","UI_0_2.swf","UI_0_3.swf","UI_1.swf","UI_2.swf","UI_4.swf","LevelsHome.swf","LevelsJC.swf"]){
+   for each(var asset:String in ["UI_0.swf","UI_0_1.swf","UI_0_2.swf","UI_0_3.swf","UI_1.swf","UI_2.swf","UI_4.swf","UI_Library.swf","UI_Seasonal.swf","LevelsHome.swf","LevelsJC.swf"]){
     var loader:Loader=new Loader();loader.contentLoaderInfo.addEventListener(Event.COMPLETE,assetLoaded);
-    loader.load(new URLRequest("/assets/"+asset),new LoaderContext(false,ApplicationDomain.currentDomain));
+    var domain:ApplicationDomain=ApplicationDomain.currentDomain;
+    if(asset.indexOf("Levels")==0){
+     domain=new ApplicationDomain(ApplicationDomain.currentDomain);
+     levelDomains[asset]=domain;ResourceManager.const_40[asset]=loader.contentLoaderInfo;
+    }
+    loader.load(new URLRequest("/assets/"+asset),new LoaderContext(false,domain));
    }
   }
-  private function assetLoaded(event:Event):void {if(++loaded==9)start();}
+  private function assetLoaded(event:Event):void {if(++loaded==11)start();}
   private function start():void {
    main=new Main();addChild(main);main.method_1634();main.method_561(stage.stageWidth,stage.stageHeight);
    game=new Game(main);game.gameState="Login";main.var_523=new Vector.<Game>();main.var_523.push(game);
@@ -71,6 +77,8 @@ package {
    for each(absent in ["am_SoundOff","am_PotionContainer"])game.screenHudTopRight.var_2[absent].visible=false;
    game.screenHudTopRight.var_2.am_Gold.text="45,884";game.screenHudTopRight.var_2.am_Idols.text="10";
    game.screenLinkBar.var_2.am_AboutBox.visible=false;
+   game.var_1828=new class_132(game);attach(game.var_1828,"a_NewsHUD");
+   game.var_1828.var_2.am_Tooltip.visible=false;
    game.screenHud=new class_58(game);attach(game.screenHud,"a_Hud");
    game.screenHud.OnCreateScreen();
    game.screenHud.var_2217.mHealthPerc=1;game.screenHud.var_2217.TickMovieClip();
@@ -109,7 +117,7 @@ package {
    for each(var name:String in ["a_Hud","a_HudTop","a_HudTopRight","a_ScreenChat","a_QuestTracker","a_MammothIdolWindow","a_ScreenLockBoxAD","a_RespawnWindow","a_FloaterSlugline","a_NewsHUD","a_Room_Main","a_ScreenBarn","a_ScreenTome","a_FriendWindow","a_PlayerName","a_StorePetWindow"]){
     if(ApplicationDomain.currentDomain.hasDefinition(name)){var type:Class=ApplicationDomain.currentDomain.getDefinition(name) as Class;assets.push(tree(new type(),3));}
    }
-   var rooms:Array=[];for each(var definition:String in ApplicationDomain.currentDomain.getQualifiedDefinitionNames())if(definition.indexOf("a_Room_")==0){var roomType:Class=ApplicationDomain.currentDomain.getDefinition(definition) as Class;rooms.push(tree(new roomType(),0));}
+   var rooms:Array=[];for each(var roomDomain:ApplicationDomain in levelDomains)for each(var definition:String in roomDomain.getQualifiedDefinitionNames())if(definition.indexOf("a_Room_")==0){var roomType:Class=roomDomain.getDefinition(definition) as Class;rooms.push(tree(new roomType(),0));}
    assets.push({rooms:rooms});
    addEventListener(Event.ENTER_FRAME,draw,false,-102);
    stage.addEventListener(MouseEvent.MOUSE_DOWN,mouse);
@@ -135,9 +143,10 @@ package {
    clip.graphics.beginFill(0x343b30);clip.graphics.lineStyle(2,0x878d72);clip.graphics.drawRect(0,0,w,h);clip.graphics.endFill();
    var label:TextField=new TextField();label.text=text;label.textColor=0xe5dec7;label.width=w;label.height=h;label.mouseEnabled=false;clip.addChild(label);game.var_89.addChild(clip);return clip;
   }
-  private function control(play:Boolean,transition:Boolean,menu:String="none",transfer:Boolean=false):Boolean {
+  private function control(play:Boolean,transition:Boolean,menu:String="none",transfer:Boolean=false,phase:String=""):Boolean {
    if(pending){main.var_523.splice(main.var_523.indexOf(pending),1);pending=null;}
    game.gameState=transfer?Game.STATE_TRANSFER:(play?Game.STATE_PLAY:"Login");
+   if(phase=="Login"||phase=="None"||phase=="Transfer")game.gameState=phase;
    if(transfer){pending=new Game(main);pending.gameState="Login";main.var_523.push(pending);}
    if(!transition)worldEnabled=false;
    game.screenBuyIdols.mWindow.mMovieClip.visible=menu=="idols";game.screenLockBox.mWindow.mMovieClip.visible=menu=="trove";
@@ -146,10 +155,12 @@ package {
    if(menu=="map")game.screenQuestTracker.var_1990.Show(true);else game.screenQuestTracker.var_1990.Hide(true);
    game.screenQuestTracker.var_2.am_ContactMatte.alpha=1;
    game.screenQuestTracker.var_2.am_ContactMatte.am_Tooltip.visible=menu=="map";
-   game.screenQuestTracker.var_2.am_ArrowWrapper.visible=menu!="map";
+   game.screenQuestTracker.var_2.am_ArrowWrapper.visible=menu!="map"&&menu!="no-direction";
    game.screenQuestTracker.var_2.am_QuestName.visible=menu!="map";
    game.screenQuestTracker.var_2.am_QuestDesc.visible=menu!="map";
    game.screenQuestTracker.var_2.am_ProgressText.visible=menu!="map";
+   // Exercise the original re-cache path repeatedly, as live UI refreshes do.
+   game.screenQuestTracker.mWindow.method_298();
    if(transition){game.mTimeThisTick=1000;game.method_1947();}
    return true;
   }
@@ -167,9 +178,9 @@ package {
    game.level=new Level(game);game.level.var_59=new MovieClip();game.level.var_1090=new Rectangle(-576,-668,32768,4008);
    game.clientEnt=null;
    if(!scene)for(var x:int=-576;x<32192;x+=64){game.level.var_59.graphics.beginFill(color(x));game.level.var_59.graphics.drawRect(x,-668,64,4008);game.level.var_59.graphics.endFill();}
-   else {game.level.var_59.graphics.beginFill(0xb4d6bd);game.level.var_59.graphics.drawRect(-576,-668,32768,4008);game.level.var_59.graphics.endFill();}
    if(scene){
-    var type:Class=ApplicationDomain.currentDomain.getDefinition(art) as Class;
+    game.level.levelFileName=art.indexOf("a_Room_JC")==0?"LevelsJC.swf":"LevelsHome.swf";
+    var type:Class=levelDomains[game.level.levelFileName].getDefinition(art) as Class;
     var room:MovieClip=new type() as MovieClip;room.stop();
     cleanArt(room);sceneTree=tree(room,3);
     var bounds:Rectangle=visibleBounds(room,room);room.x=-bounds.x+64;room.y=668-bounds.bottom;
@@ -178,7 +189,9 @@ package {
     game.clientEnt=new Entity(game,"",null,0,0,0,0,0,0,0,null,null,"",null,null,null);
     game.clientEnt.currRoom=new Room(game,room);
    }
-   game.var_1040=new Sprite();game.levelLayer=new Sprite();game.var_1040.addChild(game.levelLayer);
+   game.var_1040=new Sprite();
+   if(scene){var outside:Sprite=new Sprite();outside.graphics.beginFill(0xb4d6bd);outside.graphics.drawRect(0,0,Camera.SCREEN_WIDTH,668);outside.graphics.endFill();game.var_1040.addChild(outside);}
+   game.levelLayer=new Sprite();game.var_1040.addChild(game.levelLayer);
    game.playerEntLayer=new Sprite();game.var_107=new class_23(game);game.levelLayer.addChild(game.var_107.var_343);
    game.screenMap=new class_119(game);
    cacheIdentity=game.var_107.var_986;cacheRebuilds=0;worldFrames=0;pixelErrors=0;worldError="";
@@ -205,7 +218,7 @@ package {
    var bounds:Rectangle=value.getBounds(value);var children:Array=[];var container:DisplayObjectContainer=value as DisplayObjectContainer;
    if(depth>0&&container)for(var i:int=0;i<container.numChildren;i++)children.push(tree(container.getChildAt(i),depth-1));
    var movie:MovieClip=value as MovieClip;
-   return {type:getQualifiedClassName(value),name:value.name,x:value.x,y:value.y,width:bounds.width,height:bounds.height,bx:bounds.x,by:bounds.y,scaleX:value.scaleX,scaleY:value.scaleY,visible:value.visible,alpha:value.alpha,frames:movie?movie.totalFrames:0,labels:movie?movie.currentLabels:null,children:children};
+   return {type:getQualifiedClassName(value),name:value.name,x:value.x,y:value.y,width:bounds.width,height:bounds.height,bx:bounds.x,by:bounds.y,scaleX:value.scaleX,scaleY:value.scaleY,visible:value.visible,alpha:value.alpha,frames:movie?movie.totalFrames:0,labels:movie?movie.currentLabels:null,children:children,text:value is TextField?TextField(value).text:null,textWidth:value is TextField?TextField(value).textWidth:0};
   }
   private function drawWorld():void {
    try{
@@ -240,7 +253,8 @@ package {
     hotbar:game.screenHud.mWindow.mMovieClip.x,chat:game.screenChat.mWindow.mMovieClip.x,quest:game.screenQuestTracker.mWindow.mMovieClip.x,party:game.var_89.getChildByName("fixture-party").x,nameX:game.var_89.getChildByName("NPC name").x,
     idols:game.screenBuyIdols.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),trove:game.screenLockBox.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),
     idolPanelWidth:game.screenBuyIdols.mWindow.mMovieClip.getChildByName("am_Panel").getBounds(game.var_89).width,trovePedestalWidth:MovieClip(game.screenLockBox.mWindow.mMovieClip.getChildAt(0)).getChildAt(1).getBounds(game.var_89).width,
-    scene:sceneTree,labels:labelProbes,social:tree(game.screenFriend.var_26,0),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,1),
+    scene:sceneTree,roomInRootDomain:ApplicationDomain.currentDomain.hasDefinition("a_Room_GreatHall"),labels:labelProbes,social:tree(game.screenFriend.var_26,0),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,2),hudTree:tree(game.screenHud.var_2,2),
+    mountLabel:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.text,mountLabelWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.width,mountTextWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.textWidth,
     worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
   }
  }
