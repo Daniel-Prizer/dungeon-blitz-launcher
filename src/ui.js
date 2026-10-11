@@ -2,6 +2,10 @@
 const $ = id => document.getElementById(id);
 let state, settingsOpen = false, pending = Promise.resolve(), volumeTimer, recording=false, selectedSection=0;
 const audioBuses=['player','music','environment','creatures'];
+function paintVolume(slider) {
+  const value=Number(slider.value), min=Number(slider.min), max=Number(slider.max);
+  slider.style.setProperty('--range-fill',`${100*(value-min)/(max-min)}%`);
+}
 async function call(name, value) {
   const result = await window.blitz.action(name, value);
   if (result?.error) $('feedback').textContent = result.error;
@@ -25,6 +29,7 @@ function render(next) {
   if (state.modal === 'settings' && !settingsOpen) {
     $('volume').value = $('volume-number').value = s.volume;
     for(const bus of audioBuses){$('audio-'+bus).value=s.audioMix[bus];$('audio-value-'+bus).textContent=s.audioMix[bus]+'%';}
+    for(const slider of document.querySelectorAll('input[type=range]'))paintVolume(slider);
     $('game-zoom').value = s.gameZoom; $('hardware-acceleration').checked = s.hardwareAcceleration; $('keep-awake').checked = s.keepGameAwake;
     $('render-resolution').value=s.renderResolution;
     $('show-fps').checked=s.showFPS;
@@ -102,9 +107,11 @@ function volumeInput(source) {
   const v = Number(source.value);
   if (!Number.isInteger(v) || v < 0 || v > 100 || source.value === '') return;
   $('volume').value = $('volume-number').value = v; clearTimeout(volumeTimer); volumeTimer = setTimeout(() => save({ volume: v }), 70);
+  paintVolume($('volume'));
 }
 $('volume').oninput = () => volumeInput($('volume')); $('volume-number').oninput = () => volumeInput($('volume-number'));
 for(const bus of audioBuses)$('audio-'+bus).oninput=()=>{
+  paintVolume($('audio-'+bus));
   $('audio-value-'+bus).textContent=$('audio-'+bus).value+'%';
   const mix=Object.fromEntries(audioBuses.map(key=>[key,Number($('audio-'+key).value)]));save({audioMix:mix});
 };

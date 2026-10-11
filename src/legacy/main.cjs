@@ -7,6 +7,8 @@ const {editingCommand,pasteIntoFlash}=require('./editing.cjs');
 const {patchClient}=require('./client-patch.cjs');
 const {classifyLink}=require('./links.cjs');
 const {patchAudio}=require('./audio-patch.cjs');
+const {patchAdaptiveClient}=require('./adaptive-patch.cjs');
+let adaptiveContract;try{adaptiveContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract.json'),'utf8'));}catch(_){}
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
 const audioDeltas=[];
@@ -17,7 +19,7 @@ function validGameAddress(value) {
 }
 if(!validGameAddress(LIVE))app.exit(2);
 const ORIGIN = new URL(LIVE).origin;
-let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false, testClientHash='';
+let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false, testClientHash='',testAdapterMode='';
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
 let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false,renderResolution=1;
@@ -176,7 +178,8 @@ app.whenReady().then(async () => {
   }
   // In-process DevTools response interception preserves the selected HTTPS URL,
   // cookies and certificate checks. It opens no debugging port or proxy server.
-  // Unknown client revisions continue unmodified instead of applying stale offsets.
+  // First reuse reviewed hooks whose interfaces and method envelopes still
+  // match. Otherwise use an exact reviewed revision, or continue unmodified.
   wc.debugger.on('message',async (_event,method,params)=>{
     if(method==='Runtime.bindingCalled'){
       if(params.name==='blitzTrustedLink'&&params.executionContextId===linkContext)void routeLink(params.payload,true);
@@ -190,7 +193,8 @@ app.whenReady().then(async () => {
       const url=new URL(params.request.url);
       if(url.origin===ORIGIN && /\/DungeonBlitz\.swf$/i.test(url.pathname) && params.responseStatusCode===200) {
         const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
-        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),presentation=patchClient(bytes),audio=presentation&&audioDeltas.map(delta=>patchAudio(presentation,delta)).find(Boolean),patched=audio||presentation;
+        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),adaptive=patchAdaptiveClient(bytes,adaptiveContract),presentation=adaptive||patchClient(bytes),audio=adaptive||(presentation&&audioDeltas.map(delta=>patchAudio(presentation,delta)).find(Boolean)),patched=audio||presentation;
+        if(process.env.BLITZ_HOST_TEST==='1')testAdapterMode=adaptive?'contract':patched?'revision':'original';
         if(process.env.BLITZ_HOST_TEST==='1')testClientHash=require('crypto').createHash('sha256').update(bytes).digest('hex');
         audioIntegration=!!audio;emit({type:'audio-integration',value:audioIntegration});
         if(patched) {
@@ -288,7 +292,7 @@ readMessages(pipe, async cmd => {
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`);
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`);
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);
