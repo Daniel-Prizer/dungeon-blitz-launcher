@@ -58,7 +58,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     if(privateDesktop)assert(live.focused&&live.contentFocused&&live.geometry.focused,'Native game must be focused');
     checks.push('Original Flash renders live game; full-window input stage'+(privateDesktop?' and native input focus':''));
     await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
-    const section=name=>page.getByRole('button',{name,exact:true}).click();
+    const section=name=>page.getByRole('tab',{name,exact:true}).click();
     assert.equal(await page.locator('#volume').getAttribute('min'),'0');assert.equal(await page.locator('#volume').getAttribute('max'),'100');assert.equal(await page.locator('#volume').getAttribute('step'),'1');
     assert.equal(await page.locator('#volume').inputValue(),'100');assert.equal(await page.locator('#unlock-key').getAttribute('data-code'),'AltLeft');assert.equal(await page.locator('#cursor-lock').isChecked(),false);
     await section('Updates');assert.equal(await page.locator('#auto-updates').isChecked(),true);
@@ -86,6 +86,33 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     }
     assert(settingsRects.every(rect=>rect.width===settingsRects[0].width&&rect.height===settingsRects[0].height&&rect.x===settingsRects[0].x&&rect.y===settingsRects[0].y),'Settings frame must not move or resize across panes');
     checks.push('All five rendered Settings panes retain the same frame and scroll longer content');
+    await section('Display');
+    assert.equal(await page.getByRole('tabpanel').count(),1);
+    assert.equal(await page.getByRole('tab',{selected:true}).count(),1);
+    await page.getByRole('tab',{name:'Display',exact:true}).press('ArrowDown');
+    assert.equal(await page.getByRole('tab',{name:'Audio',exact:true}).getAttribute('aria-selected'),'true','Vertical arrows activate the next category');
+    await page.getByRole('tab',{name:'Audio',exact:true}).press('End');
+    assert.equal(await page.getByRole('tab',{name:'Updates',exact:true}).getAttribute('aria-selected'),'true');
+    await page.getByRole('tab',{name:'Updates',exact:true}).press('Home');
+    assert.equal(await page.getByRole('tab',{name:'Display',exact:true}).getAttribute('aria-selected'),'true');
+    assert(await page.locator('#centered-hotbar').isDisabled(),'Original hotbar requires widescreen without discarding its saved preference');
+    await page.locator('#experimental-widescreen').check();await until(async()=>(await call('state')).settings.experimentalWidescreen,'Widescreen must save');
+    await until(()=>page.locator('#centered-hotbar').isEnabled(),'Original hotbar becomes available with widescreen');
+    await page.locator('#centered-hotbar').check();await until(async()=>(await call('state')).settings.centeredHotbar,'Centered hotbar must save');
+    await page.locator('#experimental-widescreen').uncheck();await until(()=>page.locator('#centered-hotbar').isDisabled(),'Disabling widescreen disables its dependent control');
+    assert.equal((await call('state')).settings.centeredHotbar,true,'Dependent setting must remain saved');
+    await page.locator('#experimental-widescreen').check();await until(()=>page.locator('#centered-hotbar').isEnabled(),'Re-enabling widescreen restores access');
+    await page.locator('#centered-hotbar').uncheck();await until(async()=>!(await call('state')).settings.centeredHotbar,'Restore original hotbar default');
+    await page.locator('#experimental-widescreen').uncheck();await until(async()=>!(await call('state')).settings.experimentalWidescreen,'Restore width default');
+    await page.locator('#centered-camera').check();await until(async()=>(await call('state')).settings.centeredCamera,'New layout camera checkbox must save');
+    await page.locator('#centered-camera').uncheck();await until(async()=>!(await call('state')).settings.centeredCamera,'Restore camera default');
+    await page.locator('.advanced-options summary').click();
+    await page.locator('#hardware-acceleration').scrollIntoViewIfNeeded();
+    const displayScroll=await page.locator('#settings-content').evaluate(el=>el.scrollTop);
+    assert(displayScroll>0);await section('Audio');await section('Display');
+    assert.equal(await page.locator('#settings-content').evaluate(el=>el.scrollTop),displayScroll,'Each category keeps its own scroll position');
+    await page.locator('.advanced-options summary').click();await page.locator('#settings-content').evaluate(el=>el.scrollTop=0);
+    checks.push('Accessible category keyboard navigation, saved 16:9 dependency, camera checkbox and per-category scroll restoration');
     if(privateDesktop){
       const owner=await app.evaluate(({BrowserWindow})=>({handle:BrowserWindow.getAllWindows()[0].getNativeWindowHandle().readBigUInt64LE().toString(),pid:process.pid}));
       execFileSync(path.join(root,'.test-tools/WindowCapture.exe'),[owner.handle,String(owner.pid),path.join(out,'settings-native-window.png')],{windowsHide:true});
@@ -129,9 +156,9 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       await until(async()=> (await call('state')).cursor.enabled,'Native cursor settings not applied');
       assert.equal((await call('state')).cursor.active,false,'Cursor never confines in settings');assert.equal((await call('state')).cursor.dryRun,true);
       const savedLock=()=>JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8')).settings.cursorLock;
-      await page.locator('#toggle-cursor').click();await until(async()=> !(await call('state')).settings.cursorLock&&!(await call('state')).cursor.enabled,'Release button must uncheck and save');
+      await page.locator('#cursor-lock').uncheck();await until(async()=> !(await call('state')).settings.cursorLock&&!(await call('state')).cursor.enabled,'Cursor checkbox must disable and save');
       assert.equal(await page.locator('#cursor-lock').isChecked(),false);assert.equal(savedLock(),false);
-      await page.locator('#toggle-cursor').click();await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Relock button must check and save');
+      await page.locator('#cursor-lock').check();await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Cursor checkbox must enable and save');
       const host=line=>app.evaluate(({},line)=>global.__blitzTest.runtime().testHost(line),line);
       await host('TESTKEY 119 1 1');await until(async()=> !(await call('state')).settings.cursorLock,'Native custom key must disable saved checkbox');
       await host('TESTKEY 119 1 1');await wait(100);assert.equal((await call('state')).settings.cursorLock,false,'Saved-setting acknowledgement cannot turn a repeat into a new toggle');
@@ -144,20 +171,25 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       for(const key of [9,115]){await host('TESTKEY 164 1 1');await host('TESTKEY '+key+' 1 1');await host('TESTKEY 164 0 1');}
       await wait(100);assert.equal((await call('state')).settings.cursorLock,true,'Alt+Tab and Alt+F4 cannot toggle checkbox');
     }
-    checks.push('Actual settings controls, 0/1/37 volume, checkbox, shortcut selection and release button');
+    checks.push('Actual settings controls, 0/1/37 volume, cursor checkbox in both directions and shortcut selection');
     await page.screenshot({path:path.join(out,privateDesktop?'settings-native.png':'settings.png')});
     const initialSize=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentSize());
     for(const size of [[800,600],[1440,900]]){
       await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),size);await wait(300);
       for(const section of ['Audio','Controls','Display','Connection','Updates']){
-        await page.getByRole('button',{name:section,exact:true}).click();await wait(350);
+        await page.getByRole('tab',{name:section,exact:true}).click();await wait(350);
         const layout=await page.evaluate(()=>{
           const rect=id=>{const r=document.querySelector(id).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
-          return {height:innerHeight,width:innerWidth,panel:rect('.panel'),nav:rect('.settings-nav'),done:rect('#done'),content:rect('#settings-content'),horizontal:document.documentElement.scrollWidth>innerWidth};
+          const pane=document.querySelector('[role=tabpanel]:not([hidden])');
+          return {height:innerHeight,width:innerWidth,panel:rect('.panel'),nav:rect('.settings-nav'),done:rect('#done'),content:rect('#settings-content'),horizontal:document.documentElement.scrollWidth>innerWidth,paneOverflow:pane.scrollWidth>pane.clientWidth+1};
         });
-        assert.equal(layout.horizontal,false);assert(layout.panel.bottom<=layout.height&&layout.panel.top>=32);assert(layout.done.bottom<=layout.height&&layout.done.top>layout.nav.bottom,'Heading, navigation and Back to game must remain reachable');
+        assert.equal(layout.horizontal,false);assert.equal(layout.paneOverflow,false);assert(layout.panel.bottom<=layout.height&&layout.panel.top>=32);assert(layout.done.bottom<=layout.height&&layout.done.top>layout.nav.bottom,'Heading, navigation and Back to game must remain reachable');
       }
       await page.screenshot({path:path.join(out,`settings-${size[0]}x${size[1]}.png`)});
+      if(size[0]===800){
+        await section('Display');await page.getByRole('tab',{name:'Display',exact:true}).press('ArrowRight');
+        assert.equal(await page.getByRole('tab',{name:'Audio',exact:true}).getAttribute('aria-selected'),'true','Compact category row uses horizontal arrows');
+      }
     }
     await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),initialSize);await wait(300);
     await call('dismiss');await until(async()=>{const frame=await measure('settings-resize-restored');return frame.geometry.width===frame.viewport.width&&frame.geometry.height===frame.viewport.height;},'Returning from resized Settings must synchronize the native viewport');

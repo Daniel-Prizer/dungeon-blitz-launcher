@@ -76,7 +76,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await call('save-settings',{experimentalWidescreen:false});await call('restart-game');
   await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await wait(900);
   assert((await call('save-settings',{experimentalWidescreen:'true'})).error);
-  await call('settings');await page.getByRole('button',{name:'Display',exact:true}).click();const checkbox=page.getByRole('checkbox',{name:'Experimental 16:9',exact:true});assert.equal(await checkbox.isChecked(),false);
+  await call('settings');await page.getByRole('tab',{name:'Display',exact:true}).click();const checkbox=page.getByRole('checkbox',{name:'Experimental 16:9',exact:true});assert.equal(await checkbox.isChecked(),false);
   await checkbox.check();await until(async()=>(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1100);
   const originalUI=(await sample('wide-login')).renderProbe;assert.equal(originalUI.widescreen.active,false,'Original menu art must not stretch');
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(1100);

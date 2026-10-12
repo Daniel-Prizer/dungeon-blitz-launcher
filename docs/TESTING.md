@@ -1,4 +1,43 @@
-# Current validation: 0.21.0 (minor)
+# Current validation: 0.22.0 (minor)
+
+0.22.0 redesigns the local Settings UI in the slate stone direction selected by
+Daniel. The frame and heading reuse the title bar's palette and original local
+vector decoration, with thin gold accents, subdued category navigation and
+purple sound tracks. It removes the duplicate cursor-lock button. It adds no
+new runtime, game hooks, protocol privileges, remote assets or preference schema.
+The previous camera/adapter implementation remains unchanged.
+
+All 37 unit groups pass. The final native launcher suite passes on an inactive
+Windows desktop, without account login or operating Daniel's active game. All
+five panes retain the same frame. Real clicks, saved checkbox values and audio
+readbacks pass; the category tab/panel relationships, vertical/horizontal arrow
+navigation, Home/End and per-category scroll restoration also pass. Original
+centered hotbar is disabled with 16:9 off without discarding its saved choice.
+The camera checkbox, native cursor checkbox in both directions, key capture,
+Left Shift alias, fullscreen/F11/Escape, character return, reconnect semantics
+and isolated link handling retain their existing behavior. Cursor confinement
+is still dry-run, and silent fixtures do not measure audible or combat behavior.
+
+Screenshots of all panes were visually inspected. Tests at 800x600 and 1440x900
+check horizontal overflow, pane geometry and reachable heading/footer. A separate
+headless preview uses the actual local renderer under its CSP and a mocked state
+provider to check disabled integration, master-volume availability and update
+checking/download/verification/ready/error states. Those screenshots are layout
+evidence, not authenticated gameplay or a real update download. The actual native
+suite separately counts purple pixels at 0/25/50/100% and category endpoints,
+restores saved fill and reads back real game-process/session audio levels.
+
+Package verification confirms the tested renderer/assets, versions, runtime
+hashes and security fuses. The pinned-key signed manifest covers 158 physical
+files. The packaged updater passes physical-ASAR verification, progress, signed
+readiness, tamper rejection and failed-stage cleanup. The disposable installer
+passes fresh/repeated install, payload hashes, registration/shortcuts, busy-game
+refusal, traversal/junction rejection, managed update tracking, downgrade refusal
+and uninstall retaining unrelated/profile files. Both old root executables and
+the previous Downloads Setup were preserved before refreshing the latest files.
+No installed player build or agent copy was replaced during testing.
+
+## Previous validation: 0.21.0 (minor)
 
 0.21.0 adds optional Centered camera follow. It defaults off, saves a validated
 boolean, applies immediately through the actual Display checkbox and replays
