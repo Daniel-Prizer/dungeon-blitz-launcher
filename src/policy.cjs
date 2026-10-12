@@ -26,6 +26,7 @@ function validSettings(input = {}) {
     showFPS: input.showFPS === true,
     experimentalWidescreen: input.experimentalWidescreen === true,
     centeredHotbar: input.centeredHotbar === true,
+    centeredCamera: input.centeredCamera === true,
     autoUpdates: input.autoUpdates !== false,
     keepGameAwake: input.keepGameAwake !== false, hardwareAcceleration: input.hardwareAcceleration !== false };
 }

@@ -26,6 +26,7 @@ package {
   private static var zoom:Number=1;
   private static var wideRequested:Boolean=false;
   private static var centeredHotbar:Boolean=false;
+  private static var centeredCamera:Boolean=false;
   private static var wideGame:Game;
   private static var offsets:Dictionary=new Dictionary(true);
   private static var edges:Dictionary=new Dictionary(true);
@@ -79,6 +80,7 @@ package {
     ExternalInterface.addCallback("BlitzRenderState",Snapshot);
     ExternalInterface.addCallback("BlitzSetWidescreen",SetWidescreen);
     ExternalInterface.addCallback("BlitzSetCenteredHotbar",SetCenteredHotbar);
+    ExternalInterface.addCallback("BlitzSetCenteredCamera",SetCenteredCamera);
     registered=true;
    }
   }
@@ -96,6 +98,22 @@ package {
    // player's existing floor candidate instead. Actual floor hits, original
    // width, scripted cameras and the native camera's later bounds stay intact.
    return wideRequested&&Camera.SCREEN_WIDTH>ORIGINAL_WIDTH&&!hit?fallback:depth;
+  }
+  public static function SetCenteredCamera(value:Boolean):Boolean {
+   if(!main||!main.stage)return false;
+   centeredCamera=value;return true;
+  }
+  private static function useCenteredCamera(camera:Camera):Boolean {
+   // Scripted views and frozen cameras retain their original targets. The
+   // native method still resolves room boundaries and easing after this band.
+   return centeredCamera&&camera&&camera.var_48&&!camera.var_48.var_1122&&
+    !Camera.var_404&&isFinite(Camera.SCREEN_WIDTH)&&Camera.SCREEN_WIDTH>0;
+  }
+  public static function CameraLower(current:Number,player:Number,camera:Camera):Number {
+   return Math.min(current,player-(useCenteredCamera(camera)?Camera.SCREEN_WIDTH*0.44:camera.var_1227));
+  }
+  public static function CameraUpper(current:Number,player:Number,camera:Camera):Number {
+   return Math.max(current,player-(useCenteredCamera(camera)?Camera.SCREEN_WIDTH*0.56:camera.var_2089));
   }
   public static function SetCenteredHotbar(value:Boolean):Boolean {
    if(!main||!main.stage)return false;
@@ -743,6 +761,7 @@ package {
     animationRate:main.stage.frameRate,frameCounter:BlitzFrameCounter.Snapshot(),
     margins:{left:main.parent.x,right:main.stage.stageWidth-main.parent.x-Camera.SCREEN_WIDTH*main.overallScale},
     presentation:PresentationGeometry(),
+    centeredCamera:centeredCamera,
     widescreen:{requested:wideRequested,centeredHotbar:centeredHotbar,active:wideGame!=null,logicalWidth:Camera.SCREEN_WIDTH,
      logicalHeight:Camera.SCREEN_HEIGHT,uiOffset:wideGame&&wideGame.var_89?wideGame.var_89.x:0,
      frameAttached:Boolean(frame&&frame.parent==main),frameStyle:frameStyle,

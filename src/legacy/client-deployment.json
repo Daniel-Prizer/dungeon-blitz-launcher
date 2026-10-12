@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-12",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-c93b05a5cf72",
-  "inputHash": "fa4e3a9ba72eb6394cde3cc40b98e918a8c581b7d7b126e1d7a1f81c0017fc12",
-  "note": "Test provenance only. Compatible with the reviewed structural contract; the latest unrelated SuperAnimInstance.method_1712 body remains intact, along with preceding emote/entity/link/chat changes. Camera.method_1073 is unchanged. Both official origins serve these same SWF bytes."
+  "checkedAt": "2026-10-12T22:52:41.110Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-a4e5b36c10fc",
+  "inputHash": "37e7e506f6e0565b865cea205ffbfe7e134fc89093ab0129f1dcb1ed8110deb1",
+  "note": "Test provenance only. Existing structural contract accepts this client without new hooks. The only change since swf-c93b05a5cf72 is two unreachable instructions appended after returnvoid in class_33.method_298; its full new body remains intact. All guarded camera, input, audio and display method envelopes/interfaces are unchanged."
 }

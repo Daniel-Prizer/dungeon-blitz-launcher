@@ -1,4 +1,71 @@
-# Current validation: 0.20.0 (minor)
+# Current validation: 0.21.0 (minor)
+
+0.21.0 adds optional Centered camera follow. It defaults off, saves a validated
+boolean, applies immediately through the actual Display checkbox and replays
+after reconnect. It works with either logical viewport width. Two reviewed
+18-byte horizontal clamp expressions in Camera.method_1073 call the new helper;
+all native room rays, vertical floor offsets, movement/input, clocks and easing
+remain at their original addresses. Disabled and frozen/scripted paths reproduce
+the original arithmetic. Normal follow selects a 44–56% central target band.
+
+The camera/transition fixtures were run against the public client with SHA-256
+fa4e3a9ba72eb6394cde3cc40b98e918a8c581b7d7b126e1d7a1f81c0017fc12.
+The rebuilt reusable recipe keeps the same 31 guarded method envelopes and six
+dependencies, with 116 reviewed symbol relocations. All 37 unit groups pass,
+including changed-hook rejection, saved-setting validation and cached-runtime
+integrity checks. Existing unrelated Minesa methods remain intact.
+
+Native camera fixtures cover 1080p/1440p widescreen and the original width, with
+64,800 synthetic steps across native/off/on modes. Cases include walk/stop,
+repeated reversal, broad/narrow rooms, pointer-direction changes, jumps,
+teleports, native easing and frozen/scripted views. Disabled traces equal the
+original, vertical target/easing match and authored camera boundary endpoints
+remain. The real checkbox, malformed values and reconnect persistence pass.
+The previous camera-floor/map/HUD tests and full transition suite pass too.
+The served Minesa Ruffle build separately passes both widths and 28,800 follow
+samples, alongside the existing original-art/HUD/API probes. These are owned
+offline fixtures, not authenticated gameplay or combat-performance measurements.
+
+Daniel requested offline testing while playing; no account was opened or live
+session interrupted. Live camera feel in every multiplayer room remains outside
+this verification. The setting stays optional and preserves the original mode.
+
+During final checks Minesa deployed `swf-a4e5b36c10fc`, SHA-256
+37e7e506f6e0565b865cea205ffbfe7e134fc89093ab0129f1dcb1ed8110deb1,
+934,258 bytes. Only class_33.method_298 changed: two unreachable instructions
+were appended after its existing returnvoid. Its complete body is preserved.
+All guarded camera/display/audio/input envelopes and semantic interfaces are
+identical, and the existing recipe accepts it without a new adapter. Unit
+preservation/tamper checks were rerun against the fresh bytes. Full camera and
+transition fixtures above use the preceding client with these same guarded
+hooks; do not describe them as a new live gameplay traversal. Fresh native
+login rendering, all five Settings panes, category/master audio readbacks,
+fullscreen/Escape, character-return and input/Shift shortcut tests pass on the
+new deployment without account login. Settings screenshots were inspected.
+
+Builds now reuse the entire hash-verified local runtime import after uninstalling
+the official launcher. Builds and the transition suite pass after its removal.
+Missing/altered imported files and unsafe inventory paths fail validation. This
+does not replace the existing Flash engine or ship a modern-host migration.
+
+Packaging verifies source, runtime hashes, current versions, security fuses and
+retired-enhancer absence. The signed payload contains 158 physical files. Both
+development and packaged updater modules pass actual Electron ASAR verification,
+progress, signed readiness, tamper rejection and failed-stage cleanup. The
+disposable installer passes fresh/repeated/latest install, all payload hashes,
+registration/shortcuts, busy-process refusal, traversal/junction rejection,
+managed update tracking, downgrade refusal and profile/unrelated-file retention.
+
+At Daniel's explicit request the registered FlashBrowser and Dungeon Blitz R
+applications were uninstalled. Their registrations and main executables are
+absent. A private before/after inventory verified all 179 pre-existing launcher
+executable copies unchanged during that removal; agent copies and all four
+profile roots remained. Existing root launcher/Setup files were preserved before
+refreshing them with 0.21.0. The ordinary Start Menu shortcut retains the agent
+handoff and now uses the actual launcher icon. No player game was closed or
+restarted, and the installed player build is left running until normal updating.
+
+## Included validation: 0.20.0 (minor)
 
 0.20.0 adds the optional **Original centered hotbar** setting for 16:9 and fixes camera floor selection, map raster/hit-region alignment and the extended XP channel. The initial October 12 deployment was `swf-8e933cc95510`, SHA-256 `0688fd8eb31748ce22de0f3cee12b216b41be9741909ce129725f0ae98ec8618`, 933,947 compressed bytes. The signed reusable recipe accepts it without another exact-revision adapter. Its five newer emote/entity/link/chat bodies remain intact; all 31 edited envelopes and six dependencies remain guarded. The contract relocates 112 reviewed helper operands. Eleven UI/Home/JC hashes remain unchanged; current LevelsBT and GlobalMap01 are used for the new fixture.
 

@@ -24,7 +24,7 @@ Native raster sizing, 16:9 world/HUD layout, category sound routing, FPS instrum
 
 The runtime's bounded SWF/ABC reader locates the main script structurally. It verifies the original pool entries, complete semantic class/method/script interfaces, stage preamble and root bindings. Equivalent duplicate symbols and legal alternative integer encodings are accounted for. Extra constants/symbols are preserved. All 31 edited method envelopes and six input/transition dependency envelopes must match their reviewed hashes. Only their existing compiled deltas and four launcher-owned helper tags are added; every unrelated fetched body/tag remains intact.
 
-JPEXS records 112 exact appended-constant operand boundaries at build time. Runtime relocation moves only those references around Minesa's appended symbols. A changed encoded width rejects the contract rather than guessing new branch/exception offsets. The result is parsed again and every retained/replaced body is verified. All four older exact-revision adapters remain available as fallbacks.
+JPEXS records 116 exact appended-constant operand boundaries at build time, including the four references added for the optional centered camera. Runtime relocation moves only those references around Minesa's appended symbols. A changed encoded width rejects the contract rather than guessing new branch/exception offsets. The result is parsed again and every retained/replaced body is verified. All four older exact-revision adapters remain available as fallbacks.
 
 The newer deployment `swf-5f935c2e6795`, SHA-256 `583433640586d15fabaaf7ec35d5b7d0193efe106789256e2e7ed84b024e7f7f`, is accepted by that preceding recipe without its own exact-revision adapter. Its 12 changed social methods, two appended strings and 18 appended multinames are preserved. Tests verify the relocated helper symbols and the freshly served client in actual Flash.
 
@@ -35,6 +35,8 @@ Later on October 12, `swf-c93b05a5cf72` changed only `SuperAnimInstance.method_1
 This handles compatible code-body changes and appended symbols; it does not autonomously understand changed field types, inserted/reordered method tables, altered hook bodies, changed original constants, or incompatible asset geometry. The current helper bundle is atomic, so a failed contract disables that bundle; shell settings, master volume, window controls and signed updating remain independent. Unknown behavior in an unchanged interface can still cause a presentation regression. When that happens, compare with enhancements disabled and review the relevant callers/assets instead of loosening contracts.
 
 The custom Dragon Ore counter is not shipped. Reintroducing it requires a native icon, complete currency frame and matching embedded font, plus detection of a native replacement; do not revive the cropped Gold backing or environmental ore doodad.
+
+The later October 12 deployment `swf-a4e5b36c10fc`, SHA-256 `37e7e506f6e0565b865cea205ffbfe7e134fc89093ab0129f1dcb1ed8110deb1`, 934,258 bytes, is accepted by the same 0.21.0 recipe. Compared with `swf-c93b05a5cf72`, only `class_33.method_298` changes, appending two unreachable instructions after its return. All guarded methods/interfaces remain identical; the new window method is preserved rather than replaced. Fresh tests must pin this deployment provenance, while the reviewed contract source remains the independently compiled October 11 client.
 
 ## Review a new revision
 
@@ -62,6 +64,8 @@ A server/content update can leave the reviewed game code and UI contracts unchan
 Flash and the embedded legacy engine are unsupported. Hash pinning protects compatibility, not future Flash vulnerabilities. Keep process isolation, narrow privileges, allowed origins and signed updates; no launcher change can promise immunity to a future runtime or operating-system exploit.
 
 ## Camera and map regressions
+
+From 0.21.0, Centered camera optionally replaces only the horizontal min/max target expressions in the same guarded Camera.method_1073. Preserve its two reviewed 18-byte ranges, incoming-edge/exception checks, the original boundary rays and native easing. Do not globally change MOVEZONE_LEFT_BASE: it is shared with vertical floor samples. The helper uses the live logical width, restores original arithmetic when disabled, and bypasses frozen/scripted views. Test repeated direction changes, room edges, jumps, teleports, both widths, toggling and reconnect. Overall room art bounds are not a substitute for its original camera collision boundaries.
 
 A widened camera can put a downward side ray outside a narrow room. A missed ray retains its full search length; it must not beat the actual floor beneath the player. The guarded `Camera.method_1073` edit replaces only its two side-depth expressions, using the existing player-floor candidate on a miss in wide mode. Keep every original raycast, collision query, camera boundary, scripted/frozen path and smoothing rule. Test valid deeper floors and original-width equivalence. Do not clamp from overall room display bounds: invisible markers are not complete artwork.
 

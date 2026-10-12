@@ -19,7 +19,7 @@ test('new live deployment reuses previous hooks without its own revision pin; al
  for(const tag of before.tags)if(tag!==main(before))assert(after.tags.some(other=>other.raw.equals(tag.raw)),'Preserve every original non-hook tag');
  let relocations=0;for(const edit of recipe.bodies)for(const ref of edit.references){const body=b.bodies.find(body=>body.id===edit.id),index=a.pools[ref.pool].length+ref.index-recipe.pools[ref.pool].count;
    assert(body.bytes.subarray(ref.offset,ref.offset+integer(index).length).equals(integer(index)));assert.equal(b.referenceHash(ref.pool,index),oldCompiled.referenceHash(ref.pool,ref.index),'Relocated helper operand must retain the independently compiled symbol');relocations++;
- }assert.equal(relocations,112);
+ }assert.equal(relocations,116);
  const old=main(readSWF(fs.readFileSync(path.join(root,files[1])))).abc;const changed=a.bodies.filter(body=>!body.bytes.equals(old.bodies.find(other=>other.id===body.id).bytes));assert(changed.length>=12);assert(changed.every(body=>!edited.has(body.id)));assert(changed.some(body=>body.name==='class_56.renderWorldRows'));
 });
 test('unrelated code edits survive; changed hooks, input dependencies, constants and bindings fail closed',{skip:!present},()=>{
