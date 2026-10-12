@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.19.0** (minor: compatible Minesa updates reuse reviewed client hooks automatically; purple volume fill follows all five sliders).
+Version **0.20.0** (minor: optional original centered hotbar in 16:9; fixes narrow-room camera drops, map click alignment and extended XP dividers/seams).
 
 For new failures after a Minesa deployment, start with [the game-update repair guide](docs/MINESA-UPDATES.md). The launcher can now retain enhancements when a new revision preserves the reviewed hooks and interfaces, even if unrelated game code or appended symbols change. It keeps Minesa's changes intact. Incompatible contracts still run unchanged; saved preferences survive. This reduces compatibility releases, without promising that every future game update will work automatically.
 
@@ -12,7 +12,7 @@ The portable option remains available: run **Dungeon Blitz Launcher.exe** in thi
 
 The launcher automatically opens Minesa's live Dungeon Blitz in one isolated original Flash session. Tabs, address/search bar, homepage, bookmarks, history, downloads, browser navigation and the experimental Ruffle/socket bridge have been removed.
 
-Modern-browser playback was rechecked on 11 October 2026. Minesa's current page still renders its Flash-required fallback in current Edge; Ruffle still lacks the graphics-data API used by the game. The verified Flash host remains in use. See [the modern-web check](docs/CLIENT-FEATURES.md#modern-browser-recheck-11-october-2026).
+Modern-browser playback now works at [the new official address](https://dungeonblitz.theminesa.studio/) (without the `r`). Its custom Ruffle build renders the public class screen and passes our offline graphics/HUD enhancement probe. The old address still requires Flash. This release keeps the verified Flash host while authenticated gameplay, persistence, audio and performance are evaluated for a modern replacement. See [the October 12 investigation](docs/CLIENT-FEATURES.md#modern-browser-investigation-12-october-2026).
 
 **Change Character** in the top bar reloads the current game page and returns to the original character screen using the saved game login. It retains launcher preferences and does not apply a pending server change. Settings uses a fixed frame across all five panes; longer content scrolls inside it.
 
@@ -25,6 +25,8 @@ Settings → Display → Show FPS counter enables a small counter in the upper-l
 Game links on the selected game origin reload the configured game page. User-activated external HTTP/HTTPS links open in your default browser, never inside the Flash host. Privileged schemes and credential-bearing URLs are blocked; unsolicited external popups are denied.
 
 ## Settings
+
+- Original centered hotbar: in 16:9, restores the native compact health/abilities, companion slots, XP, quest/menu row and chat to the center beneath the wider world. Defaults off; changes apply immediately and are saved.
 
 - Experimental 16:9: off by default. Widens the logical view during play without stretching sprites or changing game clocks. Login/character selection keeps its original artwork. Active scene transfers retain the wide frame. Health/hotbar and party controls anchor left, chat/top-right controls anchor right, and menus/social center independently. The quest panel uses the extra middle width; its text and Map label keep their original proportions. Utility buttons distribute across that space. Building inspection replaces the health/combat section with its native upgrade controls at the left edge; the shared HUD backing continues to the quest panel. World labels retain their origin, and the corrected raster crop transform prevents scale-dependent cached-label shifts. Original modal dimming covers the full wider view, including inset mattes. The original ornate vector border and bottom decoration preserve their sides/corners and have no input or uncontrolled animation. Home interiors retain their original scene and player geometry inside the same wide frame/HUD. Reviewed passive wall/floor artwork fills narrow indoor background gaps without clipping players; terrain and buildings are never stretched. The backmost sky is rasterized from its original vector at the final resolution. No extra vertical world, free camera movement or generated playable scenery is added. Some private live maps/overlays may still need adaptation; this is a client presentation experiment, not official server widescreen support. See [widescreen testing and limitations](docs/WIDESCREEN.md).
 

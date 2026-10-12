@@ -25,6 +25,7 @@ package {
   private static var registered:Boolean=false;
   private static var zoom:Number=1;
   private static var wideRequested:Boolean=false;
+  private static var centeredHotbar:Boolean=false;
   private static var wideGame:Game;
   private static var offsets:Dictionary=new Dictionary(true);
   private static var edges:Dictionary=new Dictionary(true);
@@ -37,7 +38,6 @@ package {
   private static var companionIcons:Dictionary=new Dictionary(true);
   private static var upgradePowers:Dictionary=new Dictionary(true);
   private static var buildingInspection:Boolean=false;
-  private static var hudStraightBands:Array=[];
   private static var directionPlaceholders:Dictionary=new Dictionary(true);
   private static var lockedSigils:Dictionary=new Dictionary(true);
   private static var skyTransforms:Dictionary=new Dictionary(true);
@@ -49,6 +49,11 @@ package {
   private static const COMPANION_PIXELS:String="__COMPANION_PIXELS__";
   private static var frame:Sprite;
   private static var hudFrame:Sprite;
+  private static var hudArtwork:DisplayObjectContainer;
+  private static var hudPixels:BitmapData;
+  private static var hudRasterScale:Number=0;
+  private static var hudRasterInspection:Boolean=false;
+  private static var hudRasterBuilds:uint=0;
   private static var frameStyle:String="";
   private static const ORIGINAL_WIDTH:Number=1152;
   private static const WIDE_WIDTH:Number=768*16/9;
@@ -73,6 +78,7 @@ package {
     ExternalInterface.addCallback("BlitzShowFPS",BlitzFrameCounter.SetShown);
     ExternalInterface.addCallback("BlitzRenderState",Snapshot);
     ExternalInterface.addCallback("BlitzSetWidescreen",SetWidescreen);
+    ExternalInterface.addCallback("BlitzSetCenteredHotbar",SetCenteredHotbar);
     registered=true;
    }
   }
@@ -83,6 +89,22 @@ package {
    if(value)main.addEventListener(Event.ENTER_FRAME,UpdateWidescreen,false,-101,true);
    else main.removeEventListener(Event.ENTER_FRAME,UpdateWidescreen);
    UpdateWidescreen();return true;
+  }
+  public static function CameraFloor(depth:Number,hit:class_37,fallback:Number):Number {
+   // A missed side ray keeps its entire search length. It is not a floor.
+   // Widening the view can move that ray outside a narrow room; retain the
+   // player's existing floor candidate instead. Actual floor hits, original
+   // width, scripted cameras and the native camera's later bounds stay intact.
+   return wideRequested&&Camera.SCREEN_WIDTH>ORIGINAL_WIDTH&&!hit?fallback:depth;
+  }
+  public static function SetCenteredHotbar(value:Boolean):Boolean {
+   if(!main||!main.stage)return false;
+   if(centeredHotbar!=value){
+    var previous:Game=wideGame;centeredHotbar=value;restore();UpdateWidescreen();
+    // The native renderer must rebuild companions at the restored button size.
+    if(previous&&previous.clientEnt&&previous.screenHud)previous.screenHud.method_1505();
+   }
+   return true;
   }
   private static function offset(object:DisplayObject,amount:Number):void {
    if(!object)return;
@@ -146,15 +168,17 @@ package {
     // panels. Moving their parent misplaces NPC names, loot and tooltips.
     if(screen.var_1173.indexOf("Floater")>=0||screen==game.screenHudTooltip||screen==game.screenNotification)amount=0;
     if(screen==game.var_2306)amount=half; // centered room/dungeon title
-    if(screen==game.screenHud||screen==game.screenLinkBar||screen==game.var_1828)amount=0;
-    if(screen==game.screenChat||screen==game.screenHudTopRight)amount=half*2;
+    if(screen==game.screenHud)amount=centeredHotbar?half:0;
+    if(screen==game.screenLinkBar||screen==game.var_1828)amount=0;
+    if(screen==game.screenChat)amount=centeredHotbar?half:half*2;
+    if(screen==game.screenHudTopRight)amount=half*2;
     screenOffset(screen,amount);
     if(amount==half){
      stretchBackdrop(screen.mWindow.mMovieClip,half);
      var upgrade:DisplayObject=screen.mWindow.mMovieClip.getChildByName("am_GlobalUpgradePanel");
      // Inspection replaces the complete combat section from the left edge.
      // The menu itself stays centered; its native strip has a separate anchor.
-     if(upgrade){
+     if(upgrade&&!centeredHotbar){
       var baseX:Number=offsets[upgrade]?offsets[upgrade].base:upgrade.x;
       offset(upgrade,-screen.mWindow.mMovieClip.x-baseX);
       ReplaceUpgradeBacking(upgrade as DisplayObjectContainer);
@@ -168,6 +192,9 @@ package {
    if(game.screenHudTop&&game.screenHudTop.var_2){
     var top:MovieClip=game.screenHudTop.var_2;
     var utilities:Array=["am_Inventory","am_GoHome","am_Sigil","am_Spellbook","am_Social"];
+    if(centeredHotbar){
+     for each(var nativeUtility:String in utilities.concat(["am_GoLeave","am_GoLeaveDungeon","am_GearNotify","am_SocialCount","am_SocialNotify"]))offset(top.getChildByName(nativeUtility),half);
+    }else{
     var toolbarLeft:Number=439.25+questSpace;
     var toolbarWidth:Number=680+half*2-toolbarLeft-questRightInset;
     // Talent stones retain their dedicated slot when unlocked. Home/Leave
@@ -203,8 +230,9 @@ package {
      PlaceBadge(top.getChildByName("am_SocialCount"),social.x+18,social.y+23,0.7);
      PlaceBadge(top.getChildByName("am_SocialNotify"),social.x+32,social.y-3);
     }
+    }
    }
-   if(game.screenHud&&game.screenHud.var_2){
+   if(!centeredHotbar&&game.screenHud&&game.screenHud.var_2){
     buildingInspection=upgradeVisible;
     // Inspection replaces the combat panel. Hide its values, XP hit area
     // and anonymous XP dividers too; a large overlay alone leaves fragments.
@@ -235,6 +263,15 @@ package {
     }
     var xp:DisplayObject=game.screenHud.var_2.getChildByName("am_XPBar");
     if(xp){if(!buttonTransforms[xp])buttonTransforms[xp]={x:xp.scaleX,y:xp.scaleY,top:xp.y,width:xp.width};xp.scaleX=buttonTransforms[xp].x*(578.6-xp.x)/buttonTransforms[xp].width;}
+    // The four native divider clips were independent of the XP fill. Keep
+    // their vector art unscaled and spread the five cells across the full bar.
+    if(xp)for(var dividerIndex:int=0;dividerIndex<hud.numChildren;dividerIndex++){
+     var divider:DisplayObject=hud.getChildAt(dividerIndex);
+     if(divider.name.indexOf("instance")!=0||divider.y<771||divider.y>777||divider.width<6||divider.width>7||divider.height<10||divider.height>11)continue;
+     var dividerBase:Number=offsets[divider]?offsets[divider].base:divider.x;
+     if(dividerBase<100||dividerBase>360)continue;
+     offset(divider,(dividerBase-xp.x)*xp.scaleX-dividerBase+xp.x);
+    }
     var xpContact:DisplayObjectContainer=game.screenHud.var_2.getChildByName("am_XPContact") as DisplayObjectContainer;
     if(xpContact)for(var contactIndex:int=0;contactIndex<xpContact.numChildren;contactIndex++)if(xpContact.getChildAt(contactIndex) is Shape)widen(xpContact.getChildAt(contactIndex),146.1);
    }
@@ -248,8 +285,8 @@ package {
      for each(var eventName:String in ["am_HallowsEveBadge","am_HallowsEveKeys","am_Title"])offset(eventGroup.getChildByName(eventName),half*2);
     }
    }
-   screenOffset(game.screenHud,0);screenOffset(game.screenChat,half*2);screenOffset(game.screenQuestTracker,questSpace);
-   if(game.screenQuestTracker&&game.screenQuestTracker.var_2){
+   screenOffset(game.screenHud,centeredHotbar?half:0);screenOffset(game.screenChat,centeredHotbar?half:half*2);screenOffset(game.screenQuestTracker,centeredHotbar?half:questSpace);
+   if(!centeredHotbar&&game.screenQuestTracker&&game.screenQuestTracker.var_2){
     var quest:MovieClip=game.screenQuestTracker.var_2;
     // Never scale the game's cache container: its cache rebuilder measures
     // transformed width and would bake our expansion into it repeatedly.
@@ -314,7 +351,8 @@ package {
    buttonTransforms=new Dictionary(true);questFrames=new Dictionary(true);skyTransforms=new Dictionary(true);
    offsets=new Dictionary(true);edges=new Dictionary(true);backdrops=new Dictionary(true);matteScans=new Dictionary(true);sizes=new Dictionary(true);wideGame=null;
    if(frame&&frame.parent)frame.parent.removeChild(frame);frame=null;frameStyle="";
-   if(hudFrame&&hudFrame.parent)hudFrame.parent.removeChild(hudFrame);hudFrame=null;hudStraightBands=[];
+   if(hudFrame&&hudFrame.parent)hudFrame.parent.removeChild(hudFrame);hudFrame=null;hudArtwork=null;
+   if(hudPixels)hudPixels.dispose();hudPixels=null;hudRasterScale=0;
   }
   private static function hideEdge(object:DisplayObject):void {
    if(!object)return;if(edges[object]===undefined)edges[object]=object.visible;object.visible=false;
@@ -566,85 +604,72 @@ package {
    hideEdge(art);
   }
   private static function DrawHudFrame(game:Game):void {
+   if(centeredHotbar)return;
    if(!game.screenHud||!game.screenHud.mWindow||!game.screenHud.mWindow.mMovieClip||game.screenHud.mWindow.mMovieClip.parent!=game.var_89)return;
    var base:DisplayObject=game.screenHud.mWindow.mMovieClip.getChildByName("am_CacheIcon");
    if(!base||!ApplicationDomain.currentDomain.hasDefinition("a_Hud"))return;
    if(!hudFrame){
     var type:Class=ApplicationDomain.currentDomain.getDefinition("a_Hud") as Class;
-    var source:MovieClip=new type() as MovieClip;StopArtwork(source);var original:DisplayObjectContainer=source.getChildByName("am_CacheIcon") as DisplayObjectContainer;
-    if(!original)return;var bounds:Rectangle=original.getBounds(original);if(bounds.width<1100||bounds.height>150)return;
-    var originX:Number=original.x;var originY:Number=original.y;
-    var cuts:Array=[96-originX,440-originX,680-originX,bounds.right];var delta:Number=WIDE_WIDTH-ORIGINAL_WIDTH;
+    var source:MovieClip=new type() as MovieClip;StopArtwork(source);
+    hudArtwork=source.getChildByName("am_CacheIcon") as DisplayObjectContainer;
+    if(!hudArtwork)return;
+    var reviewed:Rectangle=hudArtwork.getBounds(hudArtwork);
+    if(reviewed.width<1100||reviewed.height>150){hudArtwork=null;return;}
     hudFrame=new Sprite();hudFrame.name="blitz-wide-hud-frame";hudFrame.mouseEnabled=false;hudFrame.mouseChildren=false;
-    // The old utility slots leave transparent gaps when spread apart. Keep
-    // that new center space on the original HUD's muted sage backing, beneath
-    // its vector trim and every real button; never paint over game content.
-    hudFrame.graphics.beginFill(0xa4b39c);
-    hudFrame.graphics.drawRect(440,Camera.PLAY_SCREEN_HEIGHT+8,240+delta,102);
-    hudFrame.graphics.endFill();
-    // Normal play retains the native open silhouette around the health orb.
-    // Only inspection replaces that region with a rectangular backing.
-    var inspection:Sprite=new Sprite();inspection.name="blitz-inspection-backing";inspection.mouseEnabled=false;inspection.mouseChildren=false;
-    // Mirror only the native chat's outer cap. Its transparent corners retain
-    // the original silhouette; no rectangular fill sits behind them.
-    var capWidth:Number=12;
-    inspection.graphics.beginFill(0xa4b39c);inspection.graphics.drawRect(capWidth,Camera.PLAY_SCREEN_HEIGHT+8,440-capWidth,102);inspection.graphics.endFill();
-    var capAsset:MovieClip=new type() as MovieClip;StopArtwork(capAsset);
-    var capClip:DisplayObjectContainer=capAsset.getChildByName("am_CacheIcon") as DisplayObjectContainer;capClip.x=0;capClip.y=0;
-    var cap:Sprite=new Sprite();cap.name="blitz-inspection-left-cap";cap.mouseEnabled=false;cap.mouseChildren=false;cap.addChild(capClip);
-    cap.scrollRect=new Rectangle(bounds.right-capWidth,bounds.y+3,capWidth,bounds.height-3);
-    cap.scaleX=-1;cap.x=capWidth;cap.y=originY+bounds.y+3;inspection.addChild(cap);
-    var inspectionAsset:MovieClip=new type() as MovieClip;StopArtwork(inspectionAsset);
-    var inspectionClip:DisplayObjectContainer=inspectionAsset.getChildByName("am_CacheIcon") as DisplayObjectContainer;inspectionClip.x=0;inspectionClip.y=0;
-    var inspectionPlate:Sprite=new Sprite();inspectionPlate.mouseEnabled=false;inspectionPlate.mouseChildren=false;inspectionPlate.addChild(inspectionClip);
-    inspectionPlate.scrollRect=new Rectangle(cuts[1],bounds.y+3,cuts[2]-cuts[1],bounds.height-3);
-    inspectionPlate.x=capWidth;inspectionPlate.y=originY+bounds.y+3;inspectionPlate.scaleX=(440-capWidth)/(cuts[2]-cuts[1]);inspection.addChild(inspectionPlate);hudFrame.addChild(inspection);
-    // The original health curve keeps its complete contour, independently
-    // of the straight power section which disappears during inspection.
-    var asset:MovieClip=source;var clip:DisplayObjectContainer=asset.getChildByName("am_CacheIcon") as DisplayObjectContainer;clip.x=0;clip.y=0;
-    var slice:Sprite=new Sprite();slice.name="blitz-hud-health-curve";slice.mouseEnabled=false;slice.mouseChildren=false;slice.addChild(clip);
-    slice.scrollRect=new Rectangle(bounds.x,bounds.y,96-originX-bounds.x,bounds.height);
-    slice.x=originX+bounds.x;slice.y=originY+bounds.y;hudFrame.addChild(slice);
-    // Extend only the neutral center of the original decorative HUD plate.
-    // Powers and the chat end keep their original proportions.
-    for(var i:int=0;i<3;i++){
-     asset=new type() as MovieClip;StopArtwork(asset);
-     clip=asset.getChildByName("am_CacheIcon") as DisplayObjectContainer;clip.x=0;clip.y=0;
-     slice=new Sprite();slice.mouseEnabled=false;slice.mouseChildren=false;slice.addChild(clip);
-     if(i==0)slice.name="blitz-hud-health-powers";
-     slice.scrollRect=new Rectangle(cuts[i],bounds.y,cuts[i+1]-cuts[i],bounds.height);
-     slice.x=originX+cuts[i]+(i==2?delta:0);slice.y=originY+bounds.y;
-     if(i==1)slice.scaleX=(cuts[i+1]-cuts[i]+delta)/(cuts[i+1]-cuts[i]);hudFrame.addChild(slice);
-     if(i<2)hudStraightBands.push({slice:slice,area:slice.scrollRect.clone(),top:slice.y,trim:3});
-    }
-    // The upgrade strip has its own complete left corners. A plain backing
-    // underneath avoids stacking another stretched corner/bevel behind it.
-    // Extend the XP channel only. Its narrow band is below the original
-    // ability lip (which remains entirely in the untouched left slice).
-    for(i=0;i<2;i++){
-     asset=new type() as MovieClip;StopArtwork(asset);
-     clip=asset.getChildByName("am_CacheIcon") as DisplayObjectContainer;clip.x=originX;clip.y=originY;
-     slice=new Sprite();slice.name=i==0?"blitz-xp-channel-middle":"blitz-xp-channel-cap";slice.mouseEnabled=false;slice.mouseChildren=false;slice.addChild(clip);
-     slice.scrollRect=new Rectangle(i==0?200:424,770,i==0?24:13,16);
-     slice.x=i==0?410:570;slice.y=770;
-     if(i==0)slice.scaleX=160/24;
-     hudFrame.addChild(slice);
-    }
    }
-   var left:Sprite=hudFrame.getChildByName("blitz-hud-health-powers") as Sprite;
-   if(left)left.visible=!buildingInspection;
-   hudFrame.getChildByName("blitz-inspection-backing").visible=buildingInspection;
-   // Remove the outer straight rim above the enlarged center in both modes.
-   // Keep the orb's curved outline, native ability grooves and chat end.
-   for each(var segment:Object in hudStraightBands){
-    var band:Sprite=segment.slice;var originalArea:Rectangle=segment.area;var trim:Number=segment.trim;
-    var area:Rectangle=new Rectangle(originalArea.x,originalArea.y+trim,originalArea.width,originalArea.height-trim);
-    if(!band.scrollRect.equals(area))band.scrollRect=area;
-    band.y=segment.top+trim;
+   var bounds:Rectangle=hudArtwork.getBounds(hudArtwork);
+   var originX:Number=hudArtwork.x;var originY:Number=hudArtwork.y;
+   var delta:Number=WIDE_WIDTH-ORIGINAL_WIDTH;
+   // Draw only the original passive vector plate, once per density/mode, onto
+   // a shared pixel grid. Independent scrollRects antialias their fractional
+   // edges separately, causing a dark crack or doubled edge at every join.
+   // Integer scissor rectangles partition one surface with no gaps/overlaps.
+   var scale:Number=Math.min(main.overallScale,8191/(bounds.width+delta),Math.sqrt(8388608/((bounds.width+delta)*bounds.height)));
+   if(!isFinite(scale)||scale<=0)return;
+   if(!hudPixels||hudRasterScale!=scale||hudRasterInspection!=buildingInspection){
+    if(hudPixels)hudPixels.dispose();
+    while(hudFrame.numChildren)hudFrame.removeChildAt(0);
+    var left:Number=Math.floor((originX+bounds.x)*scale)/scale;
+    var top:Number=Math.floor((originY+bounds.y)*scale)/scale;
+    var right:Number=originX+bounds.right+delta;var bottom:Number=originY+bounds.bottom;
+    hudPixels=new BitmapData(Math.ceil((right-left)*scale),Math.ceil((bottom-top)*scale),true,0);
+    hudPixels.lock();
+    var region:Function=function(x1:Number,y1:Number,x2:Number,y2:Number):Rectangle {
+     var px:int=Math.round((x1-left)*scale);var py:int=Math.round((y1-top)*scale);
+     return new Rectangle(px,py,Math.round((x2-left)*scale)-px,Math.round((y2-top)*scale)-py);
+    };
+    var paint:Function=function(sourceX:Number,targetX:Number,factor:Number,area:Rectangle):void {
+     var matrix:Matrix=new Matrix(factor*scale,0,0,scale,(targetX+(originX-sourceX)*factor-left)*scale,(originY-top)*scale);
+     hudPixels.draw(hudArtwork,matrix,null,null,area,true);
+    };
+    var edgeTop:Number=originY+bounds.y;var trimTop:Number=edgeTop+3;
+    hudPixels.fillRect(region(440,Camera.PLAY_SCREEN_HEIGHT+8,680+delta,Camera.PLAY_SCREEN_HEIGHT+110),0xffa4b39c);
+    if(buildingInspection){
+     // The native chat end mirrored into the inspection's left cap retains
+     // its transparent corners. The rest is the native neutral center plate.
+     hudPixels.fillRect(region(12,Camera.PLAY_SCREEN_HEIGHT+8,440,Camera.PLAY_SCREEN_HEIGHT+110),0xffa4b39c);
+     paint(originX+bounds.right,0,-1,region(left,trimTop,12,bottom));
+     paint(440,12,(440-12)/240,region(12,trimTop,440,bottom));
+    }else{
+     // Both health and ability sections share the same native transform.
+     // Keep the orb contour, trimming only the straight upper rim.
+     paint(0,0,1,region(left,edgeTop,96,bottom));
+     paint(0,0,1,region(96,trimTop,440,bottom));
+    }
+    paint(440,440,(240+delta)/240,region(440,trimTop,680+delta,bottom));
+    paint(0,delta,1,region(680+delta,edgeTop,right,bottom));
+    if(!buildingInspection){
+     // Erase the retired XP cap before drawing the extended channel; alpha
+     // compositing alone leaves the old cap underneath its transparent edge.
+     hudPixels.fillRect(region(409,769,583,786),0xffa4b39c);
+     paint(200,409,161/24,region(409,769,570,786));
+     paint(424,570,1,region(570,769,583,786));
+    }
+    hudPixels.unlock();
+    var raster:Bitmap=new Bitmap(hudPixels,"auto",true);raster.scaleX=raster.scaleY=1/scale;
+    hudFrame.addChild(raster);hudFrame.x=left;hudFrame.y=top;
+    hudRasterScale=scale;hudRasterInspection=buildingInspection;hudRasterBuilds++;
    }
-   hudFrame.getChildByName("blitz-hud-health-curve").visible=!buildingInspection;
-   hudFrame.getChildByName("blitz-xp-channel-middle").visible=!buildingInspection;
-   hudFrame.getChildByName("blitz-xp-channel-cap").visible=!buildingInspection;
    hideEdge(base);if(hudFrame.parent!=game.var_89)game.var_89.addChildAt(hudFrame,0);
   }
   private static function DrawFrame(game:Game):void {
@@ -718,10 +743,11 @@ package {
     animationRate:main.stage.frameRate,frameCounter:BlitzFrameCounter.Snapshot(),
     margins:{left:main.parent.x,right:main.stage.stageWidth-main.parent.x-Camera.SCREEN_WIDTH*main.overallScale},
     presentation:PresentationGeometry(),
-    widescreen:{requested:wideRequested,active:wideGame!=null,logicalWidth:Camera.SCREEN_WIDTH,
+    widescreen:{requested:wideRequested,centeredHotbar:centeredHotbar,active:wideGame!=null,logicalWidth:Camera.SCREEN_WIDTH,
      logicalHeight:Camera.SCREEN_HEIGHT,uiOffset:wideGame&&wideGame.var_89?wideGame.var_89.x:0,
      frameAttached:Boolean(frame&&frame.parent==main),frameStyle:frameStyle,
      frameInteractive:frame?frame.mouseEnabled||frame.mouseChildren:false,decorationAnimating:ArtworkPlaying(frame)||ArtworkPlaying(hudFrame),interiorLimited:false,
+     hudRaster:{width:hudPixels?hudPixels.width:0,height:hudPixels?hudPixels.height:0,scale:hudRasterScale,builds:hudRasterBuilds,inspection:hudRasterInspection},
      interiorSceneWidth:null,roomWings:geometry(roomWings)}};
   }
   private static function geometry(value:DisplayObject,depth:int=0):Object {

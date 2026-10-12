@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-11",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-5f935c2e6795",
-  "inputHash": "583433640586d15fabaaf7ec35d5b7d0193efe106789256e2e7ed84b024e7f7f",
-  "note": "Test provenance only. Accepted by the previous October 11 structural contract, without adding this file to the exact-revision patch list."
+  "checkedAt": "2026-10-12",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-c93b05a5cf72",
+  "inputHash": "fa4e3a9ba72eb6394cde3cc40b98e918a8c581b7d7b126e1d7a1f81c0017fc12",
+  "note": "Test provenance only. Compatible with the reviewed structural contract; the latest unrelated SuperAnimInstance.method_1712 body remains intact, along with preceding emote/entity/link/chat changes. Camera.method_1073 is unchanged. Both official origins serve these same SWF bytes."
 }

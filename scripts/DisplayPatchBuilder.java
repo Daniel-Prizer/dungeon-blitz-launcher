@@ -85,6 +85,39 @@ public class DisplayPatchBuilder {
   Arrays.fill(code,2415,2427,(byte)2);System.arraycopy(replacement.toByteArray(),0,code,2415,replacement.size());
   body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
  }
+ static MethodBody correctCameraFloor(ABC abc)throws Exception {
+  MethodBody body=abc.findBodyByClassAndName("Camera","method_1073");
+  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("123d341e993ad9ae659b7b4fa85d924938c9988f780bc10ab86a7d653ed8bede"))throw new IllegalStateException("Unreviewed camera floor probes");
+  byte[] code=body.getCodeBytes().clone();
+  int[] starts={2895,2983},rays={29,33},hits={31,35},depths={32,36};
+  String[] expected={"621662422a1103000029d17612060000621d660da0756320","621662422a1103000029d076120600006221660da0756324"};
+  for(int n=0;n<starts.length;n++){
+   int start=starts[n],end=start+24;
+   if(!Arrays.equals(Arrays.copyOfRange(code,start,end),HexFormat.of().parseHex(expected[n])))throw new IllegalStateException("Camera probe range mismatch");
+   // No incoming edge may land in the replaced expression. All original
+   // addresses, exception tables, raycasts and subsequent camera rules remain.
+   for(AVM2Instruction i:body.getCode().code)if(i.getAddress()<start||i.getAddress()>=end)for(long target:i.getOffsets())if(target>start&&target<end)throw new IllegalStateException("Incoming camera probe edge");
+   for(var exception:body.exceptions)if((exception.start>start&&exception.start<end)||(exception.end>start&&exception.end<end)||(exception.target>start&&exception.target<end))throw new IllegalStateException("Camera probe exception edge");
+   ByteArrayOutputStream call=new ByteArrayOutputStream();
+   for(AVM2Instruction i:new AVM2Instruction[]{ins(0x60,abc.constants.getPublicQnameId("BlitzDisplay",true)),ins(0x62,22),ins(0x62,rays[n]),ins(0x66,13),ins(0xa0),ins(0x62,hits[n]),ins(0x62,20),ins(0x46,abc.constants.getPublicQnameId("CameraFloor",true),3),ins(0x75),ins(0x63,depths[n])})call.write(i.getBytes());
+   if(call.size()>24)throw new IllegalStateException("Camera probe exceeds reviewed range");
+   Arrays.fill(code,start,end,(byte)2);System.arraycopy(call.toByteArray(),0,code,start,call.size());
+  }
+  body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
+ }
+ static MethodBody correctMapWidth(ABC abc,String name,int start,String expectedHash)throws Exception {
+  MethodBody body=abc.findBodyByClassAndName("class_119",name);
+  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals(expectedHash))throw new IllegalStateException("Unreviewed map coordinates: "+name);
+  byte[] code=body.getCodeBytes().clone();int end=start+6;
+  if(!Arrays.equals(Arrays.copyOfRange(code,start,end),HexFormat.of().parseHex("60c70166fa01")))throw new IllegalStateException("Map width range mismatch");
+  for(AVM2Instruction i:body.getCode().code)if(i.getAddress()<start||i.getAddress()>=end)for(long target:i.getOffsets())if(target>start&&target<end)throw new IllegalStateException("Incoming map width edge");
+  for(var exception:body.exceptions)if((exception.start>start&&exception.start<end)||(exception.end>start&&exception.end<end)||(exception.target>start&&exception.target<end))throw new IllegalStateException("Map width exception edge");
+  // GlobalMap artwork, cutout masks and interactive boxes are authored at
+  // 1152 logical pixels. Camera width describes the world, not this panel.
+  // Keep the original map raster/zoom scale; all handlers stay untouched.
+  byte[] replacement=ins(0x25,1152).getBytes();Arrays.fill(code,start,end,(byte)2);System.arraycopy(replacement,0,code,start,replacement.length);
+  body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
+ }
  static MethodBody prepareCanvas(ABC abc)throws Exception {
   MethodBody body=abc.findBodyByClassAndName("Game","method_1946");
   if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("b4b11cb421ae24a79159618ae97677525949be0d0ac8da653ed2b0349f1946c9"))throw new IllegalStateException("Unreviewed final-canvas draw method");
@@ -100,7 +133,7 @@ public class DisplayPatchBuilder {
   body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
  }
  public static void main(String[] args)throws Exception {
-  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null,correctedCropHash=null,canvasHash=null;
+  SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null,correctedCropHash=null,canvasHash=null,cameraHash=null,mapCreateHash=null,mapRefreshHash=null;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();MethodBody layout=abc.findBodyByClassAndName("Main","method_561");if(layout==null)continue;
    reviewInput(abc);
@@ -133,9 +166,12 @@ public class DisplayPatchBuilder {
    MethodBody crop=correctCrop(abc);correctedCropHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(crop.getCodeBytes()));
    MethodBody reuse=correctTileReuse(abc);correctedReuseHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(reuse.getCodeBytes()));
    correctedCacheHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes()));
-   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&b!=crop&&b!=canvas&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
+   MethodBody camera=correctCameraFloor(abc);cameraHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(camera.getCodeBytes()));
+   MethodBody mapCreate=correctMapWidth(abc,"OnCreateScreen",1149,"c8305d08052dc01e8f0a12f30c924a86ab94ca6cab930742597eb39f649a7cba");mapCreateHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(mapCreate.getCodeBytes()));
+   MethodBody mapRefresh=correctMapWidth(abc,"OnRefreshScreen",788,"b2fba29d71796f332e090e20f9b58d48ca8d482050ab9e459a9d176575517793");mapRefreshHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(mapRefresh.getCodeBytes()));
+   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&b!=crop&&b!=canvas&&b!=camera&&b!=mapCreate&&b!=mapRefresh&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
-   System.out.println("Verified native raster layout, cache, crop transform, canvas preparation and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?6:5)));
+   System.out.println("Verified native raster layout, cache, crop transform, map coordinates, camera floor probes, canvas preparation and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?9:8)));
   }
   if(changed!=1)throw new IllegalStateException("Expected exactly one reviewed layout method");
   try(OutputStream out=new FileOutputStream(args[1])){swf.saveTo(out);}
@@ -152,6 +188,9 @@ public class DisplayPatchBuilder {
    if(crop==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(crop.getCodeBytes())).equals(correctedCropHash))throw new IllegalStateException("Serialized crop transform changed");
    MethodBody canvas=tag.getABC().findBodyByClassAndName("Game","method_1946");
    if(canvas==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canvas.getCodeBytes())).equals(canvasHash))throw new IllegalStateException("Serialized final-canvas entry changed");
+   MethodBody camera=tag.getABC().findBodyByClassAndName("Camera","method_1073");
+   if(camera==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(camera.getCodeBytes())).equals(cameraHash))throw new IllegalStateException("Serialized camera probes changed");
+   for(String[] item:new String[][]{{"OnCreateScreen",mapCreateHash},{"OnRefreshScreen",mapRefreshHash}}){MethodBody map=tag.getABC().findBodyByClassAndName("class_119",item[0]);if(map==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(map.getCodeBytes())).equals(item[1]))throw new IllegalStateException("Serialized map width changed");}
   }
   if(verified!=1)throw new IllegalStateException("Serialized allocator missing");
  }
