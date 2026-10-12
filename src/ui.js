@@ -1,6 +1,12 @@
 'use strict';
 const $ = id => document.getElementById(id);
-let state, settingsOpen = false, pending = Promise.resolve(), volumeTimer, recording=false, selectedSection=0;
+let state, settingsOpen = false, pending = Promise.resolve(), volumeTimer, recording=false, selectedSection='display';
+const sectionScroll=new Map();
+const tabs=[...document.querySelectorAll('[data-section]')];
+const compactNavigation=window.matchMedia('(max-width:900px)');
+function navigationOrientation(){document.querySelector('.settings-nav').setAttribute('aria-orientation',compactNavigation.matches?'horizontal':'vertical');}
+navigationOrientation();compactNavigation.addEventListener('change',navigationOrientation);
+function feedback(message,error=false){$('feedback').textContent=message;$('feedback').dataset.error=String(error);}
 const audioBuses=['player','music','environment','creatures'];
 function paintVolume(slider) {
   const value=Number(slider.value), min=Number(slider.min), max=Number(slider.max);
@@ -8,11 +14,12 @@ function paintVolume(slider) {
 }
 async function call(name, value) {
   const result = await window.blitz.action(name, value);
-  if (result?.error) $('feedback').textContent = result.error;
+  if (result?.error) feedback(result.error,true);
   return result;
 }
 function save(patch) {
-  pending = pending.then(() => call('save-settings', patch)).then(async result => { if(result.error)render(await window.blitz.action('state'));$('feedback').textContent = result.message || result.error || 'Saved';return result; }).catch(() => { $('feedback').textContent = 'Could not save settings.'; });
+  feedback('Saving…');
+  pending = pending.then(() => call('save-settings', patch)).then(async result => { if(result.error)render(await window.blitz.action('state'));feedback(result.message || result.error || 'Saved automatically',!!result.error);return result; }).catch(() => { feedback('Could not save settings.',true); });
   return pending;
 }
 function render(next) {
@@ -22,7 +29,7 @@ function render(next) {
   $('waiting-text').textContent = state.error || 'Opening Dungeon Blitz…';
   $('overlay').hidden = !state.modal;
   $('settings-content').hidden = state.modal !== 'settings'; $('error-content').hidden = state.modal !== 'error';
-  document.querySelector('.settings-nav').hidden=state.modal!=='settings';
+  $('settings-body').hidden=state.modal!=='settings';
   $('panel-title').textContent = state.modal === 'error' ? 'Could not connect' : 'Settings'; $('error-text').textContent = state.error;
   $('version').textContent = `v${state.version}`;
   $('compatibility').hidden = state.clientIntegration !== false && state.audioIntegration !== false;
@@ -37,7 +44,7 @@ function render(next) {
     $('centered-hotbar').checked=s.centeredHotbar;
     $('centered-camera').checked=s.centeredCamera;
     $('auto-updates').checked=s.autoUpdates;
-    $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
+    $('game-url').value = s.gameURL; feedback('Settings save automatically.');
     selectSection(selectedSection);$('dismiss').focus();
   }
   settingsOpen = state.modal === 'settings';
@@ -46,18 +53,19 @@ function render(next) {
   $('cursor-lock').checked = s.cursorLock;
   $('shift-mount').checked=s.shiftMount;
   $('shift-mount').disabled=state.clientIntegration===false||state.audioIntegration===false;
-  $('toggle-cursor').textContent = s.cursorLock ? 'Unlock cursor' : 'Lock cursor';
-  $('cursor-status').textContent = s.cursorLock ? 'Cursor locks when you return to the game.' : 'Cursor lock is off.';
+  $('cursor-status').textContent = s.cursorLock ? 'Locks when you return to the game.' : 'Cursor lock is off.';
   $('audio-status').textContent = state.audio?.error ? 'Audio control unavailable. Reconnect to retry.' : "Controls this game's sound only.";
-  $('audio-mix-status').textContent=state.audioIntegration===false?'Separate sound controls need an update for this client version. Master volume still works.':'Player includes characters, abilities and menu sounds. Environment includes ambient loops and world sounds.';
+  $('audio-mix-status').textContent=state.audioIntegration===false?'Separate sound controls need a launcher update. Master volume still works.':'Player includes abilities and menu sounds. Environment includes ambient and world sounds. Master volume scales every category.';
   for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
   $('render-resolution').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('show-fps').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('experimental-widescreen').disabled=state.clientIntegration===false||state.audioIntegration===false;
+  $('centered-hotbar').disabled=!s.experimentalWidescreen||state.clientIntegration===false||state.audioIntegration===false;
+  $('hotbar-hint').textContent=s.experimentalWidescreen?'Keep the compact hotbar beneath the wider world.':'Enable 16:9 to use this layout. Your preference is kept.';
   $('centered-camera').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('url-status').textContent = state.pendingURL ? 'Saved. Reconnect to use the new game URL.' : '';
   const update=state.update||{};
-  $('compatibility').textContent=update.phase==='ready'?'This game client needs a compatibility update. A launcher update is downloaded and verified; close the launcher to install it with automatic updates on, or use Install & restart.':'This game client needs a compatibility update for sharp rendering, 16:9, separate sound controls, FPS and margin input. '+(s.autoUpdates?'The launcher checks for a signed update automatically.':'Use Check for updates above.')+' The game continues running without unsupported patches.';
+  $('compatibility').textContent=update.phase==='ready'?'Some enhancements need a compatibility update. A verified launcher update is ready; open Updates to install it.':'Some enhancements are unavailable for this game version. '+(s.autoUpdates?'The launcher checks for a compatible update automatically.':'Open Updates to check for a compatible launcher.')+' Your game keeps running.';
   $('update-status').textContent=update.phase==='ready'?`v${update.version} downloaded and verified. ${s.autoUpdates?'Installs when you close the launcher.':'Use Install & restart when convenient.'}`:update.phase==='downloading'?`Downloading v${update.version} · ${update.percent}%`:update.phase==='verifying'?`Verifying v${update.version} · ${update.percent}%`:update.phase==='error'?update.error:({current:'Up to date.',checking:'Checking GitHub…',development:'Updates are disabled in development builds.'}[update.phase]||(s.autoUpdates?'Checks GitHub automatically.':'Automatic updates are off.'));
   if(update.phase==='unavailable')$('update-status').textContent=update.error;
   $('install-update').hidden=update.phase!=='ready';$('check-updates').disabled=['development','unavailable','checking','downloading','verifying'].includes(update.phase);
@@ -65,17 +73,27 @@ function render(next) {
 }
 $('settings').onclick = () => call('settings'); $('fullscreen').onclick = () => call('fullscreen');
 $('change-character').onclick=async()=>{clearTimeout(volumeTimer);if(settingsOpen)await save({volume:Number($('volume-number').value)});await pending;await call('change-character');};
-function selectSection(index){
-  selectedSection=index;
-  document.querySelectorAll('.setting').forEach((section,n)=>{section.hidden=n!==index&&!(index===1&&n===2);});
-  for(const button of document.querySelectorAll('[data-section]'))button.setAttribute('aria-pressed',String(Number(button.dataset.section)===index));
-  $('settings-content').scrollTop=0;
+function selectSection(name){
+  if(!tabs.some(tab=>tab.dataset.section===name))return;
+  sectionScroll.set(selectedSection,$('settings-content').scrollTop);
+  selectedSection=name;
+  document.querySelectorAll('[data-pane]').forEach(section=>{section.hidden=section.dataset.pane!==name;});
+  for(const button of tabs){const selected=button.dataset.section===name;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;}
+  $('settings-content').scrollTop=sectionScroll.get(name)||0;
 }
-for(const button of document.querySelectorAll('[data-section]'))button.onclick=()=>selectSection(Number(button.dataset.section));
+for(const button of tabs){
+  button.onclick=()=>selectSection(button.dataset.section);
+  button.onkeydown=e=>{
+    const previous=compactNavigation.matches?'ArrowLeft':'ArrowUp',next=compactNavigation.matches?'ArrowRight':'ArrowDown';
+    if(![previous,next,'Home','End'].includes(e.key))return;
+    e.preventDefault();
+    const index=e.key==='Home'?0:e.key==='End'?tabs.length-1:(tabs.indexOf(button)+(e.key===next?1:-1)+tabs.length)%tabs.length;
+    tabs[index].focus();selectSection(tabs[index].dataset.section);
+  };
+}
 for (const id of ['dismiss', 'done']) $(id).onclick = async () => { if(settingsOpen){clearTimeout(volumeTimer);await save({ volume: Number($('volume-number').value) });}await call('dismiss'); };
 $('retry').onclick = () => call('restart-game'); $('reconnect').onclick = async () => { await pending; await call('restart-game'); };
 $('apply-url').onclick = async () => { await save({ gameURL: $('game-url').value.trim() }); };
-$('toggle-cursor').onclick = () => call('toggle-cursor');
 $('cursor-lock').onchange = () => save({ cursorLock: $('cursor-lock').checked });
 $('shift-mount').onchange=()=>save({shiftMount:$('shift-mount').checked});
 $('unlock-key').onclick = async () => {

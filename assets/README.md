@@ -11,9 +11,13 @@ the production PNGs trim transparent padding and the ICO contains 16, 24, 32,
 
 ## Settings controls
 
-`settings-frame.svg` and `settings-inset.svg` are original vector drawings matching
-the in-game Options menu's chamfered sage bevels and recessed label grooves. They
-are code assets, not screenshots, exported game symbols or generated bitmaps.
+`settings-frame.svg` is an original chamfered slate frame, with narrow fixed
+bevels and a dark interior matching the launcher's stone title bar. Settings
+uses the existing `titlebar-stone.svg` for its heading, quiet category navigation,
+thin gold controls and purple sound tracks. `settings-inset.svg` retains the
+older sage label artwork for source history; the redesigned menu does not use
+it. These are code assets, not screenshots, exported game symbols or generated
+bitmaps.
 
 `nunito.ttf` provides rounded, bold local UI text. It is Nunito from the Google
 Fonts repository, distributed with its unmodified SIL Open Font License in

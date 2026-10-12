@@ -136,7 +136,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    assert.equal(next.builds,first.builds,'HUD artwork must remain cached while frames and meters update');
   }
   await call('save-settings',{renderResolution:1});await wait(300);
-  await call('settings');await page.getByRole('button',{name:'Display',exact:true}).click();
+  await call('settings');await page.getByRole('tab',{name:'Display',exact:true}).click();
   const follow=page.getByRole('checkbox',{name:'Centered camera',exact:true});assert.equal(await follow.isChecked(),false);
   await follow.check();await until(async()=>(await call('state')).settings.centeredCamera);await call('dismiss');await wait(200);
   assert((await sample('follow-setting-enabled')).renderProbe.centeredCamera,'Actual checkbox reaches the game helper');
