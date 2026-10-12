@@ -103,6 +103,23 @@ public class DisplayPatchBuilder {
    if(call.size()>24)throw new IllegalStateException("Camera probe exceeds reviewed range");
    Arrays.fill(code,start,end,(byte)2);System.arraycopy(call.toByteArray(),0,code,start,call.size());
   }
+  // Reviewed horizontal target clamps. This only substitutes their Math
+  // expressions: native room rays, vertical probes, flags, easing and input
+  // remain at their original addresses. Disabled helpers reproduce the exact
+  // original min/max arithmetic; enabled helpers select a small central band.
+  int[] followStarts={1444,1470};
+  String[] followExpected={"6021620a660ed1d0668617a1468b0602610e","6021620a660ed1d066f527a1468d0702610e"};
+  String[] followNames={"CameraLower","CameraUpper"};
+  for(int n=0;n<followStarts.length;n++){
+   int start=followStarts[n],end=start+18;
+   if(!Arrays.equals(Arrays.copyOfRange(code,start,end),HexFormat.of().parseHex(followExpected[n])))throw new IllegalStateException("Camera follow range mismatch");
+   for(AVM2Instruction i:body.getCode().code)if(i.getAddress()<start||i.getAddress()>=end)for(long target:i.getOffsets())if(target>start&&target<end)throw new IllegalStateException("Incoming camera follow edge");
+   for(var exception:body.exceptions)if((exception.start>start&&exception.start<end)||(exception.end>start&&exception.end<end)||(exception.target>start&&exception.target<end))throw new IllegalStateException("Camera follow exception edge");
+   ByteArrayOutputStream call=new ByteArrayOutputStream();
+   for(AVM2Instruction i:new AVM2Instruction[]{ins(0x60,abc.constants.getPublicQnameId("BlitzDisplay",true)),ins(0x62,10),ins(0x66,14),ins(0xd1),ins(0xd0),ins(0x46,abc.constants.getPublicQnameId(followNames[n],true),3),ins(0x61,14)})call.write(i.getBytes());
+   if(call.size()>18)throw new IllegalStateException("Camera follow exceeds reviewed range");
+   Arrays.fill(code,start,end,(byte)2);System.arraycopy(call.toByteArray(),0,code,start,call.size());
+  }
   body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
  }
  static MethodBody correctMapWidth(ABC abc,String name,int start,String expectedHash)throws Exception {

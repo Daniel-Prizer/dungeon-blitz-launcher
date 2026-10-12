@@ -192,6 +192,7 @@ package {
   }
   private function world(value:Number,scene:Boolean,oldCoverage:Boolean=false,reuse:Boolean=false,y:Number=250,ties:Boolean=false,art:String="a_Room_Main"):Boolean {
    if(art=="a_Room_CameraProbe")return probeCamera(int(value));
+   if(art=="a_Room_FollowProbe")return probeFollow(int(value));
    if(art=="a_Room_MapProbe")return probeMap(int(value));
    if(!isFinite(value)||value<0||value>25000||!isFinite(y)||y<0||y>2000)return false;
    vertical=y;
@@ -247,6 +248,37 @@ package {
     world(Math.max(0,camera.var_81.x),true,false,false,Math.max(0,camera.var_81.y),false,"a_Room_BT12");
    }catch(error:Error){cameraProbe.error=error.toString();Camera.var_404=null;}
    return true;
+  }
+  private function probeFollow(kind:int):Boolean {
+   worldEnabled=false;mapProbe=null;cameraProbe={kind:kind,width:Camera.SCREEN_WIDTH,follow:[]};
+   var scripted:Point=Camera.var_404;
+   try {
+    Camera.var_404=null;game.collMan=new CollisionManager(game);game.levelLayer=new Sprite();game.TIMESTEP=1;
+    var roomWidth:Number=kind==1?6000:kind==2?1600:0;
+    cameraProbe.roomWidth=roomWidth;
+    var entity:Entity=new Entity(game,"",null,0,0,0,0,0,0,0,null,null,"",null,null,null);
+    entity.physPosX=roomWidth?roomWidth/2:3000;entity.physPosY=600;entity.bLeft=false;entity.bBackpedal=false;
+    var floorMask:uint=Game.const_140&~(Game.const_160|Game.const_237);
+    game.collMan.method_1952(new class_37(new Point(-10000,650),new Point(15000,650),floorMask|CollisionManager.HARD_FLOOR,0,null,null,0,0));
+    if(roomWidth){
+     game.collMan.method_1952(new class_37(new Point(0,4000),new Point(0,-4000),Game.const_152|Game.const_413,0,null,null,0,0));
+     game.collMan.method_1952(new class_37(new Point(roomWidth,-4000),new Point(roomWidth,4000),Game.const_152,0,null,null,0,0));
+    }
+    var camera:Camera=new Camera(game,entity);camera.var_556=true;camera.var_2372=entity.physPosX;camera.var_81=new Point(0,0);
+    if(kind==3){entity.var_1122=true;camera.var_556=false;camera.var_81=new Point(2000,62);game.levelLayer.x=-2000;game.levelLayer.y=-62;}
+    if(kind==4)Camera.var_404=new Point(4000,730);
+    for(var step:int=0;step<900;step++){
+     var speed:Number=step<200?5:step<300?0:step<650?-5:step<700?0:5;
+     entity.bLeft=speed<0;entity.physPosX+=speed;
+     if(roomWidth)entity.physPosX=Math.max(80,Math.min(roomWidth-80,entity.physPosX));
+     if(kind==5&&(step==100||step==400))camera.method_161();
+     if(kind==6)entity.physPosY=600-250*Math.max(0,Math.sin(step/20));
+     if(kind==7&&step==350)entity.physPosX+=1900;
+     camera.method_1073();
+     cameraProbe.follow.push({step:step,speed:speed,player:entity.physPosX,target:camera.var_81.x,render:game.levelLayer.x,screen:entity.physPosX+game.levelLayer.x,y:camera.var_81.y,layerY:game.levelLayer.y,mode:camera.var_316,easing:camera.var_557});
+    }
+   }catch(error:Error){cameraProbe.error=error.toString();}
+   Camera.var_404=scripted;return true;
   }
   private function visibleBounds(value:DisplayObject,root:DisplayObject):Rectangle {
    var result:Rectangle=new Rectangle();if(!value.visible)return result;

@@ -35,6 +35,7 @@ function render(next) {
     $('show-fps').checked=s.showFPS;
     $('experimental-widescreen').checked=s.experimentalWidescreen;
     $('centered-hotbar').checked=s.centeredHotbar;
+    $('centered-camera').checked=s.centeredCamera;
     $('auto-updates').checked=s.autoUpdates;
     $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
     selectSection(selectedSection);$('dismiss').focus();
@@ -53,6 +54,7 @@ function render(next) {
   $('render-resolution').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('show-fps').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('experimental-widescreen').disabled=state.clientIntegration===false||state.audioIntegration===false;
+  $('centered-camera').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('url-status').textContent = state.pendingURL ? 'Saved. Reconnect to use the new game URL.' : '';
   const update=state.update||{};
   $('compatibility').textContent=update.phase==='ready'?'This game client needs a compatibility update. A launcher update is downloaded and verified; close the launcher to install it with automatic updates on, or use Install & restart.':'This game client needs a compatibility update for sharp rendering, 16:9, separate sound controls, FPS and margin input. '+(s.autoUpdates?'The launcher checks for a signed update automatically.':'Use Check for updates above.')+' The game continues running without unsupported patches.';
@@ -101,6 +103,7 @@ $('render-resolution').onchange=()=>save({renderResolution:Number($('render-reso
 $('show-fps').onchange=()=>save({showFPS:$('show-fps').checked});
 $('experimental-widescreen').onchange=()=>save({experimentalWidescreen:$('experimental-widescreen').checked});
 $('centered-hotbar').onchange=()=>save({centeredHotbar:$('centered-hotbar').checked});
+$('centered-camera').onchange=()=>save({centeredCamera:$('centered-camera').checked});
 $('auto-updates').onchange=()=>save({autoUpdates:$('auto-updates').checked});
 $('check-updates').onclick=()=>call('check-updates');$('install-update').onclick=()=>call('install-update');
 $('hardware-acceleration').onchange = () => save({ hardwareAcceleration: $('hardware-acceleration').checked });

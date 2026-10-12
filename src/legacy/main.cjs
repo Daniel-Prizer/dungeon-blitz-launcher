@@ -30,6 +30,13 @@ const mountShortcut=new MountShortcut(async()=>{
 });
 let widescreen=false,appliedWidescreen=null;
 let centeredHotbar=false,appliedCenteredHotbar=null;
+let centeredCamera=false,appliedCenteredCamera=null;
+async function applyCenteredCamera(){
+ if(!win||win.isDestroyed()||!clientIntegration||!audioIntegration||appliedCenteredCamera===centeredCamera)return;
+ const wanted=centeredCamera;
+ const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetCenteredCamera==='function'&&e.BlitzSetCenteredCamera(${wanted});})()`).catch(()=>false);
+ if(applied===true&&centeredCamera===wanted)appliedCenteredCamera=wanted;
+}
 async function applyCenteredHotbar(){
  if(!win||win.isDestroyed()||!clientIntegration||!audioIntegration||appliedCenteredHotbar===centeredHotbar)return;
  const wanted=centeredHotbar;
@@ -224,7 +231,7 @@ app.whenReady().then(async () => {
   wc.on('will-redirect', (event,url) => { if (!gameURL(url)) event.preventDefault(); });
   wc.on('new-window', (event,url) => { event.preventDefault(); void routeLink(url); });
   if (wc.setWindowOpenHandler) wc.setWindowOpenHandler(({url}) => { void routeLink(url); return { action: 'deny' }; });
-  wc.on('did-start-loading', () => {mountShortcut.reset();clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;appliedWidescreen=null;appliedCenteredHotbar=null;appliedMountShortcut=null;emit({ type: 'loading', value: true });});
+  wc.on('did-start-loading', () => {mountShortcut.reset();clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;appliedWidescreen=null;appliedCenteredHotbar=null;appliedCenteredCamera=null;appliedMountShortcut=null;emit({ type: 'loading', value: true });});
   wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
   wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
   wc.on('dom-ready', applyZoom);
@@ -232,7 +239,7 @@ app.whenReady().then(async () => {
   // initial blank renderer. Enable after it has a real document instead.
   wc.on('did-navigate',()=>{linkContext=null;});
   wc.on('did-finish-load',watchHTMLLinks);
-  const audioTimer=setInterval(()=>{void applyAudioMix();void applyFPSCounter();void applyWidescreen();void applyCenteredHotbar();void applyMountShortcut();if(!appliedDisplayKey)void applyZoom();},1000);win.on('closed',()=>clearInterval(audioTimer));
+  const audioTimer=setInterval(()=>{void applyAudioMix();void applyFPSCounter();void applyWidescreen();void applyCenteredHotbar();void applyCenteredCamera();void applyMountShortcut();if(!appliedDisplayKey)void applyZoom();},1000);win.on('closed',()=>clearInterval(audioTimer));
   wc.on('did-fail-load', (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) emit({ type: 'error', message: description }); });
   wc.on('render-process-gone', () => emit({ type: 'error', message: 'The game process stopped. Reload to reconnect.' }));
   wc.on('enter-html-full-screen', () => { win.setFullScreen(false); emit({ type: 'fullscreen' }); });
@@ -265,6 +272,7 @@ readMessages(pipe, async cmd => {
     if(cmd.type==='show-fps'&&typeof cmd.value==='boolean'){showFPS=cmd.value;await applyFPSCounter();}
     if(cmd.type==='widescreen'&&typeof cmd.value==='boolean'){widescreen=cmd.value;await applyWidescreen();}
     if(cmd.type==='centered-hotbar'&&typeof cmd.value==='boolean'){centeredHotbar=cmd.value;await applyCenteredHotbar();}
+    if(cmd.type==='centered-camera'&&typeof cmd.value==='boolean'){centeredCamera=cmd.value;await applyCenteredCamera();}
     if(cmd.type==='shift-mount'&&typeof cmd.value==='boolean'){mountShortcut.configure(cmd.value);await applyMountShortcut();}
     if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
     if (['viewport','test-viewport'].includes(cmd.type) && Number.isInteger(cmd.width) && Number.isInteger(cmd.height)) {
@@ -283,7 +291,7 @@ readMessages(pipe, async cmd => {
     if(cmd.type==='test-shortcut-control'&&process.env.BLITZ_HOST_TEST==='1'&&['play','login','typing','capture','rebind','unbound','menu'].includes(cmd.value))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzInputFixtureControl(${JSON.stringify(cmd.value)})`);
     if(cmd.type==='test-transition-fixture'&&process.env.BLITZ_HOST_TEST==='1'){
       const exists=await win.webContents.executeJavaScript("typeof document.getElementById('DungeonBlitz')?.BlitzTransitionFixtureControl==='function'").catch(()=>false);
-      if(exists){clientIntegration=true;audioIntegration=true;emit({type:'client-integration',value:true});emit({type:'audio-integration',value:true});await applyZoom();await applyWidescreen();await applyCenteredHotbar();}
+      if(exists){clientIntegration=true;audioIntegration=true;emit({type:'client-integration',value:true});emit({type:'audio-integration',value:true});await applyZoom();await applyWidescreen();await applyCenteredHotbar();await applyCenteredCamera();}
     }
     if(cmd.type==='test-transition-control'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.play==='boolean'&&typeof cmd.transition==='boolean'&&(cmd.transfer===undefined||typeof cmd.transfer==='boolean')&&(cmd.phase===undefined||['Login','None','Transfer'].includes(cmd.phase))&&(cmd.menu===undefined||['none','idols','trove','barn','forge','tome','social','settings','store','companion-commands','map','no-direction'].includes(cmd.menu)))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzTransitionFixtureControl(${cmd.play},${cmd.transition},${JSON.stringify(cmd.menu??'none')},${cmd.transfer===true},${JSON.stringify(cmd.phase??'')})`);
     if(cmd.type==='test-world-control'&&process.env.BLITZ_HOST_TEST==='1'&&Number.isFinite(cmd.pan)&&cmd.pan>=0&&cmd.pan<=25000&&typeof cmd.scene==='boolean'&&typeof cmd.oldCoverage==='boolean'&&(cmd.reuse===undefined||typeof cmd.reuse==='boolean')&&(cmd.tiedTime===undefined||typeof cmd.tiedTime==='boolean')&&(cmd.art===undefined||/^a_(Room|Level)_[A-Za-z0-9_]{1,64}$/.test(cmd.art))&&(cmd.vertical===undefined||(Number.isFinite(cmd.vertical)&&cmd.vertical>=0&&cmd.vertical<=2000)))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzWorldFixtureControl(${cmd.pan},${cmd.scene},${cmd.oldCoverage},${cmd.reuse===true},${cmd.vertical??250},${cmd.tiedTime===true},${JSON.stringify(cmd.art??'a_Room_Main')})`);

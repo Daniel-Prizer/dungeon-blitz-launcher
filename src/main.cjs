@@ -129,6 +129,7 @@ async function action(name, value) {
       if('showFPS' in value&&typeof value.showFPS!=='boolean')throw new Error('Show FPS counter must be on or off.');
       if('experimentalWidescreen' in value&&typeof value.experimentalWidescreen!=='boolean')throw new Error('Experimental 16:9 must be on or off.');
       if('centeredHotbar' in value&&typeof value.centeredHotbar!=='boolean')throw new Error('Original centered hotbar must be on or off.');
+      if('centeredCamera' in value&&typeof value.centeredCamera!=='boolean')throw new Error('Centered camera must be on or off.');
       if('autoUpdates' in value&&typeof value.autoUpdates!=='boolean')throw new Error('Automatic updates must be on or off.');
       if('shiftMount' in value&&typeof value.shiftMount!=='boolean')throw new Error('Left Shift mount shortcut must be on or off.');
       if((value.shiftMount??store.data.settings.shiftMount)&&(value.unlockKey??store.data.settings.unlockKey)==='ShiftLeft')throw new Error('Choose a different cursor-lock shortcut before using Left Shift for your mount.');

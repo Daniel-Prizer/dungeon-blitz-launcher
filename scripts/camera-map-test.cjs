@@ -19,7 +19,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   res.setHeader('Content-Type','text/html');res.end('<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#484955}#game-container{width:100vw!important;height:100vh!important;min-width:0!important;min-height:0!important}object{display:block;width:100%;height:100%}</style></head><body><div id="game-container"><object id="DungeonBlitz" type="application/x-shockwave-flash" data="/DungeonBlitz.swf"><param name="movie" value="/DungeonBlitz.swf"><param name="allowScriptAccess" value="always"><param name="wmode" value="direct"></object></div></body></html>');
  });
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
- let app;const records=[],cameras=new Map();
+ let app;const records=[],cameras=new Map(),following=new Map();
  try{
   app=await electron.launch({args:[root,'--smoke-test','--private-desktop'],env});
   const page=await app.firstWindow();await page.waitForFunction(()=>window.blitz);
@@ -36,7 +36,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   }
 
   for(mode of ['camera-baseline','fixed']){
-   await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:true,centeredHotbar:false});await call('restart-game');
+   await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:true,centeredHotbar:false,centeredCamera:false});await call('restart-game');
    await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await wait(900);await cmd({type:'test-transition-control',play:true,transition:false});await wait(700);
    for(const [width,height] of [[1920,1080],[2560,1440]]){
     await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(size[0],size[1]+32),[width,height]);await wait(500);
@@ -51,6 +51,33 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
       if(kind===0){assert.equal(before.y,480,'Original missed side probe reproduces the downward camera drop');assert.equal(probe.y,62,'Missed side ray must retain the real player floor');}
       else assert.equal(probe.y,before.y,'Valid/deeper floors, missing player floor, frozen and scripted cameras stay intact');
      }
+    }
+    for(let kind=0;kind<8;kind++){
+     await cmd({type:'test-world-control',pan:kind,scene:false,oldCoverage:false,art:'a_Room_FollowProbe'});
+     const record=await sample(mode+'-follow-original-'+width+'-'+kind),probe=record.renderProbe.fixture.camera;
+     assert(!probe.error,probe.error);assert.equal(probe.follow.length,900);
+     following.set(mode+'-'+width+'-'+kind,probe);
+     if(mode==='fixed')assert.deepEqual(probe,following.get('camera-baseline-'+width+'-'+kind),'Disabled follow reproduces every original camera sample, including frozen/scripted states');
+    }
+    if(mode==='fixed'){
+     await call('save-settings',{centeredCamera:true});await wait(120);
+     for(let kind=0;kind<8;kind++){
+      await cmd({type:'test-world-control',pan:kind,scene:false,oldCoverage:false,art:'a_Room_FollowProbe'});
+      const record=await sample('follow-centered-'+width+'-'+kind),probe=record.renderProbe.fixture.camera;
+      assert(record.renderProbe.centeredCamera);assert(!probe.error,probe.error);
+      const native=following.get('fixed-'+width+'-'+kind);
+      for(const [i,point]of probe.follow.entries()){
+       assert(Number.isFinite(point.screen)&&Number.isFinite(point.target)&&Number.isFinite(point.render));
+       assert.equal(point.y,native.follow[i].y,'Preserve the native vertical target');
+       assert.equal(point.layerY,native.follow[i].layerY,'Preserve the native vertical easing');
+       if(probe.roomWidth){assert(point.target>=-.001);assert(point.target<=probe.roomWidth-probe.width+.001);}
+       if([0,1,5,6,7].includes(kind))assert(Math.abs(point.player-point.target-probe.width/2)<=probe.width*.061,'Horizontal target stays in the central band before native easing');
+      }
+      if(kind===2)for(const step of [199,649])assert(Math.abs(probe.follow[step].target-native.follow[step].target)<.001,'Keep original narrow-room endpoints within floating-point precision');
+      if(kind===3||kind===4)assert.deepEqual(probe,native,'Frozen and scripted cameras retain every original sample');
+      if(kind===7)assert(probe.follow.some(point=>point.easing>0),'Teleports retain native camera easing');
+     }
+     await call('save-settings',{centeredCamera:false});await wait(120);
     }
    }
    for(let kind=0;kind<2;kind++){
@@ -71,6 +98,26 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    await cmd({type:'test-world-control',pan:0,scene:false,oldCoverage:false,art:'a_Room_CameraProbe'});await wait(100);
    const original=(await sample(mode+'-original-camera')).renderProbe.fixture.camera;cameras.set(mode+'-original',original);
    if(mode==='fixed')assert.deepEqual(original,cameras.get('camera-baseline-original'),'Original-width camera behavior stays byte-for-byte equivalent');
+   for(let kind=0;kind<8;kind++){
+    await cmd({type:'test-world-control',pan:kind,scene:false,oldCoverage:false,art:'a_Room_FollowProbe'});
+    const probe=(await sample(mode+'-follow-original-width-'+kind)).renderProbe.fixture.camera;assert(!probe.error,probe.error);
+    following.set(mode+'-original-'+kind,probe);
+    if(mode==='fixed')assert.deepEqual(probe,following.get('camera-baseline-original-'+kind),'Original-width disabled follow is identical to native');
+   }
+   if(mode==='fixed'){
+    await call('save-settings',{centeredCamera:true});await wait(120);
+    for(let kind=0;kind<8;kind++){
+     await cmd({type:'test-world-control',pan:kind,scene:false,oldCoverage:false,art:'a_Room_FollowProbe'});
+     const probe=(await sample('follow-centered-original-width-'+kind)).renderProbe.fixture.camera,native=following.get('fixed-original-'+kind);assert(!probe.error,probe.error);
+     for(const [i,point]of probe.follow.entries()){
+      assert(Number.isFinite(point.screen)&&Number.isFinite(point.target));assert.equal(point.y,native.follow[i].y);assert.equal(point.layerY,native.follow[i].layerY);
+      if(probe.roomWidth){assert(point.target>=-.001);assert(point.target<=probe.roomWidth-probe.width+.001);}
+      if([0,1,5,6,7].includes(kind))assert(Math.abs(point.player-point.target-probe.width/2)<=probe.width*.061);
+     }
+     if(kind===3||kind===4)assert.deepEqual(probe,native);
+    }
+    await call('save-settings',{centeredCamera:false});await wait(120);
+   }
   }
   await call('save-settings',{experimentalWidescreen:true});await wait(500);
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(300);
@@ -90,6 +137,16 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   }
   await call('save-settings',{renderResolution:1});await wait(300);
   await call('settings');await page.getByRole('button',{name:'Display',exact:true}).click();
+  const follow=page.getByRole('checkbox',{name:'Centered camera',exact:true});assert.equal(await follow.isChecked(),false);
+  await follow.check();await until(async()=>(await call('state')).settings.centeredCamera);await call('dismiss');await wait(200);
+  assert((await sample('follow-setting-enabled')).renderProbe.centeredCamera,'Actual checkbox reaches the game helper');
+  await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await wait(400);
+  assert((await sample('follow-setting-reloaded')).renderProbe.centeredCamera,'Reconnect reapplies the saved follow setting');
+  await call('settings');await follow.uncheck();await until(async()=>!(await call('state')).settings.centeredCamera);await call('dismiss');await wait(200);
+  assert.equal((await sample('follow-setting-disabled')).renderProbe.centeredCamera,false);
+  assert((await call('save-settings',{centeredCamera:'yes'})).error,'Reject malformed camera settings');
+  await cmd({type:'test-transition-control',play:true,transition:false});await wait(300);
+  await call('settings');
   const centered=page.getByRole('checkbox',{name:'Original centered hotbar',exact:true});assert.equal(await centered.isChecked(),false);
   await centered.check();await until(async()=>(await call('state')).settings.centeredHotbar);await call('dismiss');await wait(500);
   const old=(await sample('original-centered-hotbar',true)).renderProbe,half=(old.widescreen.logicalWidth-1152)/2;
@@ -105,5 +162,6 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({version:(await call('state')).version,records,limits:'Owned offline fixture on inactive desktop. Actual Camera/CollisionManager and original current map artwork/controllers, no account, gameplay, cursor confinement or OS input.'},null,2));
   console.log('PASS Native camera regression reproduced and fixed at 1080p/1440p; valid/deeper floors, scripted/frozen cameras and original layout preserved');
   console.log('PASS Original map raster/hit-region alignment, native map click, extended XP dividers, bounded/cached HUD artwork at all densities, and actual centered-hotbar checkbox/restoration');
+  console.log('PASS Centered camera at 1080p/1440p: native off-mode equivalence, central band, room bounds, direction changes, vertical jumps, teleport easing, frozen/scripted states and saved checkbox/reconnect');
  }finally{if(app)await app.close();await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

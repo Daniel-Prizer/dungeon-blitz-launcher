@@ -54,8 +54,30 @@ const html='<!doctype html><html><head><style>html,body{margin:0;height:100%;ove
   assert((await sample('inspection')).widescreen.hudRaster.inspection);await page.screenshot({path:path.join(out,'ruffle-inspection-fixture.png')});
   await call('BlitzTransitionFixtureControl',true,true,'none');await call('BlitzWorldFixtureControl',250,true,false,false,250,false,'a_Room_Main');await page.waitForTimeout(1000);
   const world=await sample('world');assert.equal(world.fixture.worldError,'');assert(world.fixture.worldFrames>0);await page.screenshot({path:path.join(out,'ruffle-world-fixture.png')});
-  const result={checkedAt:new Date().toISOString(),url:origin,engineHash:hash(engineBytes),build:build?{version:build[1],name:build[2],channel:build[3],date:build[4],commit:build[5]}:null,fixtureHash:hash(fs.readFileSync(fixture)),browser:await browser.version(),api,records,warnings,limits:'Offline original-asset/native-controller fixture only. All sockets blocked; no account, multiplayer, persistence, combat performance or audible sound verification. No production migration.'};
+  for(const wideMode of [false,true]){
+   await call('BlitzSetWidescreen',wideMode);await call('BlitzTransitionFixtureControl',true,false);await page.waitForTimeout(100);
+   const native=[];
+   await call('BlitzSetCenteredCamera',false);
+   for(let kind=0;kind<8;kind++){
+    await call('BlitzWorldFixtureControl',kind,false,false,false,250,false,'a_Room_FollowProbe');
+    native.push((await call('BlitzRenderState')).fixture.camera);assert(!native[kind].error,native[kind].error);
+   }
+   await call('BlitzSetCenteredCamera',true);
+   for(let kind=0;kind<8;kind++){
+    await call('BlitzWorldFixtureControl',kind,false,false,false,250,false,'a_Room_FollowProbe');
+    const state=await call('BlitzRenderState'),probe=state.fixture.camera;assert(state.centeredCamera);assert(!probe.error,probe.error);
+    for(const [i,point]of probe.follow.entries()){
+     assert(Number.isFinite(point.target)&&Number.isFinite(point.render));
+     assert.equal(point.y,native[kind].follow[i].y);assert.equal(point.layerY,native[kind].follow[i].layerY);
+     if(probe.roomWidth){assert(point.target>=-.001);assert(point.target<=probe.roomWidth-probe.width+.001);}
+     if([0,1,5,6,7].includes(kind))assert(Math.abs(point.player-point.target-probe.width/2)<=probe.width*.061);
+    }
+    if(kind===3||kind===4)assert.deepEqual(probe,native[kind]);
+   }
+   await call('BlitzSetCenteredCamera',false);
+  }
+  const result={checkedAt:new Date().toISOString(),url:origin,engineHash:hash(engineBytes),build:build?{version:build[1],name:build[2],channel:build[3],date:build[4],commit:build[5]}:null,fixtureHash:hash(fs.readFileSync(fixture)),browser:await browser.version(),api,records,cameraChecks:{layouts:2,cases:32,samples:28800},warnings,limits:'Offline original-asset/native-controller fixture only. All sockets blocked; no account, multiplayer, persistence, combat performance or audible sound verification. No production migration.'};
   fs.writeFileSync(path.join(out,'enhancements.json'),JSON.stringify(result,null,2));
-  console.log(JSON.stringify({build:result.build,api,checks:records.map(r=>r.name),warnings,limits:result.limits},null,2));
+  console.log(JSON.stringify({build:result.build,api,checks:records.map(r=>r.name),centeredCamera:'PASS original/wide: central band, bounds, vertical targets, pointer-direction flips, teleports, frozen/scripted cameras',warnings,limits:result.limits},null,2));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e.message);process.exitCode=1;});
