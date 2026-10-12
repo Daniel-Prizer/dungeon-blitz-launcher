@@ -45,24 +45,31 @@ package {
   private var extraMenus:Array=[];
   private var labelProbes:Array=[];
   private var sceneTree:Object;
- private var levelDomains:Object={};
+  private var cameraProbe:Object;
+  private var mapProbe:Object;
+  private var levelDomains:Object={};
+  private var mapClick:String="";
   public function DungeonBlitz(){if(stage)setup();else addEventListener(Event.ADDED_TO_STAGE,setup);}
   private function setup(event:Event=null):void {
    stage.scaleMode=StageScaleMode.NO_SCALE;stage.align=StageAlign.TOP_LEFT;stage.frameRate=30;
    graphics.beginFill(0x484955);graphics.drawRect(0,0,10000,10000);graphics.endFill();
-   for each(var asset:String in ["UI_0.swf","UI_0_1.swf","UI_0_2.swf","UI_0_3.swf","UI_1.swf","UI_2.swf","UI_4.swf","UI_Library.swf","UI_Seasonal.swf","LevelsHome.swf","LevelsJC.swf"]){
+   for each(var asset:String in ["UI_0.swf","UI_0_1.swf","UI_0_2.swf","UI_0_3.swf","UI_1.swf","UI_2.swf","UI_4.swf","UI_Library.swf","UI_Seasonal.swf","LevelsHome.swf","LevelsJC.swf","LevelsBT.swf","GlobalMap01.swf"]){
     var loader:Loader=new Loader();loader.contentLoaderInfo.addEventListener(Event.COMPLETE,assetLoaded);
     var domain:ApplicationDomain=ApplicationDomain.currentDomain;
-    if(asset.indexOf("Levels")==0){
+    if(asset.indexOf("Levels")==0||asset.indexOf("GlobalMap")==0){
      domain=new ApplicationDomain(ApplicationDomain.currentDomain);
      levelDomains[asset]=domain;ResourceManager.const_40[asset]=loader.contentLoaderInfo;
     }
     loader.load(new URLRequest("/assets/"+asset),new LoaderContext(false,domain));
    }
   }
-  private function assetLoaded(event:Event):void {if(++loaded==11)start();}
+  private function assetLoaded(event:Event):void {if(++loaded==13)start();}
   private function start():void {
    main=new Main();addChild(main);main.method_1634();main.method_561(stage.stageWidth,stage.stageHeight);
+   // This offline entry point skips Main's network startup, including its
+   // stage-resize binding. Route real resize events to the native layout just
+   // as a fully initialized client does, after Chromium changes pixel density.
+   stage.addEventListener(Event.RESIZE,resized);
    game=new Game(main);game.gameState="Login";main.var_523=new Vector.<Game>();main.var_523.push(game);
    game.var_89=new Sprite();game.var_245=new Sprite();game.edgeLayer=new Sprite();
    game.mUIManager=new class_4(game);
@@ -96,6 +103,11 @@ package {
    game.screenQuestTracker.var_2.am_QuestName.text="Hiding Out";
    game.screenQuestTracker.var_2.am_QuestDesc.text="Stop the gang leaders before they kill Odryn";
    game.screenQuestTracker.var_2.am_ProgressText.text="53 ft";
+   // Native class_32's screen-priority pass puts the later HUD/quest backing
+   // below HudTop's utility controls. This fixture skips that pass, so retain
+   // its actual drawing order rather than obscuring the original hotbar icons.
+   game.var_89.setChildIndex(game.screenHud.mWindow.mMovieClip,0);
+   game.var_89.setChildIndex(game.screenQuestTracker.mWindow.mMovieClip,1);
    game.screenBuyIdols=new class_63(game);attach(game.screenBuyIdols,"a_MammothIdolWindow");game.screenBuyIdols.mWindow.mMovieClip.visible=false;
    game.screenLockBox=new class_73(game);attach(game.screenLockBox,"a_ScreenLockBoxAD");game.screenLockBox.mWindow.mMovieClip.visible=false;
    game.screenBarn=new class_99(game);attach(game.screenBarn,"a_ScreenBarn");extraMenus.push(game.screenBarn);
@@ -179,6 +191,8 @@ package {
    return true;
   }
   private function world(value:Number,scene:Boolean,oldCoverage:Boolean=false,reuse:Boolean=false,y:Number=250,ties:Boolean=false,art:String="a_Room_Main"):Boolean {
+   if(art=="a_Room_CameraProbe")return probeCamera(int(value));
+   if(art=="a_Room_MapProbe")return probeMap(int(value));
    if(!isFinite(value)||value<0||value>25000||!isFinite(y)||y<0||y>2000)return false;
    vertical=y;
    tiedTime=ties;
@@ -193,13 +207,13 @@ package {
    game.clientEnt=null;
    if(!scene)for(var x:int=-576;x<32192;x+=64){game.level.var_59.graphics.beginFill(color(x));game.level.var_59.graphics.drawRect(x,-668,64,4008);game.level.var_59.graphics.endFill();}
    if(scene){
-    game.level.levelFileName=art.indexOf("a_Room_JC")==0?"LevelsJC.swf":"LevelsHome.swf";
+    game.level.levelFileName=art.indexOf("a_Room_JC")==0?"LevelsJC.swf":art.indexOf("a_Room_BT")==0?"LevelsBT.swf":"LevelsHome.swf";
     var type:Class=levelDomains[game.level.levelFileName].getDefinition(art) as Class;
     var room:MovieClip=new type() as MovieClip;room.stop();
     cleanArt(room);sceneTree=tree(room,3);
     var bounds:Rectangle=visibleBounds(room,room);room.x=-bounds.x+64;room.y=668-bounds.bottom;
     game.level.var_59.addChild(room);
-    game.level.var_333=art.indexOf("a_Room_JC")!=0;
+    game.level.var_333=game.level.levelFileName=="LevelsHome.swf";
     game.clientEnt=new Entity(game,"",null,0,0,0,0,0,0,0,null,null,"",null,null,null);
     game.clientEnt.currRoom=new Room(game,room);
    }
@@ -211,6 +225,29 @@ package {
    cacheIdentity=game.var_107.var_986;cacheRebuilds=0;worldFrames=0;pixelErrors=0;worldError="";
    return true;
   }
+  private function probeCamera(kind:int):Boolean {
+   worldEnabled=false;mapProbe=null;cameraProbe={kind:kind};
+   try {
+    game.collMan=new CollisionManager(game);game.levelLayer=new Sprite();game.TIMESTEP=1;
+    var entity:Entity=new Entity(game,"",null,0,0,0,0,0,0,0,null,null,"",null,null,null);
+    entity.physPosX=500;entity.physPosY=600;entity.bLeft=false;
+    var floorMask:uint=Game.const_140&~(Game.const_160|Game.const_237);
+    cameraProbe.mask=floorMask;
+    if(kind!=3){
+     var end:Number=kind==1?4000:1050;
+     game.collMan.method_1952(new class_37(new Point(-4000,650),new Point(end,650),floorMask|CollisionManager.HARD_FLOOR,0,null,null,0,0));
+     if(kind==2)game.collMan.method_1952(new class_37(new Point(1051,800),new Point(4000,800),floorMask,0,null,null,0,0));
+    }
+    var camera:Camera=new Camera(game,entity);camera.var_556=true;camera.var_81=new Point(0,0);
+    if(kind==4){entity.var_1122=true;camera.var_81=new Point(20,25);}
+    if(kind==5)Camera.var_404=new Point(700,700);
+    camera.method_1073();Camera.var_404=null;
+    cameraProbe.x=camera.var_81.x;cameraProbe.y=camera.var_81.y;cameraProbe.layerY=game.levelLayer.y;
+    cameraProbe.width=Camera.SCREEN_WIDTH;
+    world(Math.max(0,camera.var_81.x),true,false,false,Math.max(0,camera.var_81.y),false,"a_Room_BT12");
+   }catch(error:Error){cameraProbe.error=error.toString();Camera.var_404=null;}
+   return true;
+  }
   private function visibleBounds(value:DisplayObject,root:DisplayObject):Rectangle {
    var result:Rectangle=new Rectangle();if(!value.visible)return result;
    var container:DisplayObjectContainer=value as DisplayObjectContainer;
@@ -220,6 +257,45 @@ package {
     if(bounds.width&&bounds.height)result=result.isEmpty()?bounds:result.union(bounds);
    }
    return result;
+  }
+  private function probeMap(kind:int):Boolean {
+   worldEnabled=false;mapProbe={kind:kind,step:"create"};game.clientEnt=null;
+   try{
+    if(!game.screenMap||!game.screenMap.var_109){
+     game.screenMap=new class_119(game);attach(game.screenMap,"a_MissionMap");game.screenMap.OnCreateScreen();
+    }
+    var map:class_119=game.screenMap;map.mWindow.mMovieClip.visible=true;map.var_2.alpha=1;map.var_2.scaleX=map.var_2.scaleY=1;
+    mapProbe.step="game";game.mMissionInfoList=[];game.level=new Level(game);game.level.internalName="BridgeTown";
+    class_14.var_238=[];class_14.var_430=new flash.utils.Dictionary();
+    map.var_102=kind==0?"Global":"BridgeTown";
+    mapProbe.step="refresh";map.OnRefreshScreen();mapProbe.step="tick";game.mTimeThisTick=100000;map.OnTickScreen();
+    mapProbe.width=Camera.SCREEN_WIDTH;mapProbe.scale=map.var_349["BridgeTown"].var_586;
+    mapProbe.globalScale=map.var_349["Global"].var_586;
+    mapProbe.root=tree(map.mWindow.mMovieClip,1);mapProbe.holder=tree(map.var_109,2);
+    mapProbe.boxes=[];
+    for(var i:int=0;i<map.var_515.numChildren;i++){
+     var box:DisplayObject=map.var_515.getChildAt(i);var b:Rectangle=box.getBounds(map.var_109);
+     mapProbe.boxes.push({name:box.name,x:b.x,y:b.y,width:b.width,height:b.height,global:box.localToGlobal(new Point())});
+    }
+   }catch(error:Error){mapProbe.error=error.toString();}
+   return true;
+  }
+  private function mapState():Object {
+   if(!mapProbe||mapProbe.error)return mapProbe;
+   var map:class_119=game.screenMap;var value:Object={};
+   for(var key:String in mapProbe)value[key]=mapProbe[key];
+   value.bitmapWidth=map.var_118.bitmapData?map.var_118.bitmapData.width:0;
+   value.displayWidth=map.var_118.width;value.click=mapClick;
+   if(mapProbe.kind==0){
+    var box:DisplayObject=map.var_515.getChildByName("am_BridgeTown");
+    if(box){
+     // Native regions use transparent hit art. Test actual input at the
+     // authored region center rather than a pixel-alpha hitTestPoint check.
+     var bounds:Rectangle=box.getBounds(box);var point:Point=box.localToGlobal(new Point(bounds.x+bounds.width/2,bounds.y+bounds.height/2));
+     value.target={name:box.name,x:point.x,y:point.y};
+    }
+   }
+   return value;
   }
   private function color(x:Number):uint {return (uint(Math.floor(x/64))*0x173b53+0x294f61)&0xffffff;}
   private function cleanArt(value:DisplayObject):void {
@@ -247,6 +323,7 @@ package {
     }
    }catch(error:Error){worldError=error.toString();}
   }
+  private function resized(event:Event):void {if(main)main.method_561(stage.stageWidth,stage.stageHeight);}
   private function draw(event:Event=null):void {
    var scale:Number=main.overallScale;
    game.var_89.scaleX=game.var_89.scaleY=scale;game.var_245.scaleX=game.var_245.scaleY=scale;game.edgeLayer.scaleX=game.edgeLayer.scaleY=scale;
@@ -259,7 +336,11 @@ package {
    main.var_147.bitmapData.fillRect(new Rectangle(0,0,16*scale,Camera.PLAY_SCREEN_HEIGHT*scale),0x8c6651);
    main.var_147.bitmapData.fillRect(new Rectangle((Camera.SCREEN_WIDTH-16)*scale,0,16*scale,Camera.PLAY_SCREEN_HEIGHT*scale),0x51808c);
   }
-  private function mouse(event:MouseEvent):void {++downs;click=main.method_987(new Point());target=event.target.name;}
+  private function mouse(event:MouseEvent):void {
+   ++downs;click=main.method_987(new Point());target=event.target.name;
+   var node:DisplayObject=event.target as DisplayObject;
+   while(node){if(game.screenMap&&node.parent==game.screenMap.var_515){mapClick=node.name;break;}node=node.parent;}
+  }
   private function snapshot():Object {
    var value:Object=BlitzDisplay.Snapshot();value.fixture={downs:downs,target:target,mouseX:click?click.x:null,mouseY:click?click.y:null,
     pan:pan,vertical:vertical,tiedTime:tiedTime,idolsVisible:game.screenBuyIdols.mWindow.mMovieClip.visible,troveVisible:game.screenLockBox.mWindow.mMovieClip.visible,
@@ -269,7 +350,7 @@ package {
     idolPanelWidth:game.screenBuyIdols.mWindow.mMovieClip.getChildByName("am_Panel").getBounds(game.var_89).width,trovePedestalWidth:MovieClip(game.screenLockBox.mWindow.mMovieClip.getChildAt(0)).getChildAt(1).getBounds(game.var_89).width,
     scene:sceneTree,roomInRootDomain:ApplicationDomain.currentDomain.hasDefinition("a_Room_GreatHall"),labels:labelProbes,social:tree(game.screenFriend.var_26,1),settings:tree(game.screenMenu.mWindow.mMovieClip,2),store:tree(extraMenus[1].mWindow.mMovieClip,1),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,2),hudTree:tree(game.screenHud.var_2,2),
     commandIcons:commandBounds(),mountLabel:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.text,mountLabelWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.width,mountTextWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.textWidth,
-    worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
+    camera:cameraProbe,map:mapState(),worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
   }
   private function commandBounds():Array {
    var result:Array=[];

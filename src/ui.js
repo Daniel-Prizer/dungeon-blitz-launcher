@@ -34,6 +34,7 @@ function render(next) {
     $('render-resolution').value=s.renderResolution;
     $('show-fps').checked=s.showFPS;
     $('experimental-widescreen').checked=s.experimentalWidescreen;
+    $('centered-hotbar').checked=s.centeredHotbar;
     $('auto-updates').checked=s.autoUpdates;
     $('game-url').value = s.gameURL; $('feedback').textContent = 'Settings save automatically.';
     selectSection(selectedSection);$('dismiss').focus();
@@ -99,6 +100,7 @@ $('game-zoom').onchange = () => save({ gameZoom: Number($('game-zoom').value) })
 $('render-resolution').onchange=()=>save({renderResolution:Number($('render-resolution').value)});
 $('show-fps').onchange=()=>save({showFPS:$('show-fps').checked});
 $('experimental-widescreen').onchange=()=>save({experimentalWidescreen:$('experimental-widescreen').checked});
+$('centered-hotbar').onchange=()=>save({centeredHotbar:$('centered-hotbar').checked});
 $('auto-updates').onchange=()=>save({autoUpdates:$('auto-updates').checked});
 $('check-updates').onclick=()=>call('check-updates');$('install-update').onclick=()=>call('install-update');
 $('hardware-acceleration').onchange = () => save({ hardwareAcceleration: $('hardware-acceleration').checked });

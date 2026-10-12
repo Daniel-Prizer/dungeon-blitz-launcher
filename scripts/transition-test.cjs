@@ -9,7 +9,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
  execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
  let mode='fixed';
  const server=http.createServer((req,res)=>{
-  if(['/assets/UI_0.swf','/assets/UI_0_1.swf','/assets/UI_0_2.swf','/assets/UI_0_3.swf','/assets/UI_1.swf','/assets/UI_2.swf','/assets/UI_4.swf','/assets/UI_Library.swf','/assets/UI_Seasonal.swf','/assets/LevelsHome.swf','/assets/LevelsJC.swf'].includes(req.url)){
+  if(['/assets/UI_0.swf','/assets/UI_0_1.swf','/assets/UI_0_2.swf','/assets/UI_0_3.swf','/assets/UI_1.swf','/assets/UI_2.swf','/assets/UI_4.swf','/assets/UI_Library.swf','/assets/UI_Seasonal.swf','/assets/LevelsHome.swf','/assets/LevelsJC.swf','/assets/LevelsBT.swf','/assets/GlobalMap01.swf'].includes(req.url)){
    // The current client's controllers require current UI assets. Falling back
    // to the archived server checkout can silently test mismatched artwork.
    const assets=process.env.BLITZ_TEST_ASSET_DIR||path.join(root,'.test-tools/wide-live-assets');
@@ -149,9 +149,11 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(250);
   for(const menu of ['barn','tome','social']){
    await cmd({type:'test-transition-control',play:true,transition:false,menu});await wait(350);
-   const shown=(await sample('wide-menu-'+menu,true)).renderProbe.fixture;
+   const inspectionRecord=(await sample('wide-menu-'+menu,true)).renderProbe;
+   const shown=inspectionRecord.fixture;
    if(menu==='social'){const panel=shown.social.children.find(c=>c.name==='am_ZonePanel');assert(panel);assert(Math.abs(shown.social.x+(panel.x+(panel.bx+panel.width/2)*panel.scaleX)*shown.social.scaleX-p.widescreen.logicalWidth/2)<.1,'Social panel must center its persistent panel rather than hidden tabs/popups');}
    if(menu!=='social'){
+    assert.equal(inspectionRecord.widescreen.hudRaster.inspection,true,'Passive HUD plate must match the current inspection mode');
     assert.equal(shown.hudTree.children.find(c=>c.name==='blitz-companion-frame').visible,false,'Upgrade strips must hide the companion decoration without leaving gold fragments');
     assert.equal(shown.hudTree.children.find(c=>c.name==='am_PowerButtons').visible,false,'Building strips must leave no partial companion buttons or active hit fragments');
     for(const name of ['am_HPBar','am_HPText','am_LevelText','am_ManaBar','am_ClassManaBar','am_ManaText','am_ClassManaText','am_XPBar','am_XPContact'])assert.equal(shown.hudTree.children.find(c=>c.name===name).visible,false,'Building inspection replaces the complete combat/XP panel: '+name);

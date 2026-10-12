@@ -63,6 +63,23 @@ public class TransitionFixtureBuilder {
     if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals("5f91731eaabfb8a921914bd5b31a8802123761f932292e0ddc841ce57fe1f34d"))throw new IllegalStateException("Tile reuse baseline reconstruction mismatch");
     reuse.setCodeBytes(original);reuse.getCode().checkValidOffsets(reuse);reuse.setCodeBytes(original);
    }
+   if(args.length>2&&args[2].equals("camera-baseline")){
+    SWF source=new SWF(new FileInputStream(args[3]),false);
+    // Negative controls restore only the three reviewed upstream methods.
+    // Keep every other display fix so the regression comparison is isolated.
+    for(String[] method:new String[][]{
+     {"Camera","method_1073","123d341e993ad9ae659b7b4fa85d924938c9988f780bc10ab86a7d653ed8bede"},
+     {"class_119","OnCreateScreen","c8305d08052dc01e8f0a12f30c924a86ab94ca6cab930742597eb39f649a7cba"},
+     {"class_119","OnRefreshScreen","b2fba29d71796f332e090e20f9b58d48ca8d482050ab9e459a9d176575517793"}
+    }){
+     byte[] original=null;
+     for(ABCContainerTag sourceTag:source.getAbcList()){
+      MethodBody candidate=sourceTag.getABC().findBodyByClassAndName(method[0],method[1]);if(candidate!=null)original=candidate.getCodeBytes();
+     }
+     if(original==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals(method[2]))throw new IllegalStateException("Unreviewed camera/map baseline: "+method[1]);
+     MethodBody body=abc.findBodyByClassAndName(method[0],method[1]);body.setCodeBytes(original);body.getCode().checkValidOffsets(body);body.setCodeBytes(original);
+    }
+   }
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
   }
   if(changed!=1)throw new IllegalStateException("Fixture must modify one Game only");
