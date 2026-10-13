@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-12T22:52:41.110Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-a4e5b36c10fc",
-  "inputHash": "37e7e506f6e0565b865cea205ffbfe7e134fc89093ab0129f1dcb1ed8110deb1",
-  "note": "Test provenance only. Existing structural contract accepts this client without new hooks. The only change since swf-c93b05a5cf72 is two unreachable instructions appended after returnvoid in class_33.method_298; its full new body remains intact. All guarded camera, input, audio and display method envelopes/interfaces are unchanged."
+  "checkedAt": "2026-10-13T00:11:36.026Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-9387c66052f8",
+  "inputHash": "02f15b2b13484ef10f8658df65741937e3f5d275c0c25f60177b745f95bbe775",
+  "note": "Test provenance only. Existing 0.22.0 structural contract accepts this deployment automatically. Minesa changed only Entity.method_1826 and CombatState.method_960 since swf-a4e5b36c10fc; both complete new bodies are preserved. All guarded camera, input, audio, display and transition method envelopes and semantic interfaces are unchanged."
 }

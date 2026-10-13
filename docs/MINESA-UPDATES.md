@@ -38,6 +38,8 @@ The custom Dragon Ore counter is not shipped. Reintroducing it requires a native
 
 The later October 12 deployment `swf-a4e5b36c10fc`, SHA-256 `37e7e506f6e0565b865cea205ffbfe7e134fc89093ab0129f1dcb1ed8110deb1`, 934,258 bytes, is accepted by the same 0.21.0 recipe. Compared with `swf-c93b05a5cf72`, only `class_33.method_298` changes, appending two unreachable instructions after its return. All guarded methods/interfaces remain identical; the new window method is preserved rather than replaced. Fresh tests must pin this deployment provenance, while the reviewed contract source remains the independently compiled October 11 client.
 
+The October 13 deployment `swf-9387c66052f8`, SHA-256 `02f15b2b13484ef10f8658df65741937e3f5d275c0c25f60177b745f95bbe775`, 934,278 bytes, is accepted by the existing 0.22.0 contract without new hooks or an exact-revision adapter. Only `Entity.method_1826` and `CombatState.method_960` changed relative to `swf-a4e5b36c10fc`; both new method bodies remain byte-identical in the adapted client. All 31 edited envelopes, six dependencies, original pools and semantic interfaces still match. Both official origins serve the same client. Version 0.22.1 refreshes test provenance and compatibility documentation; 0.22.0 already adapts automatically to this deployment. Do not confuse this verification release with a necessary repair of broken hooks.
+
 ## Review a new revision
 
 1. Preserve the original download in ignored local tooling and establish its hash. Export only relevant classes with the pinned JPEXS tool. Review changed methods and their callers against the last reviewed client.

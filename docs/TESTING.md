@@ -1,4 +1,48 @@
-# Current validation: 0.22.0 (minor)
+# Current validation: 0.22.1 (patch)
+
+0.22.1 refreshes the reviewed live deployment to `swf-9387c66052f8`, SHA-256
+`02f15b2b13484ef10f8658df65741937e3f5d275c0c25f60177b745f95bbe775`,
+934,278 bytes, checked October 13 on both official hostnames. Compared with
+`swf-a4e5b36c10fc`, only Entity.method_1826 and CombatState.method_960 change.
+The unchanged structural recipe preserves both complete new bodies, every
+other unedited body/tag, and Minesa's pool/interface definitions. Its 31 edited
+method envelopes and six dependencies still match. No new presentation/gameplay
+hook or exact-revision adapter is added; 0.22.0 already adapts automatically.
+
+The public asset manifest and the 13 checked UI, Home, JC, BT and GlobalMap01
+assets are unchanged. All 37 unit groups pass with this deployment, including
+preservation of unrelated code and rejection of altered hooks/interfaces.
+
+The exact recipe from the previously packaged 0.22.0 release also accepts the
+new bytes and preserves both changed Minesa bodies. Fresh native tests assert
+the served hash rather than trusting a cached client: clientIntegration and
+audioIntegration are active in contract mode. The full native Settings, input,
+fullscreen, silent audio and reconnect suite passes on an inactive desktop.
+Camera/map tests pass at 1080p/1440p, including native boundaries, floor rays,
+centered-camera opt-in/off equivalence, actual map polygon input, XP dividers,
+HUD seams at all densities and original-centered-hotbar restoration. Rendered
+title, map and HUD captures were inspected. These are unauthenticated live
+loading and owned offline game fixtures; no account login or multiplayer
+combat validation was performed, and Daniel's session was not operated.
+
+The full transition suite also passes against these bytes: the same wide frame
+survives Login/None/Transfer and pending-Game phases, native cache reuse and
+six-column coverage remain stable through long fractional/vertical travel,
+and original UI/Home artwork, modal mattes and restored layout render as before.
+The loading and interior captures were inspected. Fixture-only skipped network
+initialization and uninitialized menu text are not evidence of live gameplay.
+
+Package verification passes for synchronized 0.22.1 versions, source/runtime
+bytes, fuses and the root executable. The pinned Ed25519 manifest and all 158
+physical payload files are verified. The packaged Electron updater passes
+physical-ASAR hashing/progress, signed readiness, tamper rejection and cleanup.
+The disposable installer passes fresh/repeated installation, complete payload
+hashes, registration/shortcuts, busy-process refusal, traversal/junction rejection,
+managed update/downgrade handling and uninstall retaining unrelated/profile files.
+The prior root executables are preserved. No installed player or agent build
+was replaced, restarted or reconnected.
+
+## Previous validation: 0.22.0 (minor)
 
 0.22.0 redesigns the local Settings UI in the slate stone direction selected by
 Daniel. The frame and heading reuse the title bar's palette and original local

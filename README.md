@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.22.0** (minor: redesigned launcher settings with grouped options, accessible category navigation and a fixed frame).
+Version **0.22.1** (patch: refreshed compatibility verification for Minesa's October 13 client).
 
 Settings uses a slate stone frame matching the title bar, quiet category navigation, thin gold accents and purple sound tracks. It opens on Display and remembers your selected category and its scroll position while the launcher is open. A fixed category list becomes a horizontal tab row in smaller windows; the heading and Back to game button stay in place. Layout/camera and size/detail options are grouped separately, with performance settings under an expandable section. Audio uses aligned category sliders beneath master volume. Controls collects cursor and mount shortcuts, while Connection and Updates explain when an action reconnects or closes the launcher. Existing preferences remain intact; Original centered hotbar is unavailable while 16:9 is off, without losing your saved choice.
 
