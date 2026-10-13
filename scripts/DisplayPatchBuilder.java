@@ -10,6 +10,7 @@ import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 // Applies only to the exact layout-patched client checked before this builder.
 // Same-size substitutions preserve every original branch and exception offset.
 public class DisplayPatchBuilder {
+ static boolean singleplayer=false;
  static AVM2Instruction ins(int op,int... args){return new AVM2Instruction(0,op,args);}
  static void reviewInput(ABC abc)throws Exception {
   String[][] methods={
@@ -75,14 +76,17 @@ public class DisplayPatchBuilder {
  }
  static MethodBody correctCrop(ABC abc)throws Exception {
   MethodBody body=abc.findBodyByClassAndName("SuperAnimData","method_200");
-  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals("c587e8238e1571a12664a441d153dbcbacff303069dc6740c8b7ba192cbff28e"))throw new IllegalStateException("Unreviewed raster crop transform");
+  String expected=singleplayer?"3e06c3e92edd92a2341eaf8d3c579de7e2c4466a741abed6a2c1c0ef955d72f4":"c587e8238e1571a12664a441d153dbcbacff303069dc6740c8b7ba192cbff28e";
+  if(body==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getCodeBytes())).equals(expected))throw new IllegalStateException("Unreviewed raster crop transform");
   byte[] code=body.getCodeBytes().clone();
   // Consume the clone already on the stack, then mutate that same inverse
   // matrix through the launcher-owned helper. Keep every branch address.
   ByteArrayOutputStream replacement=new ByteArrayOutputStream();
   for(AVM2Instruction i:new AVM2Instruction[]{ins(0x29),ins(0x60,abc.constants.getPublicQnameId("BlitzDisplay",true)),ins(0x62,27),ins(0x62,24),ins(0x4f,abc.constants.getPublicQnameId("CorrectCrop",true),2)})replacement.write(i.getBytes());
   if(replacement.size()>12)throw new IllegalStateException("Crop fix exceeds reviewed call range");
-  Arrays.fill(code,2415,2427,(byte)2);System.arraycopy(replacement.toByteArray(),0,code,2415,replacement.size());
+  int start=singleplayer?2245:2415;
+  if(!Arrays.equals(Arrays.copyOfRange(code,start,start+12),HexFormat.of().parseHex("6218660e6218660d4fe35302")))throw new IllegalStateException("Unreviewed crop expression");
+  Arrays.fill(code,start,start+12,(byte)2);System.arraycopy(replacement.toByteArray(),0,code,start,replacement.size());
   body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
  }
  static MethodBody correctCameraFloor(ABC abc)throws Exception {
@@ -150,6 +154,7 @@ public class DisplayPatchBuilder {
   body.setCodeBytes(code);body.getCode().checkValidOffsets(body);body.setCodeBytes(code);return body;
  }
  public static void main(String[] args)throws Exception {
+  singleplayer=args.length==3&&args[2].equals("--singleplayer");
   SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;String correctedCacheHash=null,correctedReuseHash=null,correctedCropHash=null,canvasHash=null,cameraHash=null,mapCreateHash=null,mapRefreshHash=null;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();MethodBody layout=abc.findBodyByClassAndName("Main","method_561");if(layout==null)continue;
@@ -157,7 +162,9 @@ public class DisplayPatchBuilder {
    Map<Integer,byte[]> original=new HashMap<>();for(MethodBody b:abc.bodies)original.put(b.method_info,b.getCodeBytes().clone());
    byte[] code=layout.getCodeBytes().clone();
    byte[] expected={ (byte)0xd1,0x63,9,(byte)0xd2,0x63,10,0x25,(byte)0x80,9,(byte)0xd5,0x25,(byte)0x80,6,(byte)0xd6 };
-   if(!Arrays.equals(Arrays.copyOfRange(code,2,16),expected))throw new IllegalStateException("Unexpected pinned layout prefix");
+   if(singleplayer){
+    if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(code)).equals("7eed6ed17c471290118f076b4999be0d848fefaa3da2cbd78b47becacc08b7a9"))throw new IllegalStateException("Unreviewed singleplayer layout");
+   }else if(!Arrays.equals(Arrays.copyOfRange(code,2,16),expected))throw new IllegalStateException("Unexpected pinned layout prefix");
    int helper=abc.constants.getPublicQnameId("BlitzDisplay",true);
    ByteArrayOutputStream prefix=new ByteArrayOutputStream();
    for(AVM2Instruction i:new AVM2Instruction[]{ins(0xd1),ins(0x63,9),ins(0xd2),ins(0x63,10),
@@ -172,11 +179,22 @@ public class DisplayPatchBuilder {
    code[218]=(byte)0xd3;code[219]=2;
    // The enlarged picture must clip to the actual stage, not the former
    // 1152x768 scratch viewport. Centering/input still use the saved real size.
-   for(int position:new int[]{513,527}){
+   for(int position:singleplayer?new int[]{}:new int[]{513,527}){
     if((code[position]&255)!=0x25)throw new IllegalStateException("Unexpected pinned clip dimensions");
     Arrays.fill(code,position,position+4,(byte)2);code[position]=(byte)(position==513?0xd1:0xd2);
    }
-   layout.setCodeBytes(code);layout.getCode();layout.max_stack=Math.max(layout.max_stack,4);layout.setModified();layout.getCode().checkValidOffsets(layout);
+   layout.setCodeBytes(code);layout.getCode();
+   // The local server already removed the obsolete scrollRect.
+   // Restore the real stage operands before its existing parent centering;
+   // JPEXS relocates branches. Keep that server correction intact.
+   if(singleplayer){int position=layout.getCode().adr2pos(439);layout.insertAll(position,Arrays.asList(ins(0x62,9),ins(0xd5),ins(0x62,10),ins(0xd6)));layout.max_regs=Math.max(layout.max_regs,11);}
+   layout.max_stack=Math.max(layout.max_stack,4);layout.setModified();layout.getCode().checkValidOffsets(layout);
+   MethodBody focus=null;
+   if(singleplayer){
+    focus=abc.findBodyByClassAndName("class_71","method_1156");
+    if(focus==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(focus.getCodeBytes())).equals("5a4c57331cf8c85ac1ac3af2793560eb44b7e2962e4dda1f99577a048d7693df"))throw new IllegalStateException("Unreviewed focus splash");
+    byte[] empty=new byte[focus.getCodeBytes().length];Arrays.fill(empty,(byte)2);empty[0]=0x47;focus.setCodeBytes(empty);focus.getCode();focus.setModified();
+   }
    boolean transition=restoreTransition(abc);MethodBody allocation=abc.findBodyByClassAndName("Game","method_1947");
    MethodBody cache=correctCacheCheck(abc);
    MethodBody canvas=prepareCanvas(abc);canvasHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canvas.getCodeBytes()));
@@ -185,8 +203,8 @@ public class DisplayPatchBuilder {
    correctedCacheHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(cache.getCodeBytes()));
    MethodBody camera=correctCameraFloor(abc);cameraHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(camera.getCodeBytes()));
    MethodBody mapCreate=correctMapWidth(abc,"OnCreateScreen",1149,"c8305d08052dc01e8f0a12f30c924a86ab94ca6cab930742597eb39f649a7cba");mapCreateHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(mapCreate.getCodeBytes()));
-   MethodBody mapRefresh=correctMapWidth(abc,"OnRefreshScreen",788,"b2fba29d71796f332e090e20f9b58d48ca8d482050ab9e459a9d176575517793");mapRefreshHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(mapRefresh.getCodeBytes()));
-   for(MethodBody b:abc.bodies)if(b!=layout&&b!=cache&&b!=reuse&&b!=crop&&b!=canvas&&b!=camera&&b!=mapCreate&&b!=mapRefresh&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
+   MethodBody mapRefresh=correctMapWidth(abc,"OnRefreshScreen",788,singleplayer?"dd6949bfaa4212bb0f1e8b089f04e5171682902b8ac180657f9d8d7aa320f630":"b2fba29d71796f332e090e20f9b58d48ca8d482050ab9e459a9d176575517793");mapRefreshHash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(mapRefresh.getCodeBytes()));
+   for(MethodBody b:abc.bodies)if(b!=layout&&b!=focus&&b!=cache&&b!=reuse&&b!=crop&&b!=canvas&&b!=camera&&b!=mapCreate&&b!=mapRefresh&&(!transition||b!=allocation)&&!Arrays.equals(original.get(b.method_info),b.getCodeBytes()))throw new IllegalStateException("Non-display method changed: "+b.method_info);
    ((com.jpexs.decompiler.flash.tags.Tag)tag).setModified(true);changed++;
    System.out.println("Verified native raster layout, cache, crop transform, map coordinates, camera floor probes, canvas preparation and transition allocation; untouched method bodies: "+(abc.bodies.size()-(transition?9:8)));
   }

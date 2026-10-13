@@ -1,6 +1,8 @@
 # Dungeon Blitz Launcher
 
-Version **0.22.1** (patch: refreshed compatibility verification for Minesa's October 13 client).
+Version **0.23.0** (minor: local singleplayer client enhancements alongside multiplayer).
+
+For a running singleplayer server, open Settings → Connection → Use singleplayer URL, save it, then reconnect. The default is `http://localhost:8000/`; a different local port/path can be entered manually. Use multiplayer URL fills Minesa's address again. These buttons never reconnect by themselves. The reviewed local client uses the same display, HUD, camera, map, controls and sound helpers through a separate guarded adapter. Unsupported local builds continue unchanged with a compatibility note; the launcher does not start or modify your server, saves or account. See [local client maintenance](docs/MINESA-UPDATES.md#local-singleplayer-clients).
 
 Settings uses a slate stone frame matching the title bar, quiet category navigation, thin gold accents and purple sound tracks. It opens on Display and remembers your selected category and its scroll position while the launcher is open. A fixed category list becomes a horizontal tab row in smaller windows; the heading and Back to game button stay in place. Layout/camera and size/detail options are grouped separately, with performance settings under an expandable section. Audio uses aligned category sliders beneath master volume. Controls collects cursor and mount shortcuts, while Connection and Updates explain when an action reconnects or closes the launcher. Existing preferences remain intact; Original centered hotbar is unavailable while 16:9 is off, without losing your saved choice.
 

@@ -15,7 +15,7 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
   const call=(n,v)=>page.evaluate(([n,v])=>window.blitz.action(n,v),[n,v]);
   // An earlier owned render test may have left a now-closed fixture URL.
   // Native HWND policy must not race an unrelated connection-error dialog.
-  await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',cursorLock:true});await call('restart-game');
+  await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',cursorLock:true});await call('restart-game');
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.showInactive();w.focus();});
   await until(async()=>!(await call('state')).loading&&await app.evaluate(()=>!!global.__blitzTest.runtime().host));await wait(300);
   assert.equal((await call('state')).error,'');

@@ -12,12 +12,13 @@ import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 public class TransitionFixtureBuilder {
  static String name(ABC abc,int n){return abc.constants.getString(abc.constants.getMultiname(n).name_index);}
  public static void main(String[] args)throws Exception {
+  boolean singleplayer=args.length==6&&args[5].equals("--singleplayer");
   SWF swf=new SWF(new FileInputStream(args[0]),false);int changed=0;
   for(ABCContainerTag tag:swf.getAbcList()){
    ABC abc=tag.getABC();int index=abc.findClassByName("Game");if(index<0)continue;
    MethodBody allocator=abc.findBodyByClassAndName("Game","method_1947");
    String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(allocator.getCodeBytes()));
-   if(!hash.equals("87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc"))throw new IllegalStateException("Unexpected reviewed upstream allocator");
+   if(!hash.equals(singleplayer?"472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768":"87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc"))throw new IllegalStateException("Unexpected reviewed upstream allocator");
    int main=0;
    for(AVM2Instruction i:allocator.getCode().code)if(i.definition.instructionName.equals("getproperty")&&name(abc,i.operands[0]).equals("main")){main=i.operands[0];break;}
    if(main==0)throw new IllegalStateException("Missing internal main field");
@@ -76,7 +77,8 @@ public class TransitionFixtureBuilder {
      for(ABCContainerTag sourceTag:source.getAbcList()){
       MethodBody candidate=sourceTag.getABC().findBodyByClassAndName(method[0],method[1]);if(candidate!=null)original=candidate.getCodeBytes();
      }
-     if(original==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals(method[2]))throw new IllegalStateException("Unreviewed camera/map baseline: "+method[1]);
+     String expected=singleplayer&&method[1].equals("OnRefreshScreen")?"dd6949bfaa4212bb0f1e8b089f04e5171682902b8ac180657f9d8d7aa320f630":method[2];
+     if(original==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals(expected))throw new IllegalStateException("Unreviewed camera/map baseline: "+method[1]);
      MethodBody body=abc.findBodyByClassAndName(method[0],method[1]);body.setCodeBytes(original);body.getCode().checkValidOffsets(body);body.setCodeBytes(original);
     }
    }

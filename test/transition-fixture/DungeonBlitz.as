@@ -9,6 +9,7 @@ package {
  import flash.display.StageScaleMode;
  import flash.display.StageAlign;
  import flash.events.Event;
+ import flash.events.IOErrorEvent;
  import flash.events.MouseEvent;
  import flash.geom.Point;
  import flash.geom.Rectangle;
@@ -30,6 +31,7 @@ package {
   private var target:String="";
   private var downs:uint=0;
   private var loaded:uint=0;
+  private var loadError:String="";
   private var worldEnabled:Boolean=false;
   private var sceneEnabled:Boolean=false;
   private var previousCoverage:Boolean=false;
@@ -51,10 +53,12 @@ package {
   private var mapClick:String="";
   public function DungeonBlitz(){if(stage)setup();else addEventListener(Event.ADDED_TO_STAGE,setup);}
   private function setup(event:Event=null):void {
+   ExternalInterface.addCallback("BlitzRenderState",loadSnapshot);
    stage.scaleMode=StageScaleMode.NO_SCALE;stage.align=StageAlign.TOP_LEFT;stage.frameRate=30;
    graphics.beginFill(0x484955);graphics.drawRect(0,0,10000,10000);graphics.endFill();
    for each(var asset:String in ["UI_0.swf","UI_0_1.swf","UI_0_2.swf","UI_0_3.swf","UI_1.swf","UI_2.swf","UI_4.swf","UI_Library.swf","UI_Seasonal.swf","LevelsHome.swf","LevelsJC.swf","LevelsBT.swf","GlobalMap01.swf"]){
     var loader:Loader=new Loader();loader.contentLoaderInfo.addEventListener(Event.COMPLETE,assetLoaded);
+    loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR,assetError);
     var domain:ApplicationDomain=ApplicationDomain.currentDomain;
     if(asset.indexOf("Levels")==0||asset.indexOf("GlobalMap")==0){
      domain=new ApplicationDomain(ApplicationDomain.currentDomain);
@@ -63,7 +67,9 @@ package {
     loader.load(new URLRequest("/assets/"+asset),new LoaderContext(false,domain));
    }
   }
-  private function assetLoaded(event:Event):void {if(++loaded==13)start();}
+  private function loadSnapshot():Object {return {fixture:{loaded:loaded,loadError:loadError}};}
+  private function assetError(error:IOErrorEvent):void {loadError=error.toString();}
+  private function assetLoaded(event:Event):void {if(++loaded==13)try{start();}catch(error:Error){loadError=error.toString()+" "+error.getStackTrace();ExternalInterface.addCallback("BlitzRenderState",loadSnapshot);ExternalInterface.call("function(e){window.__fixtureResult=e;}",loadError);}}
   private function start():void {
    main=new Main();addChild(main);main.method_1634();main.method_561(stage.stageWidth,stage.stageHeight);
    // This offline entry point skips Main's network startup, including its
@@ -93,6 +99,9 @@ package {
    game.screenHud.var_729.mHealthPerc=1;game.screenHud.var_729.TickMovieClip();
    game.screenHud.var_645.mHealthPerc=1;game.screenHud.var_645.TickMovieClip();
    game.screenHud.var_2.am_HPText.text="29798/29798";game.screenHud.var_2.am_ManaText.text="80/80";game.screenHud.var_2.am_ClassManaText.text="100/100";game.screenHud.var_2.am_LevelText.text="32";
+   // Native player refresh normally reveals these after initialization. The
+   // account-free fixture supplies their presentation values directly.
+   game.screenHud.var_2.am_HPText.visible=true;game.screenHud.var_2.am_ManaText.visible=true;game.screenHud.var_2.am_ClassManaText.visible=true;
    game.screenChat=new class_127(game);attach(game.screenChat,"a_ScreenChat");
    for each(var detail:String in ["am_ChatHistoryBackLarge","am_ChannelChoices","am_ChatOptions","am_ItemMaterialDetail"])game.screenChat.var_2[detail].visible=false;
    game.screenQuestTracker=new class_112(game);attach(game.screenQuestTracker,"a_QuestTracker");
@@ -353,7 +362,7 @@ package {
       for each(var y:int in [10,200,333,500,655])if(main.var_147.bitmapData.getPixel(x,int(y*main.overallScale))!=color(worldX))++pixelErrors;
      }
     }
-   }catch(error:Error){worldError=error.toString();}
+   }catch(error:Error){worldError=error.toString()+" "+error.getStackTrace();}
   }
   private function resized(event:Event):void {if(main)main.method_561(stage.stageWidth,stage.stageHeight);}
   private function draw(event:Event=null):void {
@@ -374,12 +383,17 @@ package {
    while(node){if(game.screenMap&&node.parent==game.screenMap.var_515){mapClick=node.name;break;}node=node.parent;}
   }
   private function snapshot():Object {
+   try{return snapshotReady();}catch(error:Error){return {fixture:{snapshotError:error.toString()+" "+error.getStackTrace()}};}
+  }
+  private function snapshotReady():Object {
+   var troveBackground:DisplayObjectContainer=game.screenLockBox.mWindow.mMovieClip.getChildAt(0) as DisplayObjectContainer;
+   var trovePedestal:DisplayObject=troveBackground&&troveBackground.numChildren>1?troveBackground.getChildAt(1):null;
    var value:Object=BlitzDisplay.Snapshot();value.fixture={downs:downs,target:target,mouseX:click?click.x:null,mouseY:click?click.y:null,
     pan:pan,vertical:vertical,tiedTime:tiedTime,idolsVisible:game.screenBuyIdols.mWindow.mMovieClip.visible,troveVisible:game.screenLockBox.mWindow.mMovieClip.visible,
     left:game.screenHudTop.mWindow.mMovieClip.x,right:game.screenHudTopRight.mWindow.mMovieClip.x,edgeVisible:game.edgeLayer.getChildByName("am_EdgeFull").visible,
     hotbar:game.screenHud.mWindow.mMovieClip.x,chat:game.screenChat.mWindow.mMovieClip.x,quest:game.screenQuestTracker.mWindow.mMovieClip.x,party:game.var_89.getChildByName("fixture-party").x,nameX:game.var_89.getChildByName("NPC name").x,
     idols:game.screenBuyIdols.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),trove:game.screenLockBox.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),
-    idolPanelWidth:game.screenBuyIdols.mWindow.mMovieClip.getChildByName("am_Panel").getBounds(game.var_89).width,trovePedestalWidth:MovieClip(game.screenLockBox.mWindow.mMovieClip.getChildAt(0)).getChildAt(1).getBounds(game.var_89).width,
+    idolPanelWidth:game.screenBuyIdols.mWindow.mMovieClip.getChildByName("am_Panel").getBounds(game.var_89).width,trovePedestalWidth:trovePedestal?trovePedestal.getBounds(game.var_89).width:null,
     scene:sceneTree,roomInRootDomain:ApplicationDomain.currentDomain.hasDefinition("a_Room_GreatHall"),labels:labelProbes,social:tree(game.screenFriend.var_26,1),settings:tree(game.screenMenu.mWindow.mMovieClip,2),store:tree(extraMenus[1].mWindow.mMovieClip,1),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,2),hudTree:tree(game.screenHud.var_2,2),
     commandIcons:commandBounds(),mountLabel:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.text,mountLabelWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.width,mountTextWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.textWidth,
     camera:cameraProbe,map:mapState(),worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;

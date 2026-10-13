@@ -4,7 +4,8 @@ const { gameURL, validSettings, LIVE } = require('../src/policy.cjs');
 const { loadStore } = require('../src/store.cjs');
 test('game address validates schemes, credentials and origin boundaries', () => {
   for (const url of ['javascript:x','file:///C:/secret','data:text/html,x','ftp://game/','https://user:password@example.com/','http://example.com/','http://localhost.evil.org/']) assert.equal(gameURL(url),null,url);
-  for (const url of [LIVE,'https://example.com/play?server=1','http://localhost:8080/','http://127.0.0.1:8080/','http://[::1]:8080/']) assert.equal(gameURL(url),url);
+  for (const url of [LIVE,'https://example.com/play?server=1','http://localhost:8080/']) assert.equal(gameURL(url),url);
+  for(const url of ['http://127.0.0.1:8080/play?lang=en','http://[::1]:8080/play?lang=en'])assert.equal(gameURL(url),'http://localhost:8080/play?lang=en');
   assert.equal(gameURL(LIVE+'#a'),LIVE);
 });
 test('launcher defaults and validation discard obsolete browser settings', () => {

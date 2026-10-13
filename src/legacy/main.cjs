@@ -4,22 +4,24 @@ const path = require('path');
 const net = require('net');
 const {readMessages}=require('./transport.cjs');
 const {editingCommand,pasteIntoFlash}=require('./editing.cjs');
-const {patchClient}=require('./client-patch.cjs');
+const {adaptClient}=require('./client-adapter.cjs');
+const {canonicalGameAddress}=require('./game-address.cjs');
 const {classifyLink}=require('./links.cjs');
-const {patchAudio}=require('./audio-patch.cjs');
-const {patchAdaptiveClient}=require('./adaptive-patch.cjs');
 let adaptiveContract;try{adaptiveContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract.json'),'utf8'));}catch(_){}
+let singleplayerContract;try{singleplayerContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract-singleplayer.json'),'utf8'));}catch(_){}
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
 const audioDeltas=[];
 for(const name of ['audio-delta.json','audio-delta-current.json','audio-delta-latest.json','audio-delta-oct11.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
-const LIVE = process.env.BLITZ_GAME_URL;
+const LIVE = validGameAddress(process.env.BLITZ_GAME_URL)?canonicalGameAddress(process.env.BLITZ_GAME_URL):null;
 function validGameAddress(value) {
   try { const u=new URL(value);return !u.username&&!u.password&&(u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname))); } catch(_){return false;}
 }
 if(!validGameAddress(LIVE))app.exit(2);
 const ORIGIN = new URL(LIVE).origin;
 let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false, testClientHash='',testAdapterMode='';
+const testRequests=[];
+let testOriginalClient=false;
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
 let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false,renderResolution=1;
@@ -138,11 +140,15 @@ app.whenReady().then(async () => {
   // Fresh live-client tests use only their disposable profile. Clearing its
   // cache before creating a renderer avoids legacy DevTools startup deadlocks.
   if(process.env.BLITZ_HOST_TEST==='1')await ses.clearCache();
+  if(process.env.BLITZ_HOST_TEST==='1'){
+    const record=details=>{if(testRequests.length<100)testRequests.push({path:new URL(details.url).pathname,status:details.statusCode,error:details.error||''});};
+    ses.webRequest.onCompleted(record);ses.webRequest.onErrorOccurred(record);
+  }
   ses.setPermissionRequestHandler((wc, permission, callback) => callback(permission === 'fullscreen' && gameURL(wc.getURL())));
   ses.setPermissionCheckHandler((wc, permission) => permission === 'fullscreen' && wc && gameURL(wc.getURL()));
   ses.on('will-download', (event) => event.preventDefault());
   ses.webRequest.onBeforeRequest((details, callback) => {
-    // This session can fetch only the explicitly selected game's origin.
+    // Only the selected canonical game origin, including for local clients.
     callback({ cancel: !gameURL(details.url) });
   });
   win = new BrowserWindow({ width: 1200, height: 800, minWidth: 1, minHeight: 1, frame: false, thickFrame: false, resizable: false, movable: false, minimizable: false, maximizable: false, show: false, backgroundColor: '#484955', skipTaskbar: true, fullscreenable: false, webPreferences: { plugins: true, sandbox: true, contextIsolation: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, allowRunningInsecureContent: false, enableRemoteModule: false, webviewTag: false, backgroundThrottling: false } });
@@ -207,10 +213,10 @@ app.whenReady().then(async () => {
       const url=new URL(params.request.url);
       if(url.origin===ORIGIN && /\/DungeonBlitz\.swf$/i.test(url.pathname) && params.responseStatusCode===200) {
         const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
-        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),adaptive=patchAdaptiveClient(bytes,adaptiveContract),presentation=adaptive||patchClient(bytes),audio=adaptive||(presentation&&audioDeltas.map(delta=>patchAudio(presentation,delta)).find(Boolean)),patched=audio||presentation;
-        if(process.env.BLITZ_HOST_TEST==='1')testAdapterMode=adaptive?'contract':patched?'revision':'original';
+        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),adapter=testOriginalClient?{patched:null,audio:false,mode:'original'}:adaptClient(bytes,LIVE,{multiplayer:adaptiveContract,singleplayer:singleplayerContract,audioDeltas}),patched=adapter.patched;
+        if(process.env.BLITZ_HOST_TEST==='1')testAdapterMode=adapter.mode;
         if(process.env.BLITZ_HOST_TEST==='1')testClientHash=require('crypto').createHash('sha256').update(bytes).digest('hex');
-        audioIntegration=!!audio;emit({type:'audio-integration',value:audioIntegration});
+        audioIntegration=adapter.audio;emit({type:'audio-integration',value:audioIntegration});
         if(patched) {
           const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));
           headers.push({name:'Content-Length',value:String(patched.length)});
@@ -296,6 +302,7 @@ readMessages(pipe, async cmd => {
     if(cmd.type==='test-transition-control'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.play==='boolean'&&typeof cmd.transition==='boolean'&&(cmd.transfer===undefined||typeof cmd.transfer==='boolean')&&(cmd.phase===undefined||['Login','None','Transfer'].includes(cmd.phase))&&(cmd.menu===undefined||['none','idols','trove','barn','forge','tome','social','settings','store','companion-commands','map','no-direction'].includes(cmd.menu)))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzTransitionFixtureControl(${cmd.play},${cmd.transition},${JSON.stringify(cmd.menu??'none')},${cmd.transfer===true},${JSON.stringify(cmd.phase??'')})`);
     if(cmd.type==='test-world-control'&&process.env.BLITZ_HOST_TEST==='1'&&Number.isFinite(cmd.pan)&&cmd.pan>=0&&cmd.pan<=25000&&typeof cmd.scene==='boolean'&&typeof cmd.oldCoverage==='boolean'&&(cmd.reuse===undefined||typeof cmd.reuse==='boolean')&&(cmd.tiedTime===undefined||typeof cmd.tiedTime==='boolean')&&(cmd.art===undefined||/^a_(Room|Level)_[A-Za-z0-9_]{1,64}$/.test(cmd.art))&&(cmd.vertical===undefined||(Number.isFinite(cmd.vertical)&&cmd.vertical>=0&&cmd.vertical<=2000)))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzWorldFixtureControl(${cmd.pan},${cmd.scene},${cmd.oldCoverage},${cmd.reuse===true},${cmd.vertical??250},${cmd.tiedTime===true},${JSON.stringify(cmd.art??'a_Room_Main')})`);
     if (cmd.type === 'background') win.webContents.setBackgroundThrottling(!cmd.value);
+    if(cmd.type==='test-original-client'&&process.env.BLITZ_HOST_TEST==='1')testOriginalClient=cmd.value===true;
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();
     if (cmd.type === 'focus' && win.isVisible()) { win.focus(); win.webContents.focus(); }
@@ -305,10 +312,10 @@ readMessages(pipe, async cmd => {
     if (['capture','test-geometry'].includes(cmd.type) && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.path === 'string') {
       const probeStarted=process.hrtime.bigint();
       const geometry=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`);
-      const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`);
-      const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`);
+      const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`).catch(error=>({probeError:error.message}));
+      const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`).catch(error=>({probeError:error.message}));
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,probeDurationMs}));
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,testRequests,probeDurationMs}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);

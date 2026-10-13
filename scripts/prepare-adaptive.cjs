@@ -3,14 +3,15 @@
 // October 11 adapter. No compiler or downloaded patch recipe runs at runtime.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {readSWF}=require('../src/legacy/swf-contract.cjs'),{makeDelta}=require('./audio-delta.cjs');
-const root=path.resolve(__dirname,'..'),hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
-const {execFileSync}=require('node:child_process'),lib=path.join(root,'.test-tools/focus/ffdec/lib/*'),dir=path.join(root,'.test-tools/adaptive');fs.mkdirSync(dir,{recursive:true});
+const root=path.resolve(__dirname,'..'),hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex'),singleplayer=process.argv.includes('--singleplayer');
+const suffix=singleplayer?'-singleplayer':'',sourceFile=path.join(root,'.test-tools/focus',singleplayer?'singleplayer.swf':'oct11.swf'),compiledFile=path.join(root,'.test-tools/audio'+(singleplayer?suffix:'-oct11')+'/audio.swf');
+const {execFileSync}=require('node:child_process'),lib=path.join(root,'.test-tools/focus/ffdec/lib/*'),dir=path.join(root,'.test-tools/adaptive'+suffix);fs.mkdirSync(dir,{recursive:true});
 execFileSync('javac',['-cp',lib,'-d',dir,path.join(__dirname,'ContractReferences.java')],{windowsHide:true,stdio:'inherit'});
-execFileSync('java',['-Djava.awt.headless=true','-cp',dir+path.delimiter+lib,'ContractReferences',path.join(root,'.test-tools/focus/oct11.swf'),path.join(root,'.test-tools/audio-oct11/audio.swf'),path.join(dir,'references.json')],{windowsHide:true,stdio:'inherit'});
+execFileSync('java',['-Djava.awt.headless=true','-cp',dir+path.delimiter+lib,'ContractReferences',sourceFile,compiledFile,path.join(dir,'references.json')],{windowsHide:true,stdio:'inherit'});
 const references=JSON.parse(fs.readFileSync(path.join(dir,'references.json')));
-const input=fs.readFileSync(path.join(root,'.test-tools/focus/oct11.swf'));
-if(hash(input)!==require('../src/legacy/client-layout-oct11.json').inputHash)throw Error('Unreviewed contract source');
-const source=readSWF(input),target=readSWF(fs.readFileSync(path.join(root,'.test-tools/audio-oct11/audio.swf')));
+const input=fs.readFileSync(sourceFile);
+if(hash(input)!==require(singleplayer?'../src/legacy/client-singleplayer.json':'../src/legacy/client-layout-oct11.json').inputHash)throw Error('Unreviewed contract source');
+const source=readSWF(input),target=readSWF(fs.readFileSync(compiledFile));
 const main=swf=>swf.tags.find(tag=>tag.abc&&tag.abc.bodies.some(body=>body.name==='Main.method_561'));
 const before=main(source),after=main(target);if(!before||!after||!source.preamble.equals(target.preamble)||!before.lead.equals(after.lead))throw Error('Unsupported contract geometry');
 const helpers=target.tags.filter(tag=>tag.abc&&!source.tags.some(old=>old.raw.equals(tag.raw))&&tag!==after);
@@ -26,4 +27,4 @@ const pools={};for(const kind of Object.keys(before.abc.pools)){const original=b
 const recipe={format:2,sourceHash:hash(input),preambleHash:hash(source.preamble),leadHash:hash(before.lead),bindings:source.tags.filter(tag=>tag.type===76).map(tag=>hash(tag.raw)),interfaceHash:hash(before.abc.interfaceContract),pools,bodies:edits,guards,helpers:helpers.map(tag=>({hash:hash(tag.raw),data:tag.raw.toString('base64')}))};
 const output=require('../src/legacy/adaptive-patch.cjs').patchAdaptiveClient(input,recipe);if(!output)throw Error('Contract rejected its reviewed source');
 const parsed=readSWF(output),adapted=main(parsed);if(!adapted.abc.interfaceContract.equals(after.abc.interfaceContract)||JSON.stringify(adapted.abc.pools)!==JSON.stringify(after.abc.pools)||!adapted.abc.bodies.every(body=>body.bytes.equals(after.abc.bodies.find(other=>other.id===body.id).bytes))||!parsed.tags.filter(tag=>tag!==adapted).every(tag=>target.tags.some(other=>other.data.equals(tag.data)&&other.type===tag.type)))throw Error('Contract differs from compiled adapter');
-const file=path.join(root,'runtime/game/resources/adaptive-contract.json');fs.writeFileSync(file,JSON.stringify(recipe));console.log('Prepared guarded reusable adapter:',fs.statSync(file).size,'bytes;',edits.length,'method envelopes');
+const file=path.join(root,'runtime/game/resources/adaptive-contract'+suffix+'.json');fs.writeFileSync(file,JSON.stringify(recipe));console.log('Prepared guarded reusable adapter:',fs.statSync(file).size,'bytes;',edits.length,'method envelopes');

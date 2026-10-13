@@ -51,7 +51,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await call('save-settings',{gameZoom:1.5});await wait(1000);assert.equal((await sample('live-cropped')).renderProbe.frameCounter.visible,false,'No counter may cover a cropped game');
   await call('save-settings',{gameZoom:1});await call('fullscreen');await wait(1800);assert(measured(await sample('live-fullscreen',true)).visible);
   await call('exit-fullscreen');await call('settings');await call('dismiss');await wait(700);const restored=await sample('live-restored');assert(restored.focused&&restored.contentFocused);assert(measured(restored).visible);
-  await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/'});await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(2000);
+  await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/'});await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(2000);
   async function control(rate,busy,margins=true){
    await cmd({type:'test-fps-control',rate,busy,margins});await wait(2400);
    const record=await sample('fixture-'+rate+'-'+busy+'-'+margins),c=measured(record),f=record.renderProbe.fixture;

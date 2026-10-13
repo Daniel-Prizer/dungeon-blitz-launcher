@@ -1,15 +1,15 @@
 const fs=require('node:fs'),path=require('node:path'),zlib=require('node:zlib');
 const {execFileSync}=require('node:child_process');
-const latest=process.argv.includes('--latest'),current=process.argv.includes('--current'),oct11=process.argv.includes('--oct11');
-if([latest,current,oct11].filter(Boolean).length>1)throw Error('Choose one reviewed client revision');
-const suffix=oct11?'-oct11':latest?'-latest':current?'-current':'';
+const latest=process.argv.includes('--latest'),current=process.argv.includes('--current'),oct11=process.argv.includes('--oct11'),singleplayer=process.argv.includes('--singleplayer');
+if([latest,current,oct11,singleplayer].filter(Boolean).length>1)throw Error('Choose one reviewed client revision');
+const suffix=singleplayer?'-singleplayer':oct11?'-oct11':latest?'-latest':current?'-current':'';
 const root=path.resolve(__dirname,'..'),dir=path.join(root,'.test-tools/audio'+suffix),focus=path.join(root,'.test-tools/focus');fs.mkdirSync(dir,{recursive:true});
-const sourceFile=path.join(focus,oct11?'oct11.swf':latest?'latest.swf':current?'current.swf':'live.swf');
+const sourceFile=path.join(focus,singleplayer?'singleplayer.swf':oct11?'oct11.swf':latest?'latest.swf':current?'current.swf':'live.swf');
 if(!fs.existsSync(path.join(focus,'live.swf'))||!fs.existsSync(path.join(focus,'ffdec/ffdec.jar')))execFileSync(process.execPath,[path.join(__dirname,'prepare-margin-fixture.cjs')],{stdio:'inherit',windowsHide:true});
 if(current||latest||oct11)execFileSync(process.execPath,[path.join(__dirname,'prepare-margin-fixture.cjs'),'--'+(oct11?'oct11':latest?'latest':'current')],{stdio:'inherit',windowsHide:true});
 const crypto=require('node:crypto');
 const stamp=crypto.createHash('sha256');for(const file of [__filename,path.join(__dirname,'AudioPatchBuilder.java'),path.join(__dirname,'DisplayPatchBuilder.java'),path.join(__dirname,'audio-delta.cjs'),path.join(root,'src/legacy/BlitzAudio.as'),path.join(root,'src/legacy/BlitzFrameCounter.as'),path.join(root,'src/legacy/BlitzDisplay.as'),path.join(root,'src/legacy/client-patch.cjs'),path.join(root,'test/audio-fixture/DungeonBlitz.as'),path.join(root,'test/fps-fixture/DungeonBlitz.as'),path.join(focus,'live.swf')])stamp.update(fs.readFileSync(file));
-stamp.update(fs.readFileSync(sourceFile));stamp.update(fs.readFileSync(path.join(root,'src/legacy/client-layout'+suffix+'.json')));
+stamp.update(fs.readFileSync(sourceFile));stamp.update(fs.readFileSync(path.join(root,'src/legacy',singleplayer?'client-singleplayer.json':'client-layout'+suffix+'.json')));
 stamp.update(fs.readFileSync(path.join(root,'src/legacy/BlitzInput.as')));
 stamp.update(fs.readFileSync(path.join(root,'assets/companion-frame.png')));
 stamp.update(fs.readFileSync(path.join(__dirname,'EmbedCompanionArt.java')));
@@ -28,7 +28,7 @@ const body=(index,stack,scope,code)=>b([index,stack,1,scope,scope+1],u(code.leng
 const abc=b([16,0,46,0],pool,methods,types,[3],body(0,1,1,[0xd0,0x30,0xd0,0x49,0,0x47]),body(1,1,1,[0xd0,0x30,0x47]),body(2,2,0,[0xd0,0x30,0x65,0,0x60,2,0x30,0x60,2,0x58,0,0x1d,0x68,1,0x47]));
 const payload=b([1,0,0,0],Buffer.from(className+'\0'),abc),tagHeader=Buffer.alloc(6);tagHeader.writeUInt16LE((82<<6)|63);tagHeader.writeUInt32LE(payload.length,2);return b(tagHeader,payload);
 }
-const live=fs.readFileSync(sourceFile),patched=require('../src/legacy/client-patch.cjs').patchClient(live);if(!patched)throw Error('Unreviewed source client');
+const live=fs.readFileSync(sourceFile),patched=singleplayer?(crypto.createHash('sha256').update(live).digest('hex')===require('../src/legacy/client-singleplayer.json').inputHash?live:null):require('../src/legacy/client-patch.cjs').patchClient(live);if(!patched)throw Error('Unreviewed source client');
 const swf=zlib.inflateSync(patched.subarray(8));const rectBytes=Math.ceil((5+4*(swf[0]>>3))/8);let start=rectBytes+4;
 while(start<swf.length){const h=swf.readUInt16LE(start);if((h>>6)===1)break;const short=h&63;start+=short===63?6+swf.readUInt32LE(start+2):2+short;}
 const assembled=b(swf.subarray(0,start),stubTag('BlitzAudio'),stubTag('BlitzFrameCounter'),stubTag('BlitzDisplay'),stubTag('BlitzInput'),swf.subarray(start));const header=Buffer.from(patched.subarray(0,8));header.writeUInt32LE(assembled.length+8,4);
@@ -44,7 +44,7 @@ execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-replace',path.join(
 execFileSync('javac',['-cp',path.join(focus,'ffdec/lib/*'),'-d',dir,path.join(__dirname,'AudioPatchBuilder.java')],{stdio:'inherit',windowsHide:true});
 execFileSync('java',['-Djava.awt.headless=true','-cp',dir+path.delimiter+path.join(focus,'ffdec/lib/*'),'AudioPatchBuilder',path.join(dir,'display-helper.swf'),path.join(dir,'mixed.swf')],{stdio:'inherit',windowsHide:true});
 execFileSync('javac',['-cp',path.join(focus,'ffdec/lib/*'),'-d',dir,path.join(__dirname,'DisplayPatchBuilder.java')],{stdio:'inherit',windowsHide:true});
-execFileSync('java',['-Djava.awt.headless=true','-cp',dir+path.delimiter+path.join(focus,'ffdec/lib/*'),'DisplayPatchBuilder',path.join(dir,'mixed.swf'),path.join(dir,'audio.swf')],{stdio:'inherit',windowsHide:true});
+execFileSync('java',['-Djava.awt.headless=true','-cp',dir+path.delimiter+path.join(focus,'ffdec/lib/*'),'DisplayPatchBuilder',path.join(dir,'mixed.swf'),path.join(dir,'audio.swf'),...(singleplayer?['--singleplayer']:[])],{stdio:'inherit',windowsHide:true});
 const before=zlib.inflateSync(patched.subarray(8)),after=zlib.inflateSync(fs.readFileSync(path.join(dir,'audio.swf')).subarray(8));
 const delta=require('./audio-delta.cjs').makeDelta(before,after);
 const tested=require('../src/legacy/audio-patch.cjs').patchAudio(patched,delta);

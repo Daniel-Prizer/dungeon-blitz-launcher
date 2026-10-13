@@ -35,7 +35,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    records.push({name,...record});return record;
   }
   for(mode of ['baseline','fixed']){
-   await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:false});await call('restart-game');
+   await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:false});await call('restart-game');
    await until(async()=>!(await call('state')).loading);await wait(1200);await cmd({type:'test-transition-fixture'});await wait(1200);
    const initialized=(await sample(mode+'-initialized')).renderProbe?.fixture;
    assert(initialized,'Real AS3 fixture must initialize');
@@ -61,7 +61,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    }
   }
   mode='cache-baseline';
-  await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',gameZoom:1,renderResolution:1,experimentalWidescreen:true});await call('restart-game');
+  await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,renderResolution:1,experimentalWidescreen:true});await call('restart-game');
   await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await wait(900);
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(600);
   await cmd({type:'test-world-control',pan:250,scene:false,oldCoverage:false});await wait(1200);
