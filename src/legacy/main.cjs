@@ -4,7 +4,8 @@ const path = require('path');
 const net = require('net');
 const {readMessages}=require('./transport.cjs');
 const {editingCommand,pasteIntoFlash}=require('./editing.cjs');
-const {adaptClient}=require('./client-adapter.cjs');
+const {adaptClient,localAddress}=require('./client-adapter.cjs');
+const {patchLocalIcons,localIconAsset}=require('./local-icon-patch.cjs');
 const {canonicalGameAddress}=require('./game-address.cjs');
 const {classifyLink}=require('./links.cjs');
 let adaptiveContract;try{adaptiveContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract.json'),'utf8'));}catch(_){}
@@ -21,6 +22,7 @@ if(!validGameAddress(LIVE))app.exit(2);
 const ORIGIN = new URL(LIVE).origin;
 let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false, testClientHash='',testAdapterMode='';
 const testRequests=[];
+const testIconRepairs=[];
 let testOriginalClient=false;
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
@@ -224,12 +226,24 @@ app.whenReady().then(async () => {
           clientIntegration=true;emit({type:'client-integration',value:true});await applyZoom();
         } else {clientIntegration=false;emit({type:'client-integration',value:false});}
       }
-    }catch(_){clientIntegration=false;emit({type:'client-integration',value:false});}
+      if(localIconAsset(LIVE,params.request.url)&&params.responseStatusCode===200){
+        const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
+        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),patched=patchLocalIcons(bytes,LIVE);
+        if(patched){
+          const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));
+          headers.push({name:'Content-Length',value:String(patched.length)});
+          await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:patched.toString('base64')});fulfilled=true;
+          if(process.env.BLITZ_HOST_TEST==='1'&&testIconRepairs.length<8)testIconRepairs.push({path:url.pathname,sourceHash:require('crypto').createHash('sha256').update(bytes).digest('hex')});
+        }
+      }
+    }catch(_){if(/\/DungeonBlitz\.swf(?:\?|$)/i.test(params.request.url)){clientIntegration=false;emit({type:'client-integration',value:false});}}
     finally {if(!fulfilled&&!wc.isDestroyed())await wc.debugger.sendCommand('Fetch.continueRequest',{requestId:params.requestId}).catch(()=>{});}
   });
   try {
     wc.debugger.attach('1.3');
-    await wc.debugger.sendCommand('Fetch.enable',{patterns:[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}]});
+    const patterns=[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}];
+    if(localAddress(LIVE))patterns.push({urlPattern:ORIGIN+'/*UI_1.swf*',requestStage:'Response'});
+    await wc.debugger.sendCommand('Fetch.enable',{patterns});
   }
   catch(_){emit({type:'client-integration',value:false});}
   wc.on('will-attach-webview', e => e.preventDefault());
@@ -315,7 +329,7 @@ readMessages(pipe, async cmd => {
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`).catch(error=>({probeError:error.message}));
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`).catch(error=>({probeError:error.message}));
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,testRequests,probeDurationMs}));
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,testRequests,testIconRepairs,probeDurationMs}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);

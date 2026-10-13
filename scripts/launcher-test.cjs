@@ -44,7 +44,9 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     async function measure(name,capture=false){
       const file=path.join(out,name+(capture?'.png':''));if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');
       if(capture&&fs.existsSync(file))fs.unlinkSync(file);
-      await command({type:capture?'capture':'test-geometry',path:file});await until(()=>fs.existsSync(file+'.json'),'Game geometry missing');return {file,...JSON.parse(fs.readFileSync(file+'.json','utf8'))};
+      await command({type:capture?'capture':'test-geometry',path:file});let record;
+      // Native capture creates its file before finishing the JSON write.
+      await until(()=>{try{record=JSON.parse(fs.readFileSync(file+'.json','utf8'));return !!record.viewport;}catch{return false;}},'Game geometry missing');return {file,...record};
     }
     if(privateDesktop){await app.evaluate(()=>global.__blitzTest.runtime().focus());await wait(600)}
     const live=await measure(privateDesktop?'native-live':'hidden-live',true);

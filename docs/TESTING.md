@@ -1,4 +1,39 @@
-# Current validation: 0.23.0 (minor)
+# Current validation: 0.23.1 (patch)
+
+The reviewed localhost game data references absent MeteorROR and FireBrandShot
+icon names. The native class_4.method_639 returns a bitmap with no pixels when
+its symbol is absent. An account-free fixture reproduced both blank slots
+before the repair, with the main-client adapter disabled.
+
+The independent local UI_1 response repair retains every original asset tag,
+method, graphic, binding and frame in both reviewed asset variants. Only two
+launcher-owned alias definitions are added, using native Meteor/Fireball vectors.
+The native HUD refresh/resize path draws the aliases; pixels and bounds match
+the originals at 0.5/0.75/1/1.5/2 density. The fixture checks eight populated
+slots, 1152/1920/2560 widths, clear/restore and cached asset reloads. Unknown
+main-client integration stays disabled. Remote origins, changed assets, existing
+definitions and damaged helpers remain unchanged. No imported artwork is in
+the alias recipe.
+
+45 unit groups pass with no skips. Multiplayer camera/map/HUD checks pass;
+both main-client recipes remain byte-identical to 0.23.0. Tests use an inactive
+Windows desktop, fresh own host/profile and offline original controllers/assets,
+with no account/login, copied authentication or game sockets. No running launcher,
+agent copy, local server, saved character or server source was changed.
+Authenticated gameplay is outside this verification.
+
+Final native multiplayer Settings/input/audio/fullscreen/origin tests and the
+complete loading/terrain/HUD transition suite pass. A fixture report-read race
+was corrected by waiting for complete native JSON rather than file existence.
+The verified package and its pinned Ed25519 manifest cover 160 physical files.
+Actual packaged Electron updater verification, ASAR tamper rejection and failed
+stage cleanup pass. The disposable installer test passes fresh/repeated install,
+shortcut/Windows registration, busy-process refusal without killing the game,
+newer-version retention, managed update bookkeeping and safe uninstall. Root and
+Downloads installers are refreshed; the previous 0.23.0 copies/versioned build
+are retained. No real installation or running session was restarted.
+
+## Previous local support validation: 0.23.0 (minor)
 
 `npm run test:singleplayer` prepares the independently compiled local adapter and tests it on an inactive Windows desktop. It checks unauthenticated startup at localhost and 127.0.0.1, URL presets without reconnecting, then original local UI/world assets and controllers in offline fixtures: menus, inspection HUD, companion commands, all travel phases, terrain cache panning, interiors, map hit regions, XP/HUD rasters, centered camera and centered-hotbar restoration at 1080p/1440p. It uses no account or saved login and sends no global OS input. Reports and screenshots are ignored under docs/singleplayer-tests and docs/singleplayer-camera-tests. Unit tests independently compare its compiled method envelopes and preserve every non-hook method/tag, verify changed hooks fail closed and ensure multiplayer output remains identical.
 
