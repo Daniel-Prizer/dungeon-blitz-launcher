@@ -1,0 +1,6 @@
+{
+  "inputHash": "9ee13be5b00fbb3a1c4af89488f643eb17f7775a3f412402e46ac7fa030b3ac4",
+  "reviewedAt": "2026-10-13",
+  "sourceURL": "http://localhost:8000/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&lang=en",
+  "note": "Local server 1.11.3 English client. Existing local gameplay, forge persistence, translation, socket routing and removal of Main scrollRect are retained. Separate guarded presentation contract; never selected for remote origins."
+}

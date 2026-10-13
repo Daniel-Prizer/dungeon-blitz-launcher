@@ -2,10 +2,10 @@
 const {_electron:electron}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/camera-tests');fs.mkdirSync(out,{recursive:true});
+const singleplayer=process.env.BLITZ_TEST_CLIENT==='singleplayer',root=path.resolve(__dirname,'..'),out=path.join(root,'docs/'+(singleplayer?'singleplayer-camera-tests':'camera-tests'));fs.mkdirSync(out,{recursive:true});
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)return value;await wait(100);}throw Error('Transition check timed out');}
-(async()=>{
+module.exports=(async()=>{
  execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
  let mode='fixed';
  const server=http.createServer((req,res)=>{
@@ -15,7 +15,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    const assets=process.env.BLITZ_TEST_ASSET_DIR||path.join(root,'.test-tools/wide-live-assets');
    res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(assets,path.basename(req.url))));return;
   }
-  if(req.url==='/DungeonBlitz.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/transition',mode+'.swf')));return;}
+  if(req.url==='/DungeonBlitz.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/transition'+(singleplayer?'-singleplayer':''),mode+'.swf')));return;}
   res.setHeader('Content-Type','text/html');res.end('<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#484955}#game-container{width:100vw!important;height:100vh!important;min-width:0!important;min-height:0!important}object{display:block;width:100%;height:100%}</style></head><body><div id="game-container"><object id="DungeonBlitz" type="application/x-shockwave-flash" data="/DungeonBlitz.swf"><param name="movie" value="/DungeonBlitz.swf"><param name="allowScriptAccess" value="always"><param name="wmode" value="direct"></object></div></body></html>');
  });
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
@@ -36,7 +36,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   }
 
   for(mode of ['camera-baseline','fixed']){
-   await call('save-settings',{gameURL:'http://127.0.0.1:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:true,centeredHotbar:false,centeredCamera:false});await call('restart-game');
+   await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:true,centeredHotbar:false,centeredCamera:false});await call('restart-game');
    await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await wait(900);await cmd({type:'test-transition-control',play:true,transition:false});await wait(700);
    for(const [width,height] of [[1920,1080],[2560,1440]]){
     await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(size[0],size[1]+32),[width,height]);await wait(500);

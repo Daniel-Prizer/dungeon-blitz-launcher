@@ -60,7 +60,7 @@ async function until(fn){for(let i=0;i<120;i++){const v=await fn();if(v)return v
    assert(Math.abs(item.span-expected)/base<.035,'Rendered picture must scale or reach the viewport crop: '+JSON.stringify(spans));
   }
   console.log('PASS Live full-window Flash surface, left/right clicks and rendered picture scale',JSON.stringify(spans));
-  await call('save-settings',{gameURL:`http://127.0.0.1:${server.address().port}/`,gameZoom:1});await call('restart-game');
+  await call('save-settings',{gameURL:`http://localhost:${server.address().port}/`,gameZoom:1});await call('restart-game');
   let initial;await until(async()=>{try{initial=await measure('probe-ready');return initial.geometry.inputProbe;}catch{return false;}});
   await app.evaluate(()=>global.__blitzTest.runtime().focus());await wait(300);
   let count=0;

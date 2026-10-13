@@ -94,6 +94,8 @@ for(const button of tabs){
 for (const id of ['dismiss', 'done']) $(id).onclick = async () => { if(settingsOpen){clearTimeout(volumeTimer);await save({ volume: Number($('volume-number').value) });}await call('dismiss'); };
 $('retry').onclick = () => call('restart-game'); $('reconnect').onclick = async () => { await pending; await call('restart-game'); };
 $('apply-url').onclick = async () => { await save({ gameURL: $('game-url').value.trim() }); };
+$('singleplayer-url').onclick=()=>{$('game-url').value='http://localhost:8000/';$('game-url').focus();};
+$('multiplayer-url').onclick=()=>{$('game-url').value='https://dungeonblitzr.theminesa.studio/';$('game-url').focus();};
 $('cursor-lock').onchange = () => save({ cursorLock: $('cursor-lock').checked });
 $('shift-mount').onchange=()=>save({shiftMount:$('shift-mount').checked});
 $('unlock-key').onclick = async () => {

@@ -1,5 +1,6 @@
 'use strict';
 const LIVE = 'https://dungeonblitzr.theminesa.studio/';
+const {canonicalGameAddress}=require('./legacy/game-address.cjs');
 const UNLOCK_KEYS = require('./shortcuts.js').codes;
 function gameURL(value) {
   if (typeof value !== 'string' || value.length > 8192) return null;
@@ -7,7 +8,7 @@ function gameURL(value) {
     const u = new URL(value.trim());
     if (u.username || u.password) return null;
     if (u.protocol !== 'https:' && !(u.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname))) return null;
-    u.hash = ''; return u.href;
+    u.hash = ''; return canonicalGameAddress(u.href);
   } catch { return null; }
 }
 function zoom(value) { return Number.isFinite(value) ? Math.max(.5, Math.min(3, value)) : 1; }

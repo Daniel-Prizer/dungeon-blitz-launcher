@@ -1,4 +1,16 @@
-# Current validation: 0.22.1 (patch)
+# Current validation: 0.23.0 (minor)
+
+`npm run test:singleplayer` prepares the independently compiled local adapter and tests it on an inactive Windows desktop. It checks unauthenticated startup at localhost and 127.0.0.1, URL presets without reconnecting, then original local UI/world assets and controllers in offline fixtures: menus, inspection HUD, companion commands, all travel phases, terrain cache panning, interiors, map hit regions, XP/HUD rasters, centered camera and centered-hotbar restoration at 1080p/1440p. It uses no account or saved login and sends no global OS input. Reports and screenshots are ignored under docs/singleplayer-tests and docs/singleplayer-camera-tests. Unit tests independently compare its compiled method envelopes and preserve every non-hook method/tag, verify changed hooks fail closed and ensure multiplayer output remains identical.
+
+All 41 unit groups pass with no skips. The local native suite and its camera/map suite pass against server 1.11.3 (`9ee13be5…`). The actual local title, original local menus, companion commands and room captures were inspected. Fixtures skip network/player initialization: placeholder menu text, disabled companion icons and arbitrary stress-test pans are not authenticated gameplay evidence. Local screenshots use the older local room/menu artwork rather than assuming newer multiplayer assets.
+
+During verification Minesa deployed `swf-9edaa96cb6f8` (`4deb75f5…`, 934,280 bytes). It changes only one integer's encoding in the constant pool relative to `swf-9387c66052f8`; decoded pools, every method body, definitions, bindings and other tags are identical. Both official origins serve the same new bytes. The multiplayer contract is byte-identical to 0.22.1 (`d3a32373…`); its full preservation checks pass, and all 13 current UI/world asset files remain unchanged. Fresh multiplayer native Settings/input/audio/fullscreen/origin tests and camera/map/HUD regressions pass on the inactive desktop with the new deployment hash.
+
+The complete multiplayer transition suite also passes with the fresh deployment: native allocator/resolution, Login/None/Transfer and pending-game phases, width retention, original layout restoration, modal mattes, fractional/long/vertical terrain travel and cache reuse. Current title, menu, HUD and map captures were inspected. No account login or Daniel's running session was used; authenticated play and real pointer confinement remain outside this validation.
+
+The 0.23.0 package matches the tested source/runtime, synchronized versions and security fuses. All 160 files in its pinned Ed25519 manifest match their physical size/hash. Actual packaged Electron updater verification, ASAR tamper rejection and failed-stage cleanup pass. The installer passes fresh/repeated install, shortcut/Windows registration, busy-process refusal, newer-version retention, managed update bookkeeping and traversal/junction-safe uninstall in its separate disposable installation. Root/Downloads Setup and the root launcher are refreshed; previous executable/installer copies and versioned builds are retained. Daniel's real installation and running game were not restarted or changed.
+
+## Previous multiplayer review
 
 0.22.1 refreshes the reviewed live deployment to `swf-9387c66052f8`, SHA-256
 `02f15b2b13484ef10f8658df65741937e3f5d275c0c25f60177b745f95bbe775`,

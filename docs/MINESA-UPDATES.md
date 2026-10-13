@@ -1,5 +1,17 @@
 # Diagnosing and adapting to Minesa updates
 
+## Local singleplayer clients
+
+Local clients need their own review. A matching game name/path does not establish matching bytecode. `src/legacy/client-singleplayer.json` pins the October 13 local server 1.11.3 English variant (`9ee13be5…`). Its independent compile produces `adaptive-contract-singleplayer.json`; it is tried only for an explicitly selected HTTP loopback URL. The multiplayer contract and exact-revision fallback are unchanged. Full interfaces, constant-pool prefixes, bindings, 31 edited envelopes and six dependencies remain guarded. Unrelated local server changes can survive when these contracts still match; unknown/translated clients that do not match run unmodified.
+
+`npm run prepare:game` builds both adapters. The reviewed source is cached only in ignored `.test-tools/focus/singleplayer.swf`; when missing, preparation fetches the pinned public local URL and rejects an unreviewed hash. No compiler, downloaded recipe or automatic patch inference runs in production. Local server/client binaries are never committed. Keep saves, socket routing, localization, gameplay and forge fixes byte-identical outside the approved presentation/audio edits.
+
+The local Main layout removed the older scrollRect tail and has nine locals. Its adapter preserves that removal, allocates eleven locals for the two stage-size scratch slots, restores the actual stage operands before native parent centering, and retains the original transition allocator. Its raster crop expression is at a different reviewed offset, and its map refresh lacks the newer multiplayer mission marker tail. Do not reuse multiplayer byte offsets or replace those complete methods with multiplayer copies.
+
+Run `npm run test:singleplayer` with the local server available, then `npm test`, `npm run test:native`, `npm run test:camera` and `npm run test:transition` for multiplayer regression coverage. Local testing uses unauthenticated title screens and original-controller/artwork offline fixtures on an inactive desktop, never an account or saved authentication. Keep origin restrictions; supporting localhost does not permit arbitrary HTTP hosts or ports from the loaded page.
+
+HTTP loopback IP aliases normalize to `localhost`, preserving the selected port, path and query. The local client hardcodes localhost asset URLs, and Flash requires a single application/security domain; do not solve this by allowing cross-origin assets or disabling web security. Local fixtures must use the local asset structure and its actual GreatHall/Library/Armory/Stables room names. The newer multiplayer treasure panel and room names are not interchangeable with those assets.
+
 Read this before treating a new rendering, input, sound or launch failure as a launcher regression. Minesa develops its live client privately. This repository and the archived server/client sources are not the authority for the currently served game.
 
 ## First establish what changed
@@ -39,6 +51,8 @@ The custom Dragon Ore counter is not shipped. Reintroducing it requires a native
 The later October 12 deployment `swf-a4e5b36c10fc`, SHA-256 `37e7e506f6e0565b865cea205ffbfe7e134fc89093ab0129f1dcb1ed8110deb1`, 934,258 bytes, is accepted by the same 0.21.0 recipe. Compared with `swf-c93b05a5cf72`, only `class_33.method_298` changes, appending two unreachable instructions after its return. All guarded methods/interfaces remain identical; the new window method is preserved rather than replaced. Fresh tests must pin this deployment provenance, while the reviewed contract source remains the independently compiled October 11 client.
 
 The October 13 deployment `swf-9387c66052f8`, SHA-256 `02f15b2b13484ef10f8658df65741937e3f5d275c0c25f60177b745f95bbe775`, 934,278 bytes, is accepted by the existing 0.22.0 contract without new hooks or an exact-revision adapter. Only `Entity.method_1826` and `CombatState.method_960` changed relative to `swf-a4e5b36c10fc`; both new method bodies remain byte-identical in the adapted client. All 31 edited envelopes, six dependencies, original pools and semantic interfaces still match. Both official origins serve the same client. Version 0.22.1 refreshes test provenance and compatibility documentation; 0.22.0 already adapts automatically to this deployment. Do not confuse this verification release with a necessary repair of broken hooks.
+
+Later October 13, `swf-9edaa96cb6f8`, SHA-256 `4deb75f5bd8f7068dd3cac0a955cb0093347e54b5f8c974c0b4b18064241b726`, 934,280 bytes, changes only the encoding of one constant-pool integer. Its decoded value, every method body, class/method definition, binding and other tag remain identical. The multiplayer recipe is byte-identical to 0.22.1 and accepts this file while preserving its new encoding. Both official origins serve these same bytes. Refreshing deployment provenance must not introduce new hooks or weaken guards.
 
 ## Review a new revision
 
