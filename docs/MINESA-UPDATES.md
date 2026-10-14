@@ -1,5 +1,11 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 14 verification (0.24.0)
+
+Both official origins serve `swf-e547f078b555`, SHA-256 `16bc20b508cf233a3b0e9c7b5502646de9b627a290bb4e7c1b92828a659a9ce1`, 934,409 bytes. Relative to `swf-9edaa96cb6f8`, only `class_73.method_1148` and `Brain.Think` change. The complete semantic interface and every guarded hook/dependency still match. The existing recipe accepts this deployment automatically and retains both changed AI methods and every unrelated native method/tag. No guard or bytecode hook changes are needed. Eleven fresh UI/Home/JC/BT/map assets are byte-identical to the preceding snapshots.
+
+Version 0.24.0 adds explicit settings drafts and an independent native crosshair preference. Neither adds a game bytecode hook. Keep the original compiled multiplayer/local recipes and unknown-client rejection; a crosshair choice must not enable unreviewed rendering/audio/input integration.
+
 ## Local singleplayer clients
 
 Version 0.23.1 also repairs two missing local UI names independently of the main-client adapter: `a_PowerIcon_MeteorROR` and `a_PowerIcon_CrimsonShot`. The reviewed local Game data references them, while UI_1 supplies only the native `a_PowerIcon_Meteor` / `a_PowerIcon_FireBall` artwork. `local-icon-patch.cjs` inserts only two launcher-owned alias class tags into the selected loopback origin's reviewed UI_1 response. `local-icon-fallback.json` pins both reviewed source hashes and compiled helper hashes. Every original native tag, method, binding, artwork and frame remains byte-identical. The recipe contains no imported game artwork; aliases instantiate the original loaded vectors. No server, ability metadata, packet, cooldown or input edit occurs.

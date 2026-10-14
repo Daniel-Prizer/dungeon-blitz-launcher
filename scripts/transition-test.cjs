@@ -77,7 +77,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await wait(900);
   assert((await call('save-settings',{experimentalWidescreen:'true'})).error);
   await call('settings');await page.getByRole('tab',{name:'Display',exact:true}).click();const checkbox=page.getByRole('checkbox',{name:'Experimental 16:9',exact:true});assert.equal(await checkbox.isChecked(),false);
-  await checkbox.check();await until(async()=>(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1100);
+  await checkbox.check();await page.locator('#save-settings').click();await until(async()=>(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1100);
   const originalUI=(await sample('wide-login')).renderProbe;assert.equal(originalUI.widescreen.active,false,'Original menu art must not stretch');
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(1100);
   let p=(await sample('wide-play-1440p',true)).renderProbe;
@@ -264,7 +264,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   assert((await sample('wide-resumes-outdoors',true)).renderProbe.widescreen.active);
   assert.equal((await sample('interior-clip-restored')).renderProbe.widescreen.interiorLimited,false);
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(250);
-  await call('settings');await checkbox.uncheck();await until(async()=>!(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1000);
+  await call('settings');await checkbox.uncheck();await page.locator('#save-settings').click();await until(async()=>!(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1000);
   p=(await sample('restored-original',true)).renderProbe;assert.equal(p.widescreen.logicalWidth,1152);assert.equal(p.fixture.left,0);assert.equal(p.fixture.right,0);assert.equal(p.fixture.hotbar,0);assert.equal(p.fixture.chat,0);assert(Math.abs(p.fixture.idols.width-1154.9)<.061,'Restored matte geometry must agree within Flash twip quantization');assert.equal(p.fixture.edgeVisible,true);
   await call('save-settings',{experimentalWidescreen:true});await wait(1100);await cmd({type:'test-transition-control',play:false,transition:false});await wait(1000);
   assert.equal((await sample('return-to-menu',true)).renderProbe.widescreen.logicalWidth,1152+half*2,'Loading Login phases after play keep their viewport');

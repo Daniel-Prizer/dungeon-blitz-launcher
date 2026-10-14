@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dungeon Blitz Launcher</title><link rel="stylesheet" href="ui.css"><script src="shortcuts.js" defer></script><script src="ui.js" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dungeon Blitz Launcher</title><link rel="stylesheet" href="ui.css"><script src="shortcuts.js" defer></script><script src="crosshair.js" defer></script><script src="ui.js" defer></script></head>
 <body>
 <header id="titlebar"><img class="wordmark" src="wordmark.png" alt="Dungeon Blitz" draggable="false"><nav aria-label="Launcher controls"><button id="change-character" title="Return to character selection"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="6" r="3"/><path d="M4 17v-2a6 6 0 0 1 12 0v2"/></svg><span>Change Character</span></button><button id="fullscreen" aria-label="Fullscreen" title="Fullscreen (F11)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H3v4m10-4h4v4M3 13v4h4m10-4v4h-4"/></svg><span>Fullscreen</span></button><button id="settings" aria-label="Settings" title="Settings (Ctrl+,)"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6"/><circle cx="10" cy="10" r="2"/><path d="M10 1v3m0 12v3M1 10h3m12 0h3M4 4l2 2m8 8 2 2M4 16l2-2m8-8 2-2"/></svg><span>Settings</span></button></nav></header>
 <main id="surface"><div class="waiting" role="status"><img class="loading-wordmark" src="wordmark.png" alt="Dungeon Blitz" draggable="false"><p id="waiting-text">Opening Dungeon Blitz…</p><div class="activity" aria-hidden="true"><i></i><i></i><i></i></div></div></main>
@@ -11,6 +11,7 @@
       <button id="tab-display" role="tab" data-section="display" aria-controls="pane-display">Display</button>
       <button id="tab-audio" role="tab" data-section="audio" aria-controls="pane-audio">Audio</button>
       <button id="tab-controls" role="tab" data-section="controls" aria-controls="pane-controls">Controls</button>
+      <button id="tab-crosshair" role="tab" data-section="crosshair" aria-controls="pane-crosshair">Crosshair</button>
       <button id="tab-connection" role="tab" data-section="connection" aria-controls="pane-connection">Connection</button>
       <button id="tab-updates" role="tab" data-section="updates" aria-controls="pane-updates">Updates</button>
     </nav>
@@ -60,9 +61,20 @@
         <div class="shortcut-reference"><div><span>Fullscreen</span><kbd>F11</kbd></div><div><span>Launcher settings</span><kbd>Ctrl + ,</kbd></div><div><span>Close menus</span><kbd>Esc</kbd></div></div>
         <p class="hint">Escape closes Settings or game menus; it keeps fullscreen on.</p>
       </section>
+      <section id="pane-crosshair" class="setting" role="tabpanel" aria-labelledby="tab-crosshair" data-pane="crosshair" tabindex="0" hidden>
+        <div class="section-heading"><h2>Crosshair</h2><p>Replace the pointer inside the game. Text fields keep their text cursor.</p></div>
+        <div class="crosshair-preview" aria-label="Crosshair preview"><canvas id="crosshair-preview" width="145" height="145" aria-hidden="true"></canvas><span id="crosshair-preview-label">Default game pointer</span></div>
+        <div class="setting-group">
+          <div class="option row"><div><label for="crosshair-style">Pointer style</label><p>Default keeps the game's own pointer.</p></div><select id="crosshair-style"><option value="default">Default game pointer</option><option value="cross">Cross</option><option value="dot">Dot</option><option value="ring">Ring</option></select></div>
+          <div class="option row"><div><label for="crosshair-color">Color</label></div><input id="crosshair-color" type="color" value="#8cff65"></div>
+          <div class="option row"><div><label for="crosshair-size">Size</label><p>Scales with your monitor's display density.</p></div><select id="crosshair-size"><option value="16">Small · 16 px</option><option value="24">Medium · 24 px</option><option value="32">Large · 32 px</option><option value="48">Extra large · 48 px</option></select></div>
+          <div class="option check"><div><label for="crosshair-outline">Dark outline</label><p>Keep the pointer visible over bright scenery.</p></div><input id="crosshair-outline" type="checkbox"></div>
+        </div>
+        <p class="hint">The preview updates here. Press Save to apply it to the game.</p>
+      </section>
       <section id="pane-connection" class="setting" role="tabpanel" aria-labelledby="tab-connection" data-pane="connection" tabindex="0" hidden>
         <div class="section-heading"><h2>Connection</h2><p>Change servers or reconnect to the current game.</p></div>
-        <div class="setting-group connection-group"><label for="game-url">Game URL</label><p id="server-hint">Use your multiplayer server or a running local singleplayer server. Save, then reconnect to switch.</p><input id="game-url" type="url" spellcheck="false" autocomplete="off" aria-describedby="server-hint url-status"><div class="button-row"><button id="singleplayer-url" class="secondary">Use singleplayer URL</button><button id="multiplayer-url" class="secondary">Use multiplayer URL</button></div><div class="button-row"><button id="apply-url" class="secondary">Save game URL</button><button id="reconnect" class="secondary">Reconnect game</button></div><p id="url-status" class="hint" role="status"></p></div>
+        <div class="setting-group connection-group"><label for="game-url">Game URL</label><p id="server-hint">Use your multiplayer server or a running local singleplayer server. Press Save below, then reconnect to switch.</p><input id="game-url" type="url" spellcheck="false" autocomplete="off" aria-describedby="server-hint url-status"><div class="button-row"><button id="singleplayer-url" class="secondary">Use singleplayer URL</button><button id="multiplayer-url" class="secondary">Use multiplayer URL</button></div><div class="button-row"><button id="reconnect" class="secondary">Reconnect game</button></div><p id="url-status" class="hint" role="status"></p></div>
         <p class="hint">Saving the address leaves your current game open. Reconnect applies the saved address and ends the current session.</p>
       </section>
       <section id="pane-updates" class="setting" role="tabpanel" aria-labelledby="tab-updates" data-pane="updates" tabindex="0" hidden>
@@ -75,6 +87,6 @@
   </div>
   <div id="error-content" hidden><p id="error-text"></p><button id="retry">Reconnect game</button></div>
   <p id="compatibility" class="compatibility" hidden>This game client needs a compatibility update. Check Updates for a newer launcher.</p>
-  <footer><div class="save-status"><span id="feedback" role="status" aria-live="polite">Settings save automatically.</span><span id="version"></span></div><button id="done" class="primary">Back to game</button></footer>
+  <footer><div class="save-status"><span id="feedback" role="status" aria-live="polite">Changes apply when you press Save.</span><span id="version"></span></div><div class="footer-actions"><button id="discard" class="secondary" disabled>Discard</button><button id="save-settings" class="primary" disabled>Save</button><button id="done" class="secondary">Back to game</button></div></footer>
 </div></section>
 </body></html>

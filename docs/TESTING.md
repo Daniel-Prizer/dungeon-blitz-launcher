@@ -1,4 +1,16 @@
-# Current validation: 0.23.1 (patch)
+# Current validation: 0.24.0 (minor)
+
+Fresh official game deployment: swf-e547f078b555, SHA-256 16bc20b508cf233a3b0e9c7b5502646de9b627a290bb4e7c1b92828a659a9ce1. All guarded hooks/interfaces still match; only two unrelated AI methods changed, and both survive byte-identically. Eleven current UI/Home/JC/BT/map assets are unchanged. No game patch guards are weakened.
+
+Settings form edits remain drafts until Save. Native renderer tests cover cross-pane drafts across status updates, unchanged on-disk preferences before Save, atomic commit, failed-save retention/correction, Close/Back/Escape/Discard, and save/reconnect separation. Six fixed panes fit at 800×600 and 1440×900. Purple slider tracks follow the unsaved preview values, and runtime levels change only after Save.
+
+Crosshair options use the same bounded RGBA generator in shell preview and native game cursor. Win32 CreateIconIndirect/GetIconInfo readback verifies exact bitmap pixels and centered hotspot for Cross/Dot/Ring; restoring Default releases the custom cursor. Real own-renderer pointer/text events verify native eligibility and exclusion of text fields; hiding the game for Settings releases the override. Unit checks cover symmetry, bounds, transparent margins, color/outline and six DPI factors. Tests suppress custom SetCursor and never move the OS pointer or modify Windows cursor definitions. The inactive desktop cannot own the input desktop's global foreground pointer, so its native eligibility and renderer focus are checked separately. Hardware-pointer display over a player's live gameplay is not claimed as visually tested.
+
+Tests use unauthenticated public title screens and offline original controllers/assets on the inactive desktop. No account/session is read, copied or operated; no existing game, local server or agent launcher is modified/restarted.
+
+47 unit groups pass without skips. Fresh native title integration, full settings/input/audio checks, 121 camera/map/HUD samples and 130 loading/terrain/menu samples pass. The package matches tested source/runtime, security fuses and root version; the signed payload contains 160 physical files. The packaged Electron 44.7.0 updater verifies physical ASAR bytes, reports progress, rejects tampering and cleans failed stages. The disposable-GUID installer passes fresh/repeat install, exact file hashes, Windows metadata/shortcuts, busy-game refusal without killing, newer-build retention, traversal/junction rejection and managed uninstall/profile preservation. The canonical Downloads Setup is 0.24.0.0 and byte-identical to the release asset; previous root/Downloads copies are retained. Setup has not been run on the user's real installation.
+
+# Previous validation: 0.23.1 (patch)
 
 The reviewed localhost game data references absent MeteorROR and FireBrandShot
 icon names. The native class_4.method_639 returns a bitmap with no pixels when

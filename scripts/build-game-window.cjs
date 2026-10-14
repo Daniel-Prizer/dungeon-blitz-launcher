@@ -17,7 +17,7 @@ module.exports=async function buildGameWindow(){
  }
  const target=path.join(root,'runtime/game/resources/game-window.node'),built=path.join(cache,'native-build/game-window.node');
  fs.mkdirSync(path.dirname(target),{recursive:true});fs.mkdirSync(path.dirname(built),{recursive:true});
- execFileSync(compiler,['cc','-target','x86_64-windows-gnu','-shared','-O2','-s','-Wall','-Wextra','-Wno-unused-parameter','-std=c11','-I',headers,path.join(root,'src/GameWindow.c'),'-o',built,'-lcomctl32','-luser32','-lkernel32'],{windowsHide:true,stdio:'inherit'});
+ execFileSync(compiler,['cc','-target','x86_64-windows-gnu','-shared','-O2','-s','-Wall','-Wextra','-Wno-unused-parameter','-std=c11','-I',headers,path.join(root,'src/GameWindow.c'),'-o',built,'-lcomctl32','-luser32','-lgdi32','-lkernel32'],{windowsHide:true,stdio:'inherit'});
  fs.copyFileSync(built,target);
  const importLibrary=path.join(path.dirname(target),'GameWindow.lib');if(fs.existsSync(importLibrary))fs.unlinkSync(importLibrary);
  console.log('Built game window input boundary.');

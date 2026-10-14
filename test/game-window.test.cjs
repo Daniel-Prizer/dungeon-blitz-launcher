@@ -6,4 +6,6 @@ test('native game input boundary rejects malformed and nonexistent window handle
   assert.throws(()=>boundary.attach(value),/Expected one native game window handle/);
  // Zero names no window. Never query or hook another application's HWND.
  assert.throws(()=>boundary.attach(Buffer.alloc(8)),/Only this game process's own window thread/);
+ assert.throws(()=>boundary.crosshair(Buffer.alloc(16),2),/Invalid bounded game cursor artwork/);
+ assert.throws(()=>boundary.cursorPixels(),/test-only/);
 });

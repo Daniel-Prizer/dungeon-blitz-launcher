@@ -47,10 +47,7 @@ const root = path.resolve(__dirname, '..');
   execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:winexe','/platform:x64','/r:System.Windows.Forms.dll',`/win32icon:${path.join(root,'assets/icon.ico')}`,`/out:${launcher}`,generated],{stdio:'inherit'});
   execFileSync(launcher,['--verify'],{stdio:'inherit',windowsHide:true});
   execFileSync(process.execPath,[path.join(__dirname,'verify-package.cjs')],{stdio:'inherit',windowsHide:true});
-  // Remove only the obsolete root shim after its replacement is verified.
-  // Historical portable builds and any running old session are left intact.
-  const previousLauncher=path.join(root,'Blitz Browser.exe');
-  if(fs.existsSync(previousLauncher))fs.unlinkSync(previousLauncher);
+  // Keep historical root shims, portable builds and agent-owned copies intact.
   console.log(`Root executable (always latest): ${launcher}`);
   console.log(`Ready: ${executable}`);
 })().catch(error => { console.error(error); process.exitCode = 1; });

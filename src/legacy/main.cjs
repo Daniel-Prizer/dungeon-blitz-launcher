@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, session } = require('electron');
+const { app, BrowserWindow, session, screen } = require('electron');
 const path = require('path');
 const net = require('net');
 const {readMessages}=require('./transport.cjs');
@@ -12,6 +12,16 @@ let adaptiveContract;try{adaptiveContract=JSON.parse(require('fs').readFileSync(
 let singleplayerContract;try{singleplayerContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract-singleplayer.json'),'utf8'));}catch(_){}
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
+const crosshairArtwork=require('./crosshair.js');
+let gameWindow,crosshair=crosshairArtwork.valid(),appliedCrosshair='',cursorType='default';
+function applyCrosshair(){
+  if(!gameWindow||!win||win.isDestroyed())return;
+  const density=screen.getDisplayMatching(win.getBounds()).scaleFactor;
+  const key=JSON.stringify([crosshair,density]);if(key===appliedCrosshair)return;
+  const image=crosshairArtwork.pixels(crosshair,density);
+  gameWindow.crosshair(crosshair.style==='default'?Buffer.alloc(0):Buffer.from(image.rgba),crosshair.style==='default'?0:image.width);
+  appliedCrosshair=key;
+}
 const audioDeltas=[];
 for(const name of ['audio-delta.json','audio-delta-current.json','audio-delta-latest.json','audio-delta-oct11.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
 const LIVE = validGameAddress(process.env.BLITZ_GAME_URL)?canonicalGameAddress(process.env.BLITZ_GAME_URL):null;
@@ -159,7 +169,9 @@ app.whenReady().then(async () => {
   // frameless hit-test resize borders active.
   // The own-process subclass blocks interactive move/resize. Do not cancel
   // native placement events: our owner uses SetWindowPos to synchronize position.
-  require(path.join(process.resourcesPath,'game-window.node')).attach(win.getNativeWindowHandle());
+  gameWindow=require(path.join(process.resourcesPath,'game-window.node'));gameWindow.attach(win.getNativeWindowHandle());
+  win.on('move',applyCrosshair);
+  win.webContents.on('cursor-changed',(_event,type)=>{cursorType=type;gameWindow.cursorType(['default','pointer','hand','crosshair'].includes(type));});
   win.setMenuBarVisibility(false);
   win.on('focus',()=>emit({type:'focused'}));
   // Alt+F4 on the game surface closes its launcher without a confirmation.
@@ -294,6 +306,7 @@ readMessages(pipe, async cmd => {
     if(cmd.type==='centered-hotbar'&&typeof cmd.value==='boolean'){centeredHotbar=cmd.value;await applyCenteredHotbar();}
     if(cmd.type==='centered-camera'&&typeof cmd.value==='boolean'){centeredCamera=cmd.value;await applyCenteredCamera();}
     if(cmd.type==='shift-mount'&&typeof cmd.value==='boolean'){mountShortcut.configure(cmd.value);await applyMountShortcut();}
+    if(cmd.type==='crosshair'&&cmd.value){crosshair=crosshairArtwork.valid(cmd.value);applyCrosshair();}
     if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
     if (['viewport','test-viewport'].includes(cmd.type) && Number.isInteger(cmd.width) && Number.isInteger(cmd.height)) {
       viewport={width:Math.max(1,Math.min(8000,cmd.width)),height:Math.max(1,Math.min(8000,cmd.height))};
@@ -329,7 +342,8 @@ readMessages(pipe, async cmd => {
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`).catch(error=>({probeError:error.message}));
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`).catch(error=>({probeError:error.message}));
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,testRequests,testIconRepairs,probeDurationMs}));
+      const cursorPixels=gameWindow.cursorPixels();
+      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,testRequests,testIconRepairs,probeDurationMs,crosshair:{...crosshair,cursorType,density:screen.getDisplayMatching(win.getBounds()).scaleFactor,pixels:cursorPixels.toString('base64'),eligible:gameWindow.cursorPolicy(),active:gameWindow.cursorActive(),dryRun:true}}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }
     if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);
