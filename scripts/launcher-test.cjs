@@ -21,7 +21,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     if(req.url==='/flash-links'){
       res.setHeader('Content-Type','text/html');res.end(`<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/link-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"><param name="flashvars" value="gameURL=${encodeURIComponent('http://localhost:'+server.address().port+'/flash-links')}"></object></div></body>`);return;
     }
-    res.setHeader('Content-Type','text/html');res.end(`<!doctype html><html><body style="margin:0;background:#484955;display:flex;justify-content:center;align-items:center;min-height:100vh"><div id="game-container"><div id="DungeonBlitz" style="width:1152px;height:768px;background:linear-gradient(45deg,#493c20,#8a713c)">Audio isolation fixture</div></div><a style="position:fixed;left:10px;top:10px" target="_blank" href="https://www.paypal.com/donate/?a=1&amp;b=2">PayPal</a><a style="position:fixed;left:10px;top:60px" href="https://www.facebook.com/">Facebook</a><a style="position:fixed;left:10px;top:110px" target="_blank" href="/game-link">Game</a><script>const ctx=new AudioContext();const oscillator=ctx.createOscillator();const gain=ctx.createGain();gain.gain.value=0;oscillator.connect(gain).connect(ctx.destination);oscillator.start();ctx.resume();window.__fixtureResult={node:typeof require,process:typeof process,launcher:typeof window.blitz,popup:window.open('https://example.com/')===null};fetch('http://127.0.0.1:'+location.port+'/blocked').then(()=>window.__fixtureResult.blocked=false).catch(()=>window.__fixtureResult.blocked=true);</script></body></html>`);
+    res.setHeader('Content-Type','text/html');res.end(`<!doctype html><html><body style="margin:0;background:#484955;display:flex;justify-content:center;align-items:center;min-height:100vh"><div id="game-container"><div id="DungeonBlitz" style="width:1152px;height:768px;background:linear-gradient(45deg,#493c20,#8a713c)">Audio isolation fixture</div></div><input id="cursor-field" aria-label="Offline cursor probe" style="position:fixed;left:20px;top:200px;width:240px;height:36px;cursor:text"><a style="position:fixed;left:10px;top:10px" target="_blank" href="https://www.paypal.com/donate/?a=1&amp;b=2">PayPal</a><a style="position:fixed;left:10px;top:60px" href="https://www.facebook.com/">Facebook</a><a style="position:fixed;left:10px;top:110px" target="_blank" href="/game-link">Game</a><script>const ctx=new AudioContext();const oscillator=ctx.createOscillator();const gain=ctx.createGain();gain.gain.value=0;oscillator.connect(gain).connect(ctx.destination);oscillator.start();ctx.resume();window.__fixtureResult={node:typeof require,process:typeof process,launcher:typeof window.blitz,popup:window.open('https://example.com/')===null};fetch('http://127.0.0.1:'+location.port+'/blocked').then(()=>window.__fixtureResult.blocked=false).catch(()=>window.__fixtureResult.blocked=true);</script></body></html>`);
   });await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const fixture=`http://localhost:${server.address().port}/`;
   const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
@@ -61,18 +61,57 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     checks.push('Original Flash renders live game; full-window input stage'+(privateDesktop?' and native input focus':''));
     await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
     const section=name=>page.getByRole('tab',{name,exact:true}).click();
+    async function commitUI(){if(await page.locator('#save-settings').isEnabled())await page.locator('#save-settings').click();await until(()=>page.locator('#settings-body').evaluate(el=>!el.inert),'Settings save must complete');}
+    // Changes across categories must remain a local draft, including while new
+    // native status arrives. Closing by any route discards rather than saves.
+    const preferences=()=>fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8');
+    const originalPreferences=preferences();
+    await section('Audio');await page.locator('#volume-number').fill('23');
+    await section('Display');await page.locator('#centered-camera').check();
+    await section('Controls');await page.locator('#cursor-lock').check();
+    await section('Crosshair');await page.locator('#crosshair-style').selectOption('cross');
+    await wait(1200);assert.equal(preferences(),originalPreferences,'Draft edits must never write preferences');
+    assert.equal((await call('state')).settings.volume,100);assert.equal((await call('state')).settings.centeredCamera,false);
+    assert.equal((await call('state')).settings.cursorLock,false);assert.equal((await call('state')).settings.crosshair.style,'default');
+    await section('Audio');assert.equal(await page.locator('#volume-number').inputValue(),'23','Drafts survive pane changes and native status');
+    await page.locator('#dismiss').click();await call('settings');assert.equal(await page.locator('#volume-number').inputValue(),'100');
+    await page.locator('#volume-number').fill('17');await page.locator('#discard').click();assert.equal(await page.locator('#volume-number').inputValue(),'100');
+    await page.locator('#volume-number').fill('29');await page.locator('#done').click();await call('settings');assert.equal(await page.locator('#volume-number').inputValue(),'100');
+    await page.locator('#volume-number').fill('43');await shellKey('Escape');await call('settings');assert.equal(await page.locator('#volume-number').inputValue(),'100');
+    assert.equal(preferences(),originalPreferences,'Close, Back, Escape and Discard leave saved values intact');
+    await section('Controls');await page.locator('#shift-mount').check();await page.locator('#unlock-key').click();await page.locator('#unlock-key').press('ShiftLeft');await commitUI();
+    assert.equal((await call('state')).settings.shiftMount,false);assert.equal(await page.locator('#shift-mount').isChecked(),true,'Failed save preserves the draft');
+    assert.match(await page.locator('#feedback').innerText(),/different cursor-lock shortcut/);await page.locator('#discard').click();
+    await section('Crosshair');await page.locator('#crosshair-style').selectOption('cross');await page.locator('#crosshair-size').selectOption('32');
+    assert.equal((await measure('draft-crosshair')).crosshair.style,'default','Unsaved pointer never reaches the game');
+    await page.locator('.panel').screenshot({path:path.join(out,'settings-crosshair-preview.png')});
+    await commitUI();
+    const crosshairCaptures=[];
+    for(const style of ['cross','dot','ring']){
+      await page.locator('#crosshair-style').selectOption(style);await commitUI();
+      const probe=await measure('crosshair-'+style),native=probe.crosshair;
+      const image=require('../src/crosshair.js').pixels(native,native.density),bgra=Buffer.from(image.rgba);
+      for(let i=0;i<bgra.length;i+=4){[bgra[i],bgra[i+2]]=[bgra[i+2],bgra[i]];}
+      assert.equal(native.style,style);assert.equal(native.dryRun,true);assert.deepEqual(Buffer.from(native.pixels,'base64'),bgra,'Actual Win32 pointer bitmap and centered hotspot must match preview');
+      const png=await app.evaluate(({nativeImage},data)=>nativeImage.createFromBitmap(Buffer.from(data.pixels,'base64'),{width:data.width,height:data.width}).toPNG().toString('base64'),{pixels:native.pixels,width:image.width});
+      fs.writeFileSync(path.join(out,'native-pointer-'+style+'.png'),Buffer.from(png,'base64'));crosshairCaptures.push({style,width:image.width,hotspot:image.hotspot});
+    }
+    await page.locator('#crosshair-style').selectOption('default');await commitUI();assert.equal((await measure('crosshair-restored')).crosshair.pixels,'','Default removes only the custom game cursor');
+    assert.equal((await call('save-settings',{crosshair:{style:'cross',size:100000,color:'#fff',outline:true}})).ok,false);
+    checks.push('Explicit Save commits drafts atomically; Close/Back/Escape/Discard never autosave; invalid saves retain edits; native crosshair bitmap/hotspot readback matches preview');
+    await section('Display');
     assert.equal(await page.locator('#volume').getAttribute('min'),'0');assert.equal(await page.locator('#volume').getAttribute('max'),'100');assert.equal(await page.locator('#volume').getAttribute('step'),'1');
     assert.equal(await page.locator('#volume').inputValue(),'100');assert.equal(await page.locator('#unlock-key').getAttribute('data-code'),'AltLeft');assert.equal(await page.locator('#cursor-lock').isChecked(),false);
     await section('Updates');assert.equal(await page.locator('#auto-updates').isChecked(),true);
-    await page.locator('#auto-updates').uncheck();await until(async()=> (await call('state')).settings.autoUpdates===false,'Update opt-out not saved');
-    await page.locator('#auto-updates').check();await until(async()=> (await call('state')).settings.autoUpdates===true,'Updates not re-enabled');
+    await page.locator('#auto-updates').uncheck();await commitUI();await until(async()=> (await call('state')).settings.autoUpdates===false,'Update opt-out not saved');
+    await page.locator('#auto-updates').check();await commitUI();await until(async()=> (await call('state')).settings.autoUpdates===true,'Updates not re-enabled');
     assert.equal((await call('save-settings',{autoUpdates:'yes'})).ok,false);
     checks.push('Actual automatic-update checkbox saves both choices and rejects malformed values');
     await section('Audio');for(const bus of ['player','music','environment','creatures']){
       const slider=page.locator('#audio-'+bus);assert.equal(await slider.inputValue(),'100');assert.equal(await slider.getAttribute('step'),'1');assert.equal(await slider.isEnabled(),true);
-      await slider.press('Home');await until(async()=> (await call('state')).settings.audioMix[bus]===0,'Sound bus zero not saved');
-      await slider.press('ArrowRight');await until(async()=> (await call('state')).settings.audioMix[bus]===1,'Sound bus one-step increment not saved');
-      await slider.press('End');await until(async()=> (await call('state')).settings.audioMix[bus]===100,'Sound bus reset not saved');
+      await slider.press('Home');await commitUI();await until(async()=> (await call('state')).settings.audioMix[bus]===0,'Sound bus zero not saved');
+      await slider.press('ArrowRight');await commitUI();await until(async()=> (await call('state')).settings.audioMix[bus]===1,'Sound bus one-step increment not saved');
+      await slider.press('End');await commitUI();await until(async()=> (await call('state')).settings.audioMix[bus]===100,'Sound bus reset not saved');
     }
     await call('save-settings',{audioMix:{player:17,music:29,environment:43,creatures:61}});await wait(1200);
     assert.deepEqual((await measure('live-audio-mix')).audioProbe.levels,{player:.17,music:.29,environment:.43,creatures:.61});
@@ -82,12 +121,12 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     const settingsRects=[];
     await page.evaluate(()=>document.fonts.ready);
     assert(await page.evaluate(()=>[...document.fonts].some(face=>face.family==='BlitzRounded'&&face.status==='loaded')),'Bundled rounded Settings font must load under the local CSP');
-    for(const name of ['Audio','Controls','Display','Connection','Updates']){
+    for(const name of ['Audio','Controls','Crosshair','Display','Connection','Updates']){
       await section(name);settingsRects.push(await page.locator('.panel').boundingBox());
       await page.screenshot({path:path.join(out,'settings-'+name.toLowerCase()+'.png')});
     }
     assert(settingsRects.every(rect=>rect.width===settingsRects[0].width&&rect.height===settingsRects[0].height&&rect.x===settingsRects[0].x&&rect.y===settingsRects[0].y),'Settings frame must not move or resize across panes');
-    checks.push('All five rendered Settings panes retain the same frame and scroll longer content');
+    checks.push('All six rendered Settings panes retain the same frame and scroll longer content');
     await section('Display');
     assert.equal(await page.getByRole('tabpanel').count(),1);
     assert.equal(await page.getByRole('tab',{selected:true}).count(),1);
@@ -98,16 +137,16 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     await page.getByRole('tab',{name:'Updates',exact:true}).press('Home');
     assert.equal(await page.getByRole('tab',{name:'Display',exact:true}).getAttribute('aria-selected'),'true');
     assert(await page.locator('#centered-hotbar').isDisabled(),'Original hotbar requires widescreen without discarding its saved preference');
-    await page.locator('#experimental-widescreen').check();await until(async()=>(await call('state')).settings.experimentalWidescreen,'Widescreen must save');
+    await page.locator('#experimental-widescreen').check();await commitUI();await until(async()=>(await call('state')).settings.experimentalWidescreen,'Widescreen must save');
     await until(()=>page.locator('#centered-hotbar').isEnabled(),'Original hotbar becomes available with widescreen');
-    await page.locator('#centered-hotbar').check();await until(async()=>(await call('state')).settings.centeredHotbar,'Centered hotbar must save');
-    await page.locator('#experimental-widescreen').uncheck();await until(()=>page.locator('#centered-hotbar').isDisabled(),'Disabling widescreen disables its dependent control');
+    await page.locator('#centered-hotbar').check();await commitUI();await until(async()=>(await call('state')).settings.centeredHotbar,'Centered hotbar must save');
+    await page.locator('#experimental-widescreen').uncheck();await commitUI();await until(()=>page.locator('#centered-hotbar').isDisabled(),'Disabling widescreen disables its dependent control');
     assert.equal((await call('state')).settings.centeredHotbar,true,'Dependent setting must remain saved');
-    await page.locator('#experimental-widescreen').check();await until(()=>page.locator('#centered-hotbar').isEnabled(),'Re-enabling widescreen restores access');
-    await page.locator('#centered-hotbar').uncheck();await until(async()=>!(await call('state')).settings.centeredHotbar,'Restore original hotbar default');
-    await page.locator('#experimental-widescreen').uncheck();await until(async()=>!(await call('state')).settings.experimentalWidescreen,'Restore width default');
-    await page.locator('#centered-camera').check();await until(async()=>(await call('state')).settings.centeredCamera,'New layout camera checkbox must save');
-    await page.locator('#centered-camera').uncheck();await until(async()=>!(await call('state')).settings.centeredCamera,'Restore camera default');
+    await page.locator('#experimental-widescreen').check();await commitUI();await until(()=>page.locator('#centered-hotbar').isEnabled(),'Re-enabling widescreen restores access');
+    await page.locator('#centered-hotbar').uncheck();await commitUI();await until(async()=>!(await call('state')).settings.centeredHotbar,'Restore original hotbar default');
+    await page.locator('#experimental-widescreen').uncheck();await commitUI();await until(async()=>!(await call('state')).settings.experimentalWidescreen,'Restore width default');
+    await page.locator('#centered-camera').check();await commitUI();await until(async()=>(await call('state')).settings.centeredCamera,'New layout camera checkbox must save');
+    await page.locator('#centered-camera').uncheck();await commitUI();await until(async()=>!(await call('state')).settings.centeredCamera,'Restore camera default');
     await page.locator('.advanced-options summary').click();
     await page.locator('#hardware-acceleration').scrollIntoViewIfNeeded();
     const displayScroll=await page.locator('#settings-content').evaluate(el=>el.scrollTop);
@@ -129,38 +168,38 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     }
     const fillCounts=[];
     for(const value of [0,25,50,100]){
-      await page.locator('#volume-number').fill(String(value));await until(async()=>(await call('state')).settings.volume===value,'Master fill value must save');
+      await page.locator('#volume-number').fill(String(value));await commitUI();await until(async()=>(await call('state')).settings.volume===value,'Master fill value must save');
       const fill=await purplePixels(page.locator('#volume'));fillCounts.push(fill.purple);
       assert(Math.abs(fill.purple-fill.width*value/100)<24,'Rendered purple width must follow the actual master slider value');
       await page.locator('.panel').screenshot({path:path.join(out,'settings-volume-'+value+'.png')});
     }
     assert.equal(fillCounts[0],0,'Zero volume must have no purple track');assert(fillCounts.every((count,n)=>!n||count>fillCounts[n-1]),'Purple fill must grow from zero to full');
     for(const bus of ['player','music','environment','creatures']){
-      const slider=page.locator('#audio-'+bus);await slider.press('Home');await until(async()=>(await call('state')).settings.audioMix[bus]===0,'Category zero must save');assert.equal((await purplePixels(slider)).purple,0);
-      await slider.press('End');await until(async()=>(await call('state')).settings.audioMix[bus]===100,'Category full must save');const full=await purplePixels(slider);assert(full.purple>full.width-24);
+      const slider=page.locator('#audio-'+bus);await slider.press('Home');await commitUI();await until(async()=>(await call('state')).settings.audioMix[bus]===0,'Category zero must save');assert.equal((await purplePixels(slider)).purple,0);
+      await slider.press('End');await commitUI();await until(async()=>(await call('state')).settings.audioMix[bus]===100,'Category full must save');const full=await purplePixels(slider);assert(full.purple>full.width-24);
     }
-    await page.locator('#volume-number').fill('37');await until(async()=>(await call('state')).settings.volume===37,'Restored master fill must save');
+    await page.locator('#volume-number').fill('37');await commitUI();await until(async()=>(await call('state')).settings.volume===37,'Restored master fill must save');
     await page.locator('#done').click();await page.getByRole('button',{name:'Settings',exact:true}).click();await section('Audio');
     assert.equal(await page.locator('#volume').inputValue(),'37');const restored=await purplePixels(page.locator('#volume'));assert(Math.abs(restored.purple-restored.width*.37)<24,'Reopened Settings must restore the persisted fill');
     checks.push('Actual rendered purple slider fill at 0/25/50/100%, all category endpoints and saved-value restoration');
     assert(await page.locator('.wordmark').evaluate(el=>el.complete&&el.naturalWidth>0),'Actual titlebar wordmark loads');
-    async function bind(code){await section('Controls');await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Shortcut capture must arm');await page.locator('#unlock-key').press(code);await until(async()=> !(await call('state')).capturingShortcut,'Shortcut capture must finish');}
+    async function bind(code){await section('Controls');await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Shortcut capture must arm');await page.locator('#unlock-key').press(code);await commitUI();await until(async()=> !(await call('state')).capturingShortcut,'Shortcut capture must finish');await commitUI();}
     if(privateDesktop)assert.equal((await measure('hidden-in-settings')).visible,false);
-    await page.locator('#volume').focus();await page.locator('#volume').press('Home');await until(async()=> (await call('state')).settings.volume===0,'Volume zero not saved');
-    await page.locator('#volume').press('ArrowRight');await until(async()=> (await call('state')).settings.volume===1,'Volume increment not saved');
-    await page.locator('#volume-number').fill('37');await until(async()=> (await call('state')).settings.volume===37,'Volume 37 not saved');
-    await section('Controls');await page.locator('#cursor-lock').check();await until(async()=> (await call('state')).settings.cursorLock,'Cursor checkbox not saved');
+    await page.locator('#volume').focus();await page.locator('#volume').press('Home');await commitUI();await until(async()=> (await call('state')).settings.volume===0,'Volume zero not saved');
+    await page.locator('#volume').press('ArrowRight');await commitUI();await until(async()=> (await call('state')).settings.volume===1,'Volume increment not saved');
+    await page.locator('#volume-number').fill('37');await commitUI();await until(async()=> (await call('state')).settings.volume===37,'Volume 37 not saved');
+    await section('Controls');await page.locator('#cursor-lock').check();await commitUI();await until(async()=> (await call('state')).settings.cursorLock,'Cursor checkbox not saved');
     await bind('F8');await until(async()=> (await call('state')).settings.unlockKey==='F8','Shortcut not saved');
     await bind('g');await until(async()=> (await call('state')).settings.unlockKey==='KeyG','Letter shortcut not saved');
-    await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Capture arm');await page.locator('#unlock-key').press('F11');assert.equal((await call('state')).fullscreen,false,'Reserved F11 during capture must not enter fullscreen');await page.locator('#unlock-key').press('Escape');await until(async()=> !(await call('state')).capturingShortcut,'Escape cancels capture');assert.equal((await call('state')).settings.unlockKey,'KeyG');
+    await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Capture arm');await page.locator('#unlock-key').press('F11');assert.equal((await call('state')).fullscreen,false,'Reserved F11 during capture must not enter fullscreen');await page.locator('#unlock-key').press('Escape');await commitUI();await until(async()=> !(await call('state')).capturingShortcut,'Escape cancels capture');assert.equal((await call('state')).settings.unlockKey,'KeyG');
     await bind('F8');await until(async()=> (await call('state')).settings.unlockKey==='F8','Reset F8');
     if(privateDesktop){
       await until(async()=> (await call('state')).cursor.enabled,'Native cursor settings not applied');
       assert.equal((await call('state')).cursor.active,false,'Cursor never confines in settings');assert.equal((await call('state')).cursor.dryRun,true);
       const savedLock=()=>JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8')).settings.cursorLock;
-      await page.locator('#cursor-lock').uncheck();await until(async()=> !(await call('state')).settings.cursorLock&&!(await call('state')).cursor.enabled,'Cursor checkbox must disable and save');
+      await page.locator('#cursor-lock').uncheck();await commitUI();await until(async()=> !(await call('state')).settings.cursorLock&&!(await call('state')).cursor.enabled,'Cursor checkbox must disable and save');
       assert.equal(await page.locator('#cursor-lock').isChecked(),false);assert.equal(savedLock(),false);
-      await page.locator('#cursor-lock').check();await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Cursor checkbox must enable and save');
+      await page.locator('#cursor-lock').check();await commitUI();await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Cursor checkbox must enable and save');
       const host=line=>app.evaluate(({},line)=>global.__blitzTest.runtime().testHost(line),line);
       await host('TESTKEY 119 1 1');await until(async()=> !(await call('state')).settings.cursorLock,'Native custom key must disable saved checkbox');
       await host('TESTKEY 119 1 1');await wait(100);assert.equal((await call('state')).settings.cursorLock,false,'Saved-setting acknowledgement cannot turn a repeat into a new toggle');
@@ -178,7 +217,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     const initialSize=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentSize());
     for(const size of [[800,600],[1440,900]]){
       await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),size);await wait(300);
-      for(const section of ['Audio','Controls','Display','Connection','Updates']){
+      for(const section of ['Audio','Controls','Crosshair','Display','Connection','Updates']){
         await page.getByRole('tab',{name:section,exact:true}).click();await wait(350);
         const layout=await page.evaluate(()=>{
           const rect=id=>{const r=document.querySelector(id).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
@@ -197,12 +236,12 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     await call('dismiss');await until(async()=>{const frame=await measure('settings-resize-restored');return frame.geometry.width===frame.viewport.width&&frame.geometry.height===frame.viewport.height;},'Returning from resized Settings must synchronize the native viewport');
     await call('settings');await section('Display');await wait(350);
     checks.push('Settings navigation at 800x600 and 1440x900 preserves heading/footer, fits horizontally and scrolls each section');
-    await page.locator('#game-zoom').selectOption('1.5');await wait(400);const enlarged=await measure('scale-150');
+    await page.locator('#game-zoom').selectOption('1.5');await commitUI();await wait(400);const enlarged=await measure('scale-150');
     assert(enlarged.renderProbe&&live.renderProbe,'Reviewed native raster adapter must be active');
     assert.equal(enlarged.renderProbe.zoom,1.5);
     assert(enlarged.renderProbe.nativeScale*enlarged.scale>live.renderProbe.nativeScale*live.scale*1.45,'Game magnification must increase inside Flash');
     assert(enlarged.renderProbe.bitmapWidth>live.renderProbe.bitmapWidth*1.45,'Magnification must allocate real game pixels');
-    await page.locator('#game-zoom').selectOption('1');await page.getByRole('button',{name:'Back to game'}).click();await wait(600);
+    await page.locator('#game-zoom').selectOption('1');await commitUI();await page.getByRole('button',{name:'Back to game'}).click();await commitUI();await wait(600);
     if(privateDesktop){const restored=await measure('focus-restored');assert(restored.focused&&restored.contentFocused&&restored.geometry.focused);}
     await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await wait(600);assert.equal((await call('state')).fullscreen,true);
     assert.equal(await page.locator('#titlebar').isVisible(),false);assert.equal(await page.locator('#surface').evaluate(el=>el.getBoundingClientRect().y),0);
@@ -217,8 +256,8 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
     assert.equal((await call('state')).modal,null,'Escape closes launcher Settings');assert.equal((await call('state')).fullscreen,true,'Closing Settings preserves fullscreen');
     await call('exit-fullscreen');await wait(400);
     checks.push('Rendered game scale, native focus restoration, fullscreen button/F11, Escape reaches game and keeps fullscreen, Escape closes Settings without exiting fullscreen');
-    await page.getByRole('button',{name:'Settings',exact:true}).click();await section('Connection');await page.locator('#game-url').fill('file:///C:/Windows/system.ini');await page.locator('#apply-url').click();await wait(200);assert.equal((await call('state')).settings.gameURL,LIVE);
-    await page.locator('#game-url').fill(fixture);await page.locator('#apply-url').click();await until(async()=> (await call('state')).pendingURL,'New URL not saved');assert.equal((await call('state')).gameURL,LIVE,'URL edit must not navigate current game');
+    await page.getByRole('button',{name:'Settings',exact:true}).click();await section('Connection');await page.locator('#game-url').fill('file:///C:/Windows/system.ini');await page.locator('#save-settings').click();await commitUI();await wait(200);assert.equal((await call('state')).settings.gameURL,LIVE);
+    await page.locator('#game-url').fill(fixture);await page.locator('#save-settings').click();await commitUI();await until(async()=> (await call('state')).pendingURL,'New URL not saved');assert.equal((await call('state')).gameURL,LIVE,'URL edit must not navigate current game');
     await page.locator('#reconnect').click();await until(async()=> !(await call('state')).loading,'Fixture did not start');await wait(1000);assert.equal((await call('state')).gameURL,fixture);assert.equal((await call('state')).error,'');
     const fixtureFrame=await measure('fixture-boundaries');assert.equal(fixtureFrame.windows,1,'Popup attempt must not create another native window');assert.deepEqual({...fixtureFrame.geometry.fixture,popup:undefined},{node:'undefined',process:'undefined',launcher:'undefined',popup:undefined,blocked:true});assert(!fixtureRequests.includes('/blocked'),'Cross-origin fetch must be denied before it reaches the server');
     checks.push('Selected-origin runtime denies cross-origin requests and popups; game has no Node or launcher API');
@@ -228,6 +267,15 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       for(const type of ['mouseDown','mouseUp'])await command({type:'test-input',input:{type,x:Math.round(x),y:Math.round(y),button:'left',clickCount:1}});
     }
     const scale=fixtureFrame.scale;
+    await call('save-settings',{crosshair:{style:'cross',color:'#8cff65',size:24,outline:true}});await wait(200);
+    await command({type:'test-input',input:{type:'mouseMove',x:Math.round(100*scale),y:Math.round(220*scale)}});await wait(250);
+    const textPointer=(await measure('crosshair-text-field')).crosshair;
+    assert.equal(textPointer.cursorType,'text','The offline input must request the real native text cursor');assert.equal(textPointer.eligible,false,'Text fields must not be overridden');
+    await command({type:'test-input',input:{type:'mouseMove',x:Math.round(400*scale),y:Math.round(400*scale)}});await wait(250);
+    const gameArea=await measure('crosshair-game-area'),gamePointer=gameArea.crosshair;assert.equal(gamePointer.eligible,true,'Native game cursor policy must accept the normal game pointer');assert(gameArea.focused&&gameArea.visible);
+    await call('settings');const hiddenPointer=await measure('crosshair-settings-hidden');assert.equal(hiddenPointer.visible,false);assert.equal(hiddenPointer.crosshair.active,false,'Settings hides the game and releases its pointer override');await call('dismiss');
+    await call('save-settings',{crosshair:require('../src/crosshair.js').valid()});
+    checks.push('Real renderer pointer/text transitions preserve text fields; Settings releases the game cursor; restoring Default clears the custom cursor');
     await clickGame(25*scale,18*scale);await until(async()=> (await opened()).length===1,'Clicked external popup handoff missing');
     assert.deepEqual(await opened(),['https://www.paypal.com/donate/?a=1&b=2']);await wait(1100);
     await clickGame(25*scale,68*scale);await until(async()=> (await opened()).length===2,'Clicked same-window external handoff missing');
@@ -282,7 +330,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       await clickGame(600,300);await wait(200);
       await control('play');assert.equal((await probe()).key,56,'Actual reviewed client defaults Mount to 8');assert.equal((await probe()).mountCommand,12);
       await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,'Disabled alias must do nothing');
-      await call('settings');await section('Controls');const checkbox=page.locator('#shift-mount');await checkbox.check();await until(async()=>(await call('state')).settings.shiftMount,'Mount checkbox saves');
+      await call('settings');await section('Controls');const checkbox=page.locator('#shift-mount');await checkbox.check();await commitUI();await until(async()=>(await call('state')).settings.shiftMount,'Mount checkbox saves');
       assert.equal(JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'))).settings.shiftMount,true);
       assert.equal((await call('save-settings',{shiftMount:'yes'})).ok,false);assert.equal((await call('save-settings',{unlockKey:'ShiftLeft'})).ok,false,'Shortcut conflict must be explained');
       await call('dismiss');await wait(500);await control('play');await key('Shift',['left']);
@@ -299,7 +347,7 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       await control('play');for(let i=0;i<4;i++)await command({type:'test-input',input:{type:'keyDown',keyCode:'Shift',modifiers:['left']}});await wait(400);
       await command({type:'test-input',input:{type:'keyUp',keyCode:'Shift',modifiers:['left']}});assert.equal((await probe()).events.filter(e=>e.command===12&&e.type==='keyDown').length,1,'Held Shift cannot repeat mounting');
       await control('menu');await call('fullscreen');await wait(400);await key('Escape');assert.equal((await call('state')).fullscreen,true);assert.equal((await probe()).panel,false,'Escape must reach Flash stage to close its panel');
-      await call('exit-fullscreen');await call('settings');await checkbox.uncheck();await until(async()=>!(await call('state')).settings.shiftMount,'Mount opt-out saves');await call('dismiss');await wait(400);await control('play');await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0);
+      await call('exit-fullscreen');await call('settings');await checkbox.uncheck();await commitUI();await until(async()=>!(await call('state')).settings.shiftMount,'Mount opt-out saves');await call('dismiss');await wait(400);await control('play');await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0);
       checks.push('Real Flash stage Esc remains fullscreen; actual reviewed key manager and new helper prove opt-in Left Shift/current mount rebind, one paired event, original key, typing/login/capture/unbound/chord guards and saved checkbox; right-side filtering separately unit-tested');
     }
     await call('save-settings',{gameURL:LIVE,volume:100,cursorLock:false,unlockKey:'AltLeft',gameZoom:1,shiftMount:false});

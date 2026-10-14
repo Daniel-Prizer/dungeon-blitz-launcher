@@ -40,11 +40,11 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   await call('settings');await page.getByRole('tab',{name:'Display',exact:true}).click();const fpsCheckbox=page.getByRole('checkbox',{name:'Show FPS counter',exact:true});assert.equal(await fpsCheckbox.isChecked(),false);
   await fpsCheckbox.check();await until(async()=>(await call('state')).settings.showFPS);await call('dismiss');await wait(1200);
   const live=await sample('live-1080p',true),counter=measured(live);assert(counter.visible);
-  await call('settings');await fpsCheckbox.uncheck();await until(async()=>!(await call('state')).settings.showFPS);await call('dismiss');await wait(700);
+  await call('settings');await fpsCheckbox.uncheck();await page.locator('#save-settings').click();await until(async()=>!(await call('state')).settings.showFPS);await call('dismiss');await wait(700);
   assert.equal((await sample('live-setting-hidden')).renderProbe.frameCounter.visible,false);
   await cmd({type:'show-fps',value:'true'});assert.equal((await sample('invalid-setting-ignored')).renderProbe.frameCounter.shown,false);
   assert((await call('save-settings',{showFPS:1})).error,'Nonboolean settings must be rejected');
-  await call('settings');assert.equal(await fpsCheckbox.isChecked(),false);await fpsCheckbox.check();await until(async()=>(await call('state')).settings.showFPS);await call('dismiss');await wait(700);
+  await call('settings');assert.equal(await fpsCheckbox.isChecked(),false);await fpsCheckbox.check();await page.locator('#save-settings').click();await until(async()=>(await call('state')).settings.showFPS);await call('dismiss');await wait(700);
   assert(counter.x+counter.width<=(live.renderProbe.stageWidth-(1152+62)*live.renderProbe.nativeScale)/2,'Counter must fit outside the original game frame');
   assert.equal(live.renderProbe.animationRate,100,'Production target must remain unchanged');
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(2560,1472));await wait(1800);assert(measured(await sample('live-1440p',true)).visible);

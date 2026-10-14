@@ -2,6 +2,7 @@
 const LIVE = 'https://dungeonblitzr.theminesa.studio/';
 const {canonicalGameAddress}=require('./legacy/game-address.cjs');
 const UNLOCK_KEYS = require('./shortcuts.js').codes;
+const {valid:validCrosshair}=require('./crosshair.js');
 function gameURL(value) {
   if (typeof value !== 'string' || value.length > 8192) return null;
   try {
@@ -28,6 +29,7 @@ function validSettings(input = {}) {
     experimentalWidescreen: input.experimentalWidescreen === true,
     centeredHotbar: input.centeredHotbar === true,
     centeredCamera: input.centeredCamera === true,
+    crosshair:validCrosshair(input.crosshair),
     autoUpdates: input.autoUpdates !== false,
     keepGameAwake: input.keepGameAwake !== false, hardwareAcceleration: input.hardwareAcceleration !== false };
 }

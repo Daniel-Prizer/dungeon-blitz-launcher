@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-13T09:24:35.970Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-9edaa96cb6f8",
-  "inputHash": "4deb75f5bd8f7068dd3cac0a955cb0093347e54b5f8c974c0b4b18064241b726",
-  "note": "Test provenance only. Existing structural contract accepts this deployment automatically. Since swf-9387c66052f8, one constant-pool integer uses an equivalent longer encoding; decoded pools, all method bodies, definitions, bindings and other tags are identical. The unchanged multiplayer recipe preserves the new encoding and every unrelated byte."
+  "checkedAt": "2026-10-14T17:06:01.121Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-e547f078b555",
+  "inputHash": "16bc20b508cf233a3b0e9c7b5502646de9b627a290bb4e7c1b92828a659a9ce1",
+  "note": "Test provenance only. The existing complete structural contract accepts this deployment; no guard is weakened and all unrelated updated methods/tags remain intact."
 }
