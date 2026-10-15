@@ -36,7 +36,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   }
   for(mode of ['baseline','fixed']){
    await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:false});await call('restart-game');
-   await until(async()=>!(await call('state')).loading);await wait(1200);await cmd({type:'test-transition-fixture'});await wait(1200);
+   await until(async()=>!(await call('state')).loading);await wait(1200);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await wait(1200);
    const initialized=(await sample(mode+'-initialized')).renderProbe?.fixture;
    assert(initialized,'Real AS3 fixture must initialize');
    assert.equal(initialized.labels.length,5);
@@ -57,24 +57,29 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
     },{path:path.join(out,mode+'-'+width+'-after.png'),x:Math.floor((width-before.bitmapWidth)/2)+before.bitmapWidth+25});
     assert.deepEqual(pixel,mode==='baseline'?[101,112,96,255]:[85,73,72,255],'Right gray margin must not be overwritten by the transition canvas');
     if(mode==='baseline'){assert.equal(after.bitmapWidth,2048);assert.equal(after.bitmapHeight,1152);assert.notEqual(after.bitmapWidth,before.bitmapWidth);}
-    else{assert.equal(after.bitmapWidth,before.bitmapWidth);assert.equal(after.bitmapHeight,before.bitmapHeight);}
+    else{
+     assert.equal(after.bitmapWidth,before.bitmapWidth);assert.equal(after.bitmapHeight,before.bitmapHeight);
+     await cmd({type:'test-world-control',pan:0,scene:false,oldCoverage:false,art:'a_Room_RecoveryProbe'});await wait(200);
+     const recovered=(await sample('allocator-recovery-'+width,true)).renderProbe.fixture.recovery;
+     assert.deepEqual(recovered,{error:'',restored:true,attached:true,fadeCleared:true,tick:1000},'Actual new upstream catch must restore the previous canvas without changing the clock');
+    }
    }
   }
   mode='cache-baseline';
   await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,renderResolution:1,experimentalWidescreen:true});await call('restart-game');
-  await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await wait(900);
+  await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await wait(900);
   await cmd({type:'test-transition-control',play:true,transition:false});await wait(600);
   await cmd({type:'test-world-control',pan:250,scene:false,oldCoverage:false});await wait(1200);
   const badCache=(await sample('cache-baseline',true)).renderProbe.fixture;
   assert.equal(badCache.worldError,'');assert(badCache.worldFrames>=5);assert.equal(badCache.cacheRebuilds,badCache.worldFrames,'Original fractional check must reproduce a cache rebuild every rendered frame');
-  mode='reuse-baseline';await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await wait(900);await cmd({type:'test-transition-control',play:true,transition:false});await wait(600);
+  mode='reuse-baseline';await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await wait(900);await cmd({type:'test-transition-control',play:true,transition:false});await wait(600);
   await cmd({type:'test-world-control',pan:0,vertical:2000,scene:false,oldCoverage:false,tiedTime:true});await wait(400);
   for(let step=1;step<=20;step++){await cmd({type:'test-world-control',pan:Math.min(23000,step*1151.7),vertical:2000,scene:false,oldCoverage:false,reuse:true,tiedTime:true});await wait(60);}
   const badReuse=(await sample('tile-reuse-baseline',true)).renderProbe.fixture;
   assert.equal(badReuse.pan,23000);assert.equal(badReuse.vertical,2000);assert.equal(badReuse.tiedTime,true);assert.equal(badReuse.worldError,'');assert(badReuse.pixelErrors>0,'Original narrow protection must reproduce visible corruption with tied LRU timestamps');
   mode='fixed';
   await call('save-settings',{experimentalWidescreen:false});await call('restart-game');
-  await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await wait(900);
+  await until(async()=>!(await call('state')).loading);await wait(1600);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await wait(900);
   assert((await call('save-settings',{experimentalWidescreen:'true'})).error);
   await call('settings');await page.getByRole('tab',{name:'Display',exact:true}).click();const checkbox=page.getByRole('checkbox',{name:'Experimental 16:9',exact:true});assert.equal(await checkbox.isChecked(),false);
   await checkbox.check();await page.locator('#save-settings').click();await until(async()=>(await call('state')).settings.experimentalWidescreen);await call('dismiss');await wait(1100);

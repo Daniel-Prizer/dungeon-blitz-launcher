@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-14T17:06:01.121Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-e547f078b555",
-  "inputHash": "16bc20b508cf233a3b0e9c7b5502646de9b627a290bb4e7c1b92828a659a9ce1",
-  "note": "Test provenance only. The existing complete structural contract accepts this deployment; no guard is weakened and all unrelated updated methods/tags remain intact."
+  "checkedAt": "2026-10-15T19:32:18.667Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-197b49a91c2b",
+  "inputHash": "6d88ca869755fcdaa1225ce05168ae159fef357c57b56204417f1cdc94b8043d",
+  "note": "October 15 transition recovery requires a separately guarded contract. Retain the entire new allocator and all other upstream changes; the prior contract and local contract remain unchanged."
 }

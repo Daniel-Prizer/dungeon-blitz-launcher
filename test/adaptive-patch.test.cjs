@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {readSWF,encodeTag,writeSWF,encodePools,integer}=require('../src/legacy/swf-contract.cjs'),{patchAdaptiveClient}=require('../src/legacy/adaptive-patch.cjs'),{patchClient}=require('../src/legacy/client-patch.cjs');
-const root=path.resolve(__dirname,'..'),files=['runtime/game/resources/adaptive-contract.json','.test-tools/focus/oct11.swf','.test-tools/focus/deployed.swf','.test-tools/audio-oct11/audio.swf'];
+const root=path.resolve(__dirname,'..'),files=['runtime/game/resources/adaptive-contract.json','.test-tools/focus/oct11.swf','.test-tools/focus/deployed-e547f078b555.swf','.test-tools/audio-oct11/audio.swf'];
 const present=files.every(file=>fs.existsSync(path.join(root,file))),hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const main=swf=>swf.tags.find(tag=>tag.abc&&tag.abc.bodies.some(body=>body.name==='Main.method_561'));
 function setup(){return {recipe:JSON.parse(fs.readFileSync(path.join(root,files[0]))),original:fs.readFileSync(path.join(root,files[1])),current:fs.readFileSync(path.join(root,files[2])),compiled:readSWF(fs.readFileSync(path.join(root,files[3])))};}

@@ -1,0 +1,9 @@
+{
+  "inputHash": "6d88ca869755fcdaa1225ce05168ae159fef357c57b56204417f1cdc94b8043d",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-197b49a91c2b",
+  "method": "Game.method_1947",
+  "bodyHash": "e516cb0cf9944494a491692cf9c6bdb479525ed31d9d629e09d28e5cc74ef8e6",
+  "codeHash": "96f688319ad8a6983c15d272f4924b5122d5a625615e0a0b1bba4dec7219ac41",
+  "previousCodeHash": "87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc",
+  "note": "Reviewed upstream allocation recovery: unchanged previous-canvas dimensions; catch restores the preceding canvas and clears fade state. Preserve this entire method, including its exception envelope. No new game hook."
+}

@@ -37,7 +37,7 @@ module.exports=(async()=>{
 
   for(mode of ['camera-baseline','fixed']){
    await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:true,centeredHotbar:false,centeredCamera:false});await call('restart-game');
-   await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await wait(900);await cmd({type:'test-transition-control',play:true,transition:false});await wait(700);
+   await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await wait(900);await cmd({type:'test-transition-control',play:true,transition:false});await wait(700);
    for(const [width,height] of [[1920,1080],[2560,1440]]){
     await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(size[0],size[1]+32),[width,height]);await wait(500);
     for(let kind=0;kind<6;kind++){
@@ -140,7 +140,7 @@ module.exports=(async()=>{
   const follow=page.getByRole('checkbox',{name:'Centered camera',exact:true});assert.equal(await follow.isChecked(),false);
   await follow.check();await page.locator('#save-settings').click();await until(async()=>(await call('state')).settings.centeredCamera);await call('dismiss');await wait(200);
   assert((await sample('follow-setting-enabled')).renderProbe.centeredCamera,'Actual checkbox reaches the game helper');
-  await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await wait(400);
+  await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await wait(400);
   assert((await sample('follow-setting-reloaded')).renderProbe.centeredCamera,'Reconnect reapplies the saved follow setting');
   await call('settings');await follow.uncheck();await page.locator('#save-settings').click();await until(async()=>!(await call('state')).settings.centeredCamera);await call('dismiss');await wait(200);
   assert.equal((await sample('follow-setting-disabled')).renderProbe.centeredCamera,false);

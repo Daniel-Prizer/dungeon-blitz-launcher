@@ -49,6 +49,7 @@ package {
   private var sceneTree:Object;
   private var cameraProbe:Object;
   private var mapProbe:Object;
+  private var recoveryProbe:Object;
   private var levelDomains:Object={};
   private var mapClick:String="";
   public function DungeonBlitz(){if(stage)setup();else addEventListener(Event.ADDED_TO_STAGE,setup);}
@@ -200,6 +201,18 @@ package {
    return true;
   }
   private function world(value:Number,scene:Boolean,oldCoverage:Boolean=false,reuse:Boolean=false,y:Number=250,ties:Boolean=false,art:String="a_Room_Main"):Boolean {
+   if(art=="a_Room_RecoveryProbe"){
+    worldEnabled=false;
+    if(main.var_374){game.mTimeThisTick=main.var_903+1;game.method_1947();}
+    var original:Bitmap=main.var_147;var pixels:BitmapData=original.bitmapData;var tick:uint=game.mTimeThisTick;
+    main.var_903=2000;main.var_860=1000;game.mTimeThisTick=1000;original.bitmapData=null;
+    recoveryProbe={error:""};
+    try{game.method_1947();}catch(failure:Error){recoveryProbe.error=failure.toString();}
+    recoveryProbe.restored=main.var_147===original;recoveryProbe.attached=original.parent===main;
+    recoveryProbe.fadeCleared=main.var_374==null&&main.var_903==0&&main.var_860==0;
+    recoveryProbe.tick=game.mTimeThisTick;original.bitmapData=pixels;game.mTimeThisTick=tick;
+    return true;
+   }
    if(art=="a_Room_CameraProbe")return probeCamera(int(value));
    if(art=="a_Room_FollowProbe")return probeFollow(int(value));
    if(art=="a_Room_MapProbe")return probeMap(int(value));
@@ -396,7 +409,7 @@ package {
     idolPanelWidth:game.screenBuyIdols.mWindow.mMovieClip.getChildByName("am_Panel").getBounds(game.var_89).width,trovePedestalWidth:trovePedestal?trovePedestal.getBounds(game.var_89).width:null,
     scene:sceneTree,roomInRootDomain:ApplicationDomain.currentDomain.hasDefinition("a_Room_GreatHall"),labels:labelProbes,social:tree(game.screenFriend.var_26,1),settings:tree(game.screenMenu.mWindow.mMovieClip,2),store:tree(extraMenus[1].mWindow.mMovieClip,1),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,2),hudTree:tree(game.screenHud.var_2,2),
     commandIcons:commandBounds(),mountLabel:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.text,mountLabelWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.width,mountTextWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.textWidth,
-    camera:cameraProbe,map:mapState(),worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
+    camera:cameraProbe,map:mapState(),recovery:recoveryProbe,worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
   }
   private function commandBounds():Array {
    var result:Array=[];
