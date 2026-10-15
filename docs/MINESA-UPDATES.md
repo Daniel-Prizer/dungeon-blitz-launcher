@@ -1,5 +1,15 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 15 compatibility (0.24.1)
+
+Both official origins now serve `swf-197b49a91c2b`, SHA-256 `6d88ca869755fcdaa1225ce05168ae159fef357c57b56204417f1cdc94b8043d`, 935,145 bytes. Pools and semantic interfaces are unchanged. Four bodies change: `Game.method_1947`, `Entity.method_986`, `class_82.method_193` and `CombatState.method_1192`. Eleven fresh UI/Home/JC/BT/map assets are unchanged.
+
+The old contract correctly rejects the changed transition dependency. The new allocator retains its previous-canvas dimensions and adds a catch handler covering the bitmap source/allocation range. On error, it restores the preceding canvas and clears both fade clocks. Review raw instructions and exceptions: JPEXS's deobfuscated source incorrectly hides the existing normal fill/attachment tail. Only an unreachable obfuscator branch is normalized in the old prefix; the appended handler is 37 bytes, with an exact exception range from 428 to 481 and target 563. Preserve the full new method rather than replacing it with an old copy.
+
+`client-transition-oct15.json` pins the reviewed source, method envelope and code hashes. `prepare-transition-contract.cjs` derives a separate complete recipe, changing only that one dependency guard after verifying the entire source and recovery handler. All 31 hooks, five other dependencies, pools, interfaces, bindings and helpers remain guarded. The old multiplayer recipe and the local recipe remain unchanged. Runtime tries at most those two signed multiplayer contracts before the existing local/revision fallbacks; unknown hooks still reject. Every unrelated fetched body/tag, including all four Minesa changes, is retained.
+
+Native tests exercise normal transitions at 1080p/1440p and deliberately provide a missing source bitmap to enter the actual upstream catch, then restore the owned fixture's bitmap. This safely checks previous-canvas restoration, attachment, cleared fade state and unchanged tick; it does not exhaust memory, use accounts or change game clocks in production. Unit tests verify exact preservation and tamper rejection. The fake accessibility regression uses its own mutex so a real running launcher cannot block the fake API; production coordination and Windows settings behavior are unchanged.
+
 ## October 14 verification (0.24.0)
 
 Both official origins serve `swf-e547f078b555`, SHA-256 `16bc20b508cf233a3b0e9c7b5502646de9b627a290bb4e7c1b92828a659a9ce1`, 934,409 bytes. Relative to `swf-9edaa96cb6f8`, only `class_73.method_1148` and `Brain.Think` change. The complete semantic interface and every guarded hook/dependency still match. The existing recipe accepts this deployment automatically and retains both changed AI methods and every unrelated native method/tag. No guard or bytecode hook changes are needed. Eleven fresh UI/Home/JC/BT/map assets are byte-identical to the preceding snapshots.

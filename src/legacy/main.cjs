@@ -8,7 +8,7 @@ const {adaptClient,localAddress}=require('./client-adapter.cjs');
 const {patchLocalIcons,localIconAsset}=require('./local-icon-patch.cjs');
 const {canonicalGameAddress}=require('./game-address.cjs');
 const {classifyLink}=require('./links.cjs');
-let adaptiveContract;try{adaptiveContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract.json'),'utf8'));}catch(_){}
+const adaptiveContract=[];for(const name of ['adaptive-contract.json','adaptive-contract-oct15.json'])try{adaptiveContract.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
 let singleplayerContract;try{singleplayerContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract-singleplayer.json'),'utf8'));}catch(_){}
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
@@ -323,7 +323,11 @@ readMessages(pipe, async cmd => {
     }
     if(cmd.type==='test-shortcut-control'&&process.env.BLITZ_HOST_TEST==='1'&&['play','login','typing','capture','rebind','unbound','menu'].includes(cmd.value))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzInputFixtureControl(${JSON.stringify(cmd.value)})`);
     if(cmd.type==='test-transition-fixture'&&process.env.BLITZ_HOST_TEST==='1'){
-      const exists=await win.webContents.executeJavaScript("typeof document.getElementById('DungeonBlitz')?.BlitzTransitionFixtureControl==='function'").catch(()=>false);
+      let exists=false;
+      for(let attempt=0;attempt<150&&!exists&&win&&!win.isDestroyed();attempt++){
+        exists=await win.webContents.executeJavaScript("typeof document.getElementById('DungeonBlitz')?.BlitzTransitionFixtureControl==='function'").catch(()=>false);
+        if(!exists)await new Promise(resolve=>setTimeout(resolve,100));
+      }
       if(exists){clientIntegration=true;audioIntegration=true;emit({type:'client-integration',value:true});emit({type:'audio-integration',value:true});await applyZoom();await applyWidescreen();await applyCenteredHotbar();await applyCenteredCamera();}
     }
     if(cmd.type==='test-transition-control'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.play==='boolean'&&typeof cmd.transition==='boolean'&&(cmd.transfer===undefined||typeof cmd.transfer==='boolean')&&(cmd.phase===undefined||['Login','None','Transfer'].includes(cmd.phase))&&(cmd.menu===undefined||['none','idols','trove','barn','forge','tome','social','settings','store','companion-commands','map','no-direction'].includes(cmd.menu)))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzTransitionFixtureControl(${cmd.play},${cmd.transition},${JSON.stringify(cmd.menu??'none')},${cmd.transfer===true},${JSON.stringify(cmd.phase??'')})`);

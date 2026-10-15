@@ -16,6 +16,7 @@ public sealed class AccessibilityShortcuts : IDisposable {
   readonly Func<uint,uint[],bool> spi;
   readonly string journal;
   readonly bool dryRun;
+  readonly string mutexName;
   Mutex mutex;
   bool owned;
   readonly Dictionary<uint,uint[]> changed=new Dictionary<uint,uint[]>();
@@ -34,7 +35,7 @@ public sealed class AccessibilityShortcuts : IDisposable {
   public AccessibilityShortcuts(bool test) : this(test,Native,Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Dungeon Blitz Launcher","accessibility-recovery.json")) {}
   // A fake SPI and disposable journal exercise all state transitions without
   // changing the user's global accessibility preferences, even on a test desktop.
-  public AccessibilityShortcuts(bool test,Func<uint,uint[],bool> api,string file) {dryRun=test;spi=api;journal=file;}
+  public AccessibilityShortcuts(bool test,Func<uint,uint[],bool> api,string file,string coordinationName="Local\\DungeonBlitzLauncher-AccessibilityShortcuts") {dryRun=test;spi=api;journal=file;mutexName=coordinationName;}
   uint[] Read(uint get) {var words=new uint[Words(get)];words[0]=(uint)(words.Length*4);return spi(get,words)?words:null;}
   bool Save() {
     try {Directory.CreateDirectory(Path.GetDirectoryName(journal));var records=new Dictionary<string,uint[]>();foreach(var item in changed)records[item.Key.ToString(System.Globalization.CultureInfo.InvariantCulture)]=item.Value;string temporary=journal+".tmp";File.WriteAllText(temporary,new JavaScriptSerializer().Serialize(records));if(File.Exists(journal))File.Delete(journal);File.Move(temporary,journal);return true;}catch{return false;}
@@ -62,7 +63,7 @@ public sealed class AccessibilityShortcuts : IDisposable {
     if(dryRun)return;
     if(!active){if(owned){Restore();mutex.ReleaseMutex();owned=false;}return;}
     if(!owned) {
-      if(mutex==null)mutex=new Mutex(false,"Local\\DungeonBlitzLauncher-AccessibilityShortcuts");
+      if(mutex==null)mutex=new Mutex(false,mutexName);
       try{owned=mutex.WaitOne(0);}catch(AbandonedMutexException){owned=true;}
       if(!owned)return;Recover();
     }

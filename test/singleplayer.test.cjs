@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {readSWF,writeSWF,encodeTag}=require('../src/legacy/swf-contract.cjs'),{adaptClient,localAddress}=require('../src/legacy/client-adapter.cjs');
-const root=path.resolve(__dirname,'..'),files=['.test-tools/focus/singleplayer.swf','.test-tools/audio-singleplayer/audio.swf','runtime/game/resources/adaptive-contract-singleplayer.json','runtime/game/resources/adaptive-contract.json','.test-tools/focus/deployed.swf'];
+const root=path.resolve(__dirname,'..'),files=['.test-tools/focus/singleplayer.swf','.test-tools/audio-singleplayer/audio.swf','runtime/game/resources/adaptive-contract-singleplayer.json','runtime/game/resources/adaptive-contract.json','.test-tools/focus/deployed-e547f078b555.swf'];
 const present=files.every(f=>fs.existsSync(path.join(root,f))),main=s=>s.tags.find(t=>t.abc?.bodies.some(b=>b.name==='Main.method_561'));
 const load=()=>({input:fs.readFileSync(path.join(root,files[0])),compiled:readSWF(fs.readFileSync(path.join(root,files[1]))),recipes:{singleplayer:JSON.parse(fs.readFileSync(path.join(root,files[2]))),multiplayer:JSON.parse(fs.readFileSync(path.join(root,files[3])))}});
 test('singleplayer adapter is restricted to explicit HTTP loopback addresses',()=>{

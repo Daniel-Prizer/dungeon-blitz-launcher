@@ -1,4 +1,16 @@
-# Current validation: 0.24.0 (minor)
+# Current validation: 0.24.1 (patch)
+
+Fresh official deployment swf-197b49a91c2b (6d88ca86…) requires a separate transition dependency guard. The existing recipe still rejects it. The reviewed variant preserves the entire new allocator and exception handler, all three unrelated updated methods, and every other unedited body/tag. Original hook recipes and local contracts are unchanged. Eleven live UI/Home/map assets are byte-identical to the preceding review.
+
+49 unit groups pass with no skips, including new contract preservation and allocator/input/rendering/audio tamper rejection. Native public-title, Settings Save/discard, crosshair policy/artwork, input, audio and fullscreen checks pass. Tests use no account/authentication, existing session, user desktop input or local-server edits. Cursor confinement and custom pointer application remain dry-run.
+
+The full transition and camera regressions pass at 1080p/1440p with the new native allocator preserved. Both normal transitions and forced source-read failures exercise the real original Game.method_1947; its catch restores the preceding canvas/attachment, clears fade state, and preserves the tick. Original/wide hotbars, map hit regions, extended XP, native cache reuse, interior art, matte coverage and all travel phases retain their checks. Fixtures now wait for registered asset callbacks and integration acknowledgement before sampling, avoiding accidental fallback-raster testing while large assets are still loading. The fake accessibility API uses a distinct test mutex; production coordination is unchanged.
+
+121 camera/map/HUD and 132 transition samples pass. The package matches tested source/runtime and security fuses; the new signed payload contains 161 physical files. The packaged Electron updater passes physical-ASAR verification, tamper rejection, progress and failed-stage cleanup. Both multiplayer contracts produce unchanged local output when the separate reviewed loopback adapter is selected, and neither enables the local adapter on a multiplayer origin.
+
+The disposable-GUID installer passes fresh/repeat install, exact installed hashes, Windows metadata/shortcuts, active-process refusal without killing, newer-build retention, traversal/junction rejection and managed uninstall/profile preservation. The canonical Downloads Setup is 0.24.1.0 and byte-identical to the release asset. Previous root/Downloads installers are preserved. Real launchers remain running, so the user's installation is not restarted or silently replaced.
+
+# Previous validation: 0.24.0 (minor)
 
 Fresh official game deployment: swf-e547f078b555, SHA-256 16bc20b508cf233a3b0e9c7b5502646de9b627a290bb4e7c1b92828a659a9ce1. All guarded hooks/interfaces still match; only two unrelated AI methods changed, and both survive byte-identically. Eleven current UI/Home/JC/BT/map assets are unchanged. No game patch guards are weakened.
 

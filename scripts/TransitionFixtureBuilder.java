@@ -18,7 +18,7 @@ public class TransitionFixtureBuilder {
    ABC abc=tag.getABC();int index=abc.findClassByName("Game");if(index<0)continue;
    MethodBody allocator=abc.findBodyByClassAndName("Game","method_1947");
    String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(allocator.getCodeBytes()));
-   if(!hash.equals(singleplayer?"472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768":"87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc"))throw new IllegalStateException("Unexpected reviewed upstream allocator");
+   if(!(singleplayer?hash.equals("472c1b22356dac968d260da0a48687c247da761be2e779f1d1a6bf624132b768"):(hash.equals("87bef2738ee6a0d598ea359f8877e38ce742ec1cb80a1ddf97d34ecb84149afc")||hash.equals("96f688319ad8a6983c15d272f4924b5122d5a625615e0a0b1bba4dec7219ac41"))))throw new IllegalStateException("Unexpected reviewed upstream allocator");
    int main=0;
    for(AVM2Instruction i:allocator.getCode().code)if(i.definition.instructionName.equals("getproperty")&&name(abc,i.operands[0]).equals("main")){main=i.operands[0];break;}
    if(main==0)throw new IllegalStateException("Missing internal main field");
@@ -49,6 +49,7 @@ public class TransitionFixtureBuilder {
     }
     if(previous==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(previous.getCodeBytes())).equals("baf51368e22c568f758efda185540460f7d39b5384b3ff3d6792821838fae506"))throw new IllegalStateException("Unreviewed preceding allocator baseline");
     byte[] original=previous.getCodeBytes().clone();allocator.max_stack=previous.max_stack;
+    allocator.exceptions=previous.exceptions.clone();
     allocator.setCodeBytes(original);allocator.getCode().checkValidOffsets(allocator);allocator.setCodeBytes(original);
    }
    if(args.length>2&&args[2].equals("cache-baseline")){
