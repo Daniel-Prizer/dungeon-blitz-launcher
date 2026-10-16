@@ -1,4 +1,16 @@
-# Current validation: 0.24.1 (patch)
+# Current validation: 0.24.2 (patch)
+
+Fresh downloads from both official origins serve swf-83d18dee0daa, SHA-256 `11e05b43317eb7028cad591a18a00b571a4a3a8d1ea9c48adf2da3c1481b435b`. The previous interface guard rejects the changed native Game.const_950. The third full contract changes only its reviewed interface pin: all 31 hook edits, six dependencies, helpers and pool/binding guards remain identical to October 15. Tests verify every unrelated method and upstream ABC tag remains byte-identical, including all 15 changed main bodies and eight new classes. The previous and singleplayer recipes remain unchanged; both prior-client output and local-client output are unchanged with the expanded multiplayer recipe list. Modified hooks, dependencies and original pool constants still reject.
+
+51 unit groups pass with no skips. Fresh unauthenticated native title rendering reports the exact current client hash with graphics/audio integration enabled. Explicit settings drafts, crosshair bitmap/policy, focus, input, shortcuts, independent audio buses and fullscreen checks pass. No accounts, saved authentication, existing games, user desktop input or local servers are used. Cursor confinement and custom pointer application remain dry-run.
+
+121 camera/map/HUD and 132 transition samples pass at 1080p/1440p, including original/wide and centered HUDs, actual map clicks, extended XP cells, terrain cache reuse, interior art, menu mattes, all travel phases and the preserved native allocator recovery. Owned synthetic fixture screenshots and the public unauthenticated title were inspected. These are not authenticated multiplayer gameplay verification.
+
+Ten freshly fetched relevant assets are unchanged. Only UI_Seasonal sprite 185 adds four named lock decorations to its existing dungeon prompt; all other top-level tags remain identical. No launcher artwork replacement is needed. New native boss voice retains upstream volume/mute behavior and process master volume; the existing category sliders do not separately control that direct SoundChannel.
+
+Packaged source/runtime and security fuses pass verification. The signed update contains 162 physical files. The packaged Electron 44.7.0 updater verifies physical ASAR bytes, reports progress, rejects tampering and cleans failed stages. The disposable installer passes fresh/repeat installs, payload hashes, shortcuts/registration, active-process refusal without killing, newer-build retention, traversal/junction rejection and uninstall/profile preservation. The canonical Downloads Setup is 0.24.2.0; previous installers and all agent-owned copies are retained. Existing games remain running, so this update is prepared without replacing or restarting their installation.
+
+# Previous validation: 0.24.1 (patch)
 
 Fresh official deployment swf-197b49a91c2b (6d88ca86…) requires a separate transition dependency guard. The existing recipe still rejects it. The reviewed variant preserves the entire new allocator and exception handler, all three unrelated updated methods, and every other unedited body/tag. Original hook recipes and local contracts are unchanged. Eleven live UI/Home/map assets are byte-identical to the preceding review.
 

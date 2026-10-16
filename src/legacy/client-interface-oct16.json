@@ -1,0 +1,30 @@
+{
+  "inputHash": "11e05b43317eb7028cad591a18a00b571a4a3a8d1ea9c48adf2da3c1481b435b",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-83d18dee0daa",
+  "previousSourceHash": "6d88ca869755fcdaa1225ce05168ae159fef357c57b56204417f1cdc94b8043d",
+  "previousInterfaceHash": "91dbffd806f36a9140304965c7598b1571d6cbf585ee1dbec800cfcc9899f0bb",
+  "interfaceHash": "230935959bb3ecb0f5ece33d63eca7bc013ed4f2a4fb7bd7c4e0e6590242f2f7",
+  "classIndex": 30,
+  "traitIndex": 160,
+  "previousTrait": [
+    "bb1554b66201934f3c4287b8f9bc768cdb1c05256f78c2125049ce0f48173b06",
+    6,
+    160,
+    "a5c6d59ab4fa91aa4684b91e4bd7c39fb1c9dc030f8f51565ed3fb55ae741cee",
+    [
+      3,
+      "c5067a4349192124edef273edca6d256da631eabac1b537bc0c1cf3b751b0aaf"
+    ]
+  ],
+  "trait": [
+    "bb1554b66201934f3c4287b8f9bc768cdb1c05256f78c2125049ce0f48173b06",
+    6,
+    160,
+    "a5c6d59ab4fa91aa4684b91e4bd7c39fb1c9dc030f8f51565ed3fb55ae741cee",
+    [
+      3,
+      "a37e21a4b1267906ad8a9c418613563e2ba0dc57ef059ba78b495e3f484da1fc"
+    ]
+  ],
+  "note": "Only Game private const_950 changes from 200 to 20. Preserve the full native interface and all 15 changed native methods plus eight new upstream ABC tags. All 31 launcher edits and six dependencies remain unchanged."
+}

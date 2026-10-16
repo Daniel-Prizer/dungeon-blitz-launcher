@@ -30,6 +30,8 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   assert.deepEqual(asar.extractFile(legacy,'crosshair.js'),fs.readFileSync(path.join(root,'src/crosshair.js')));
   assert.deepEqual(asar.extractFile(legacy,'client-transition-oct15.json'),fs.readFileSync(path.join(root,'src/legacy/client-transition-oct15.json')));
   assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-oct15.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-oct15.json')));
+  assert.deepEqual(asar.extractFile(legacy,'client-interface-oct16.json'),fs.readFileSync(path.join(root,'src/legacy/client-interface-oct16.json')));
+  assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-oct16.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-oct16.json')));
   for(const file of ['client-adapter.cjs','client-singleplayer.json','game-address.cjs','local-icon-patch.cjs','local-icon-fallback.json','icon-fallback/a_PowerIcon_MeteorROR.as','icon-fallback/a_PowerIcon_CrimsonShot.as'])assert.deepEqual(asar.extractFile(legacy,file),fs.readFileSync(path.join(root,'src/legacy',file)));
   assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-singleplayer.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-singleplayer.json')));
   for(const file of ['NativeHost.exe','UpdateInstaller.exe','game/BlitzGame.exe','game/resources/pepflashplayer64.dll','game/resources/game-window.node','game/resources/audio-delta.json','game/resources/audio-delta-current.json','game/resources/audio-delta-latest.json','game/resources/audio-delta-oct11.json','game/resources/adaptive-contract.json'])

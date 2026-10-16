@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.24.1** (patch: compatibility with Minesa’s October 15 loading recovery).
+Version **0.24.2** (patch: compatibility with Minesa’s October 16 client update).
 
 Settings changes stay pending until you press **Save**. Switching categories keeps the draft. **Discard**, closing Settings, **Back to game** and Escape discard unsaved changes. A failed save leaves your edits available to correct. Saving applies game/display/audio options without reconnecting; a saved server address needs an explicit reconnect, and graphics acceleration needs a launcher restart.
 
