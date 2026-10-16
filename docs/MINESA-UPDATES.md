@@ -1,5 +1,15 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 16 compatibility (0.24.2)
+
+Both official origins serve `swf-83d18dee0daa`, SHA-256 `11e05b43317eb7028cad591a18a00b571a4a3a8d1ea9c48adf2da3c1481b435b`, 942,622 bytes. All 31 launcher hook envelopes, six dependency envelopes, original pool prefixes, stage and root bindings remain unchanged. The complete semantic interface changes only at Game's private `const_950`, from 200 to 20, used by native `method_527`. Fifteen native bodies change and eight upstream ABC tags are added (seasonal lock, boss prewarming/voice, coffer keys, pet synchronization/egg handling, animation release and rankings). These remain intact; they are game changes, not launcher replacements.
+
+The older full-interface guards correctly reject this deployment. `client-interface-oct16.json` pins the reviewed source and both complete interface hashes. `prepare-interface-contract.cjs` derives a third separate recipe from October 15, changing only the full interface hash after verifying that reverting precisely the reviewed trait reproduces the previous full interface. All hook deltas, helpers, six dependencies and pool/binding guards are identical. Runtime still requires an exact complete semantic interface; it never normalizes or ignores constants. The previous recipes and separate singleplayer contract remain unchanged.
+
+Fresh asset comparisons find ten UI/Home/JC/BT/map files unchanged. `UI_Seasonal.swf` changes from `f309ee0b1ba80d35f39381cb7e0fd9ff18acc95007e6708610c98cf831f6e906` to `b298626d1f47f9e5c71b95b57a33fb53a76fef5e33491be54086f472a6b6e1e1`: only sprite 185 inside the Halloween dungeon prompt changes, adding `am_LockedClock`, `am_LockedDoor`, `am_LockedPadlock` and `am_LockedWisps`. All 710 top-level tags retain their order and all other tags are byte-identical. No launcher asset replacement is introduced.
+
+The new upstream boss voice plays its own SoundChannel outside SoundManager.Play. Its native volume/mute behavior and launcher master process volume remain intact; the existing four category routes do not separately control that new direct channel. Do not claim per-category coverage of every new upstream audio path without an independently reviewed hook and test.
+
 ## October 15 compatibility (0.24.1)
 
 Both official origins now serve `swf-197b49a91c2b`, SHA-256 `6d88ca869755fcdaa1225ce05168ae159fef357c57b56204417f1cdc94b8043d`, 935,145 bytes. Pools and semantic interfaces are unchanged. Four bodies change: `Game.method_1947`, `Entity.method_986`, `class_82.method_193` and `CombatState.method_1192`. Eleven fresh UI/Home/JC/BT/map assets are unchanged.
