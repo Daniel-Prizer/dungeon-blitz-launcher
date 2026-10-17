@@ -505,7 +505,11 @@ package {
    hideEdge(base);
   }
   public static function PrepareFrame(game:Game):void {
-   if(!main||!wideRequested)return;
+   if(!main)return;
+   // The native final renderer otherwise keeps a single still frame behind
+   // the map. Refresh only its presentation cache; simulation is untouched.
+   if(game.gameState==Game.STATE_PLAY&&game.screenMap&&game.screenMap.mbVisible)game.var_1778=false;
+   if(!wideRequested)return;
    UpdateWidescreen();
    if(game.gameState==Game.STATE_PLAY&&(!(game.screenMap.mbVisible||game.screenForge.mbVisible)||!game.var_1778)&&main.var_147.bitmapData){
     // Transparent terrain/parallax edges must never leave scenery from an

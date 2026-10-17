@@ -1,5 +1,11 @@
 # Diagnosing and adapting to Minesa updates
 
+## Launcher input and map presentation (0.26.0)
+
+The launcher-owned BlitzInput helper adds renderer-local Ö autorun. It reads `clientEnt.bLeftFacing` and the current normal-context left/right command bindings, dispatches the original stage key-down, and pairs the release on cancellation. It never writes entity movement, keymaps, physics, clocks or packets. Native key/context handlers remain byte-identical. Unsupported clients keep the feature inactive. Preserve explicit settings drafts and the normal typing, mount, modifier and focus behavior.
+
+The native Game final-canvas renderer reuses its captured world while `screenMap.mbVisible` and `var_1778` are true. The existing launcher PrepareFrame callback now clears only that presentation flag for an open map in STATE_PLAY. The original renderer redraws the world at its current canvas size, including fullscreen/resize. Forge caching, simulation and dungeon/session behavior remain unchanged. Keep the current method/interface guards; this is a launcher helper change, not replacement of native renderer methods.
+
 ## October 17 follow-up (0.25.1)
 
 Public deployment `swf-80a212d8f997`, SHA-256 `bd8e2509b0291ce73fb0d3ee6a3feb00a3cc1b72d72779f12dcf8059cd0e0006`, is 942,619 bytes. The complete main interface and every original pool entry are unchanged. Only unedited `DayNightManager.method_1268` changes: a two-pop sequence becomes `pushtrue; callpropvoid method_193, 2`, with corresponding branch relocations and no exception entries. The existing guarded contract applies and retains this native method byte-identically. No new game recipe or weaker guards are needed.

@@ -91,6 +91,8 @@ function render(next) {
   if(!recording){$('unlock-key').textContent=window.blitzShortcuts.label(s.unlockKey);$('unlock-key').dataset.code=s.unlockKey;}
   $('cursor-lock').checked = s.cursorLock;
   $('shift-mount').checked=s.shiftMount;
+  $('autorun').checked=s.autorun;
+  $('autorun').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('shift-mount').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('cursor-status').textContent = s.cursorLock ? 'Locks after saving and returning to the game.' : 'Cursor lock is off.';
   $('audio-status').textContent = state.audio?.error ? 'Audio control unavailable. Reconnect to retry.' : "Controls this game's sound only.";
@@ -146,6 +148,7 @@ $('singleplayer-url').onclick=()=>{$('game-url').value='http://localhost:8000/';
 $('multiplayer-url').onclick=()=>{$('game-url').value='https://dungeonblitzr.theminesa.studio/';edit({gameURL:$('game-url').value});$('game-url').focus();};
 $('cursor-lock').onchange = () => edit({ cursorLock: $('cursor-lock').checked });
 $('shift-mount').onchange=()=>edit({shiftMount:$('shift-mount').checked});
+$('autorun').onchange=()=>edit({autorun:$('autorun').checked});
 $('unlock-key').onclick = async () => {
   recording=!recording;await call('capture-shortcut',recording);
   $('unlock-key').setAttribute('aria-pressed',String(recording));

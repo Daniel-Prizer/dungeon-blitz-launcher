@@ -136,6 +136,7 @@ async function action(name, value) {
       if('centeredCamera' in value&&typeof value.centeredCamera!=='boolean')throw new Error('Centered camera must be on or off.');
       if('autoUpdates' in value&&typeof value.autoUpdates!=='boolean')throw new Error('Automatic updates must be on or off.');
       if('shiftMount' in value&&typeof value.shiftMount!=='boolean')throw new Error('Left Shift mount shortcut must be on or off.');
+      if('autorun' in value&&typeof value.autorun!=='boolean')throw new Error('Autorun must be on or off.');
       if((value.shiftMount??store.data.settings.shiftMount)&&(value.unlockKey??store.data.settings.unlockKey)==='ShiftLeft')throw new Error('Choose a different cursor-lock shortcut before using Left Shift for your mount.');
       if('audioMix' in value&&(!value.audioMix||Array.isArray(value.audioMix)||!AUDIO_BUSES.every(key=>Number.isInteger(value.audioMix[key])&&value.audioMix[key]>=0&&value.audioMix[key]<=100)))throw new Error('Sound volumes must be whole numbers from 0 to 100.');
       if('crosshair' in value&&(!value.crosshair||typeof value.crosshair!=='object'||Array.isArray(value.crosshair)||Object.keys(value.crosshair).length!==4||!Object.entries(validCrosshair(value.crosshair)).every(([key,v])=>value.crosshair[key]===v)))throw new Error('Choose a valid crosshair style, color and size.');

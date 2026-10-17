@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.25.1** (patch: Rankings opens in your default browser without reloading the game).
+Version **0.26.0** (minor: Ö autorun and live map backgrounds).
 
 Settings changes stay pending until you press **Save**. Switching categories keeps the draft. **Discard**, closing Settings, **Back to game** and Escape discard unsaved changes. A failed save leaves your edits available to correct. Saving applies game/display/audio options without reconnecting; a saved server address needs an explicit reconnect, and graphics acceleration needs a launcher restart.
 
@@ -101,3 +101,7 @@ See docs/CLIENT-FEATURES.md for historical neural and frame-interpolation experi
 ## Public source repository
 
 The repository contains launcher source, generated brand assets and development tests. Local profiles, test captures, executable builds and the imported Flash/runtime binaries are excluded. The initial import needs the official Dungeon Blitz R application; subsequent builds can reuse the verified local runtime copy. This is a community launcher; game definitions and private server behavior belong to their respective owners.
+
+Autorun: Ö toggles walking in the direction the character faces, through the current in-game movement binding. A second Ö, manual movement, typing, map/menu input or loss of focus releases it. Controls has an explicit Save checkbox to disable it. The binding follows the typed Ö character on your keyboard layout; it does not install a global hotkey.
+
+The world canvas refreshes behind the map instead of retaining the native still image. No simulation clocks, game ticks, dungeon travel or session/rejoin behavior changes.

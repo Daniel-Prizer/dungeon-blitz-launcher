@@ -1,4 +1,18 @@
-# Current validation: 0.25.1 (patch)
+# Current validation: 0.26.0 (minor)
+
+Ö autorun is a local typed-character shortcut. Native tests use the actual key manager and a typed, synthetic Entity facing holder, with account/player initialization omitted only in the unshipped fixture. Both directions, native movement-command aliases and matching held-key release pass. Manual direction input and Settings cancel; login, text input, key capture, an open map and disabled autorun do nothing. Pure policy tests cover Ö/ö, repeat, chords, opt-out and pending work cancellation on blur. No global key hook, OS input, account or player session is used. Existing Shift mounting, original bindings, Escape and normal typing retain the full native regression.
+
+The map's original final-canvas still-frame flag is refreshed through the existing guarded PrepareFrame callback. Ten focused native samples pass: moving terrain behind an open map, fullscreen and window restoration with the map open, then fullscreen/window restoration at 100%, 75% and 50% rendering resolution. Native terrain cache pixels retain exact coordinate alignment with zero sampled errors. This does not establish the absence of every possible live fullscreen artifact; no authenticated gameplay or user's screen is captured. The broader camera/HUD and transition checks remain separate so the additional fullscreen samples do not exhaust the inactive-desktop test time limit.
+
+The rendered Controls pane retains the fixed Settings frame and explicit Save behavior. Autorun defaults to the requested Ö binding and can be disabled in Controls. No simulation clocks, gameplay methods, saved keymaps, physics, packets or dungeon/session/rejoin behavior are modified. Current public deployment still matches the existing guarded contracts. The default browser Rankings repair remains intact.
+
+57 unit groups and the full native regression pass. The separate camera/map/HUD suite passes at 1080p/1440p, including native map clicks, rendering densities, centered and original hotbars and saved camera controls. Owned Controls and rendering screenshots were visually inspected. The user's running 0.25.0 installation was inspected by executable version only and remains untouched; no game account, saved authentication or original session is accessed.
+
+121 camera/map/HUD samples and 132 loading/terrain/menu samples pass, alongside the ten focused fullscreen/map-background samples. All previous renderer/camera hook guards and native exception handling remain intact. Original multiplayer and separately guarded singleplayer helpers compile against their own reviewed clients; the launcher does not operate a local server or its saves.
+
+Package source/runtime and security fuses pass; 163 physical files are signed. The packaged Electron updater passes physical-ASAR verification, tamper rejection, cleanup and signed rollback staging. The disposable installer passes fresh/repeat installation, exact file hashes, registration/shortcuts, running-process refusal, newer-build retention, traversal/junction rejection, complete signed rollback and managed uninstall/profile preservation. Canonical Downloads Setup is 0.26.0.0, with previous installers and builds retained. No local installation or running game is changed.
+
+# Previous validation: 0.25.1 (patch)
 
 56 unit groups pass without skips. Rankings URL tests cover both official Minesa origins, historical dungeonblitz.com aliases, preserved level/category queries and fragments, local/custom origins, malformed input and path/hostname lookalikes. Original game reload routing remains intact. The official HTTPS rankings endpoint returns 200 and identifies itself as Global Rankings - Dungeon Blitz. No game bytecode or dungeon/session behavior is changed.
 
