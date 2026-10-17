@@ -206,6 +206,15 @@ package {
     world(0,false,false,false,250,false,"a_Room_Main");liveMap=true;game.screenMap.mbVisible=true;game.var_1778=true;return true;
    }
    liveMap=false;
+   if(art=="a_Room_FinalCanvasRecovery"){
+    world(0,false,false,false,250,false,"a_Room_Main");
+    var previousPixels:BitmapData=main.var_147.bitmapData;var previousTick:uint=game.mTimeThisTick;
+    game.gameState=Game.STATE_PLAY;game.var_1778=false;previousPixels.dispose();recoveryProbe={error:""};
+    try{game.method_1946();recoveryProbe.replaced=main.var_147.bitmapData!==previousPixels;recoveryProbe.width=main.var_147.bitmapData.width;recoveryProbe.height=main.var_147.bitmapData.height;}catch(finalFailure:Error){recoveryProbe.error=finalFailure.toString();}
+    recoveryProbe.tickUnchanged=game.mTimeThisTick==previousTick;
+    if(main.var_147.bitmapData===previousPixels)main.var_147.bitmapData=new BitmapData(int(Math.ceil(Camera.SCREEN_WIDTH*main.overallScale)),int(Math.ceil(Camera.PLAY_SCREEN_HEIGHT*main.overallScale)),false);
+    return true;
+   }
    if(art=="a_Room_RecoveryProbe"){
     worldEnabled=false;
     if(main.var_374){game.mTimeThisTick=main.var_903+1;game.method_1947();}

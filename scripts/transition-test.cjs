@@ -62,6 +62,10 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
      await cmd({type:'test-world-control',pan:0,scene:false,oldCoverage:false,art:'a_Room_RecoveryProbe'});await wait(200);
      const recovered=(await sample('allocator-recovery-'+width,true)).renderProbe.fixture.recovery;
      assert.deepEqual(recovered,{error:'',restored:true,attached:true,fadeCleared:true,tick:1000},'Actual new upstream catch must restore the previous canvas without changing the clock');
+    await cmd({type:'test-world-control',pan:0,scene:false,oldCoverage:false,art:'a_Room_FinalCanvasRecovery'});await wait(200);
+    const finalRecovery=(await sample('final-canvas-recovery-'+width,true)).renderProbe.fixture.recovery;
+    assert.equal(finalRecovery.error,'');assert.equal(finalRecovery.replaced,true);assert.equal(finalRecovery.tickUnchanged,true);
+    assert(finalRecovery.width>0&&finalRecovery.height>0,'Native final renderer replaces the disposed fixture bitmap');
     }
    }
   }

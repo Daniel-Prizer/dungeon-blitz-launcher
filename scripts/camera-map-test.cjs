@@ -49,6 +49,13 @@ module.exports=(async()=>{
    await call('exit-fullscreen');await wait(450);assert.equal((await sample('terrain-window-restored-'+density)).renderProbe.fixture.pixelErrors,0,'Returning from fullscreen preserves texture coordinates');
   }
   await call('save-settings',{renderResolution:1});await wait(200);
+  for(const width of [1920,2560]){
+   await app.evaluate(({BrowserWindow},width)=>BrowserWindow.getAllWindows()[0].setContentSize(width,width===1920?1112:1472),width);await wait(400);
+   await cmd({type:'test-world-control',pan:0,scene:false,oldCoverage:false,art:'a_Room_FinalCanvasRecovery'});await wait(200);
+   const p=(await sample('wide-canvas-recovery-'+width,true)).renderProbe,r=p.fixture.recovery;
+   assert.equal(p.widescreen.active,true);assert.equal(r.error,'');assert.equal(r.replaced,true);assert.equal(r.tickUnchanged,true);
+   assert(r.width>0&&r.height>0,'Wide helper permits native disposed-canvas recovery');
+  }
    fs.writeFileSync(path.join(out,'map-fullscreen-results.json'),JSON.stringify({passed:true,version:require('../package.json').version,records},null,2));console.log('PASS live map background and fullscreen terrain alignment: '+records.length+' samples');return;
   }
 
