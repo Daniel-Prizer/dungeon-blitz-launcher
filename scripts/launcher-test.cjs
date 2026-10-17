@@ -326,6 +326,14 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       await wait(1100);const count=fixtureRequests.filter(u=>u==='/flash-links').length;
       await clickGame(260*flash.scale,50*flash.scale);await until(()=>fixtureRequests.filter(u=>u==='/flash-links').length>count,'Flash game link must reload');
       assert(!fixtureRequests.includes('/flash-links/other'));assert.equal((await measure('flash-after-links')).windows,1);
+      await wait(1100);const rankingReloads=fixtureRequests.filter(u=>u==='/flash-links').length;
+      await clickGame(440*flash.scale,50*flash.scale);await until(async()=> (await opened()).length===4,'Flash legacy rankings browser handoff missing');
+      assert.equal((await opened())[3],'https://dungeonblitz.theminesa.studio/rankings/?level=Temple%20of%20Umbra&mode=heroic');
+      await wait(1100);await clickGame(620*flash.scale,50*flash.scale);await until(async()=> (await opened()).length===5,'Flash current-site rankings browser handoff missing');
+      assert.equal((await opened())[4],'https://dungeonblitz.theminesa.studio/rankings/');
+      await wait(200);assert.equal(fixtureRequests.filter(u=>u==='/flash-links').length,rankingReloads,'Rankings must leave the running game untouched');
+      assert.equal((await measure('flash-after-rankings')).windows,1);
+      checks.push('Flash Rankings clicks on legacy and current-site URLs hand off the official HTTPS rankings URL with level parameters, without reloading the game');
       checks.push('Original Flash MouseUp/navigateToURL opens external URL and reloads game URL, without creating popup windows');
     }
     await call('save-settings',{gameURL:fixture+'audio-fixture'});await call('restart-game');await wait(2000);await command({type:'test-audio-fixture'});await wait(500);

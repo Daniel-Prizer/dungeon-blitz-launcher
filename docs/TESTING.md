@@ -1,4 +1,14 @@
-# Current validation: 0.25.0 (minor)
+# Current validation: 0.25.1 (patch)
+
+56 unit groups pass without skips. Rankings URL tests cover both official Minesa origins, historical dungeonblitz.com aliases, preserved level/category queries and fragments, local/custom origins, malformed input and path/hostname lookalikes. Original game reload routing remains intact. The official HTTPS rankings endpoint returns 200 and identifies itself as Global Rankings - Dungeon Blitz. No game bytecode or dungeon/session behavior is changed.
+
+Native Flash MouseUp/navigateToURL tests on the inactive desktop verify the button's actual popup navigation for both historical and current-site rankings URLs: the trusted browser handoff receives the official HTTPS URL and level parameters, the game page request count stays unchanged, and no extra game window appears. Existing HTML external/self navigation, unsolicited popup rejection and genuine game reloads retain their tests. The full native settings, pointer, input, fullscreen and audio regression passes on the exact fresh public title. Browser handoffs are recorded by the test boundary; Daniel's browser is never launched, no account/session is used and the shared OS cursor is untouched.
+
+The fresh public client is `swf-80a212d8f997`, SHA-256 `bd8e2509b0291ce73fb0d3ee6a3feb00a3cc1b72d72779f12dcf8059cd0e0006`. Existing guarded contracts apply without modification. Full interfaces and pools are unchanged; the sole changed main body is the unedited native day/night method, retained byte-identically. Eleven fresh relevant assets match the preceding review. Camera, HUD and transition hooks are unchanged from the 0.25.0 validation below.
+
+Package source/runtime and fuses match; 163 physical files are signed. The packaged Electron updater passes physical-ASAR verification, tamper rejection, cleanup and signed rollback staging. The disposable installer passes fresh/repeat installs, hashes, Windows registration/shortcuts, running-process refusal, newer-build retention, traversal/junction rejection, complete signed rollback and uninstall/profile preservation. Canonical Downloads Setup is 0.25.1.0 with the prior installer retained. The installed 0.24.1 hold remains active; no real installation or session is changed.
+
+# Previous validation: 0.25.0 (minor)
 
 55 unit groups pass without skips. The Cross, Dot and Ring options retain exact native bitmap/hotspot checks. Original recoloring additionally passes actual Windows arrow, hand and monochrome crosshair readback, plus a renderer-provided custom image with an off-center hotspot. Alpha, outlines, original shape and hotspot remain intact. Native parent/focus scoping, text-field exclusion, explicit Save/discard and Default restoration pass. Tests never call custom SetCursor or ClipCursor, move the shared pointer, read saved authentication or log into a game. Hardware-pointer appearance during authenticated gameplay is not claimed as visually tested.
 

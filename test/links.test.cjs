@@ -11,3 +11,11 @@ test('game links reload and web links receive a canonical default-browser handof
 test('external handoff rejects privileged schemes, credentials, malformed and oversized input',()=>{
   for(const url of [null,{},'','javascript:alert(1)','file:///C:/Windows','data:text/html,x','mailto:x@example.com','steam://game','https://user:pass@paypal.com/','https://paypal.com\n.evil.org/',' https://paypal.com/','https://x/'+ 'a'.repeat(4096)])assert.equal(classifyLink(url,game),null,String(url).slice(0,60));
 });
+test('rankings open in the browser without reloading, retaining category/level parameters',()=>{
+  for(const host of ['www.dungeonblitz.com','dungeonblitz.com','dungeonblitzr.theminesa.studio','dungeonblitz.theminesa.studio'])
+    for(const path of ['/rankings','/rankings/','/rankings/levels?level=Temple%20of%20Umbra&mode=heroic#scores'])
+      assert.deepEqual(classifyLink('http://'+host+path,game),{type:'external',url:'https://dungeonblitz.theminesa.studio'+path});
+  assert.deepEqual(classifyLink('http://localhost:8080/rankings/?level=1','http://localhost:8080/'),{type:'external',url:'http://localhost:8080/rankings/?level=1'});
+  assert.equal(classifyLink(game+'rankings-other',game).type,'reload');
+  assert.deepEqual(classifyLink('https://dungeonblitz.com.evil.org/rankings/',game),{type:'external',url:'https://dungeonblitz.com.evil.org/rankings/'});
+});
