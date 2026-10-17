@@ -1,10 +1,14 @@
 # Dungeon Blitz Launcher
 
-Version **0.24.2** (patch: compatibility with Minesa’s October 16 client update).
+Version **0.25.0** (minor: original-pointer recoloring and signed previous-version restore).
 
 Settings changes stay pending until you press **Save**. Switching categories keeps the draft. **Discard**, closing Settings, **Back to game** and Escape discard unsaved changes. A failed save leaves your edits available to correct. Saving applies game/display/audio options without reconnecting; a saved server address needs an explicit reconnect, and graphics acceleration needs a launcher restart.
 
-Settings → Crosshair offers the default game pointer, Cross, Dot or Ring, with color, size, dark outline and a preview. Save applies it inside the game only. It scales with monitor density, preserves text-field cursors and does not change Windows cursor preferences. It is independent of game bytecode compatibility.
+Settings → Crosshair offers the untouched game pointer, **Original, recolored**, Cross, Dot or Ring. Recoloring retains the original shape, size, hotspot, transparency and dark outline; custom shapes offer size and outline controls. The preview uses the last original pointer reported by the game. Save applies changes inside the game only; text fields keep their text cursor. Windows cursor preferences stay unchanged. Crosshair options work independently of game bytecode compatibility.
+
+Settings → Updates includes **Restore previous version & restart** when a distinct saved launcher and its complete build are present. It verifies that build against its signed release before closing this game, restores Windows version metadata and keeps both versions. Automatic updates turn off so the restored version stays selected. Internet access is required to fetch the signed verification manifest. An older launcher may lack compatibility with the current game; this restores the launcher, not Minesa's server deployment.
+
+A settings snapshot is saved before restoring. Older versions may use defaults for options they do not support, such as original-pointer recoloring.
 
 For a running singleplayer server, open Settings → Connection → Use singleplayer URL, save it, then reconnect. The default is `http://localhost:8000/`; a different local port/path can be entered manually. Use multiplayer URL fills Minesa's address again. These buttons never reconnect by themselves. The reviewed local client uses the same display, HUD, camera, map, controls and sound helpers through a separate guarded adapter. Unsupported main clients retain their original code with a compatibility note; the launcher does not start or modify your server, saves or account. See [local client maintenance](docs/MINESA-UPDATES.md#local-singleplayer-clients).
 

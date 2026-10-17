@@ -36,7 +36,7 @@ async function openGameLink(event) {
 function state() {
   return { settings: store.data.settings, gameURL: gameAddress, loading, error, modal, fullscreen: win?.isFullScreen() || false,
     cursor: game?.cursorState || { enabled: store.data.settings.cursorLock, active: false },
-    audio: game?.audioState || null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: gameAddress !== store.data.settings.gameURL };
+    audio: game?.audioState || null, originalPointer:game?.originalPointer||null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: gameAddress !== store.data.settings.gameURL };
 }
 function publish() { if (win && !win.isDestroyed()) win.webContents.send('blitz:state', state()); }
 function layout() {
@@ -88,6 +88,7 @@ function startGame() {
     });
     instance.on('event', event => {
       if (!current()) return;
+      if(event.type==='original-pointer')try{const p=event.value;if(p===null){instance.originalPointer=null;publish();}else if(Number.isInteger(p?.width)&&p.width>=9&&p.width<=145&&typeof p.compressed==='string'&&p.compressed.length<27000){const rgba=require('zlib').inflateSync(Buffer.from(p.compressed,'base64'),{maxOutputLength:145*145*4});if(rgba.length===p.width*p.width*4){instance.originalPointer={width:p.width,hotspotX:p.hotspotX,hotspotY:p.hotspotY,rgba:rgba.toString('base64')};publish();}}}catch{}
       if (event.type === 'loading') loading = !!event.value;
       if ((event.type === 'client-integration' || event.type === 'audio-integration') && event.value === false) updater?.checkForClientUpdate?.();
       if (event.type === 'zoom-applied') layout();
@@ -122,6 +123,8 @@ async function action(name, value) {
     case 'toggle-cursor': return action('save-settings',{cursorLock:!store.data.settings.cursorLock});
     case 'check-updates': if(updater)void updater.check();break;
     case 'install-update': if(updater?.installAfterExit(true)){updater.installAfterExit=()=>false;win.close();}break;
+    case 'restore-previous':
+      await require('./rollback.cjs').restorePrevious({updater,snapshot:()=>{const backups=path.join(app.getPath('userData'),'rollback-preferences');fs.mkdirSync(backups,{recursive:true});fs.writeFileSync(path.join(backups,app.getVersion()+'-'+Date.now()+'.json'),JSON.stringify(store.data,null,2),{flag:'wx'});},disableUpdates:()=>action('save-settings',{autoUpdates:false}),close:()=>win.close()});break;
     case 'save-settings': {
       if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid settings.');
       if ('gameURL' in value && !gameURL(value.gameURL)) throw new Error('Use an HTTPS game URL, or HTTP for localhost. Passwords in URLs are not allowed.');

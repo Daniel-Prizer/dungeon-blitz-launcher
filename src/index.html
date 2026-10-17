@@ -65,7 +65,7 @@
         <div class="section-heading"><h2>Crosshair</h2><p>Replace the pointer inside the game. Text fields keep their text cursor.</p></div>
         <div class="crosshair-preview" aria-label="Crosshair preview"><canvas id="crosshair-preview" width="145" height="145" aria-hidden="true"></canvas><span id="crosshair-preview-label">Default game pointer</span></div>
         <div class="setting-group">
-          <div class="option row"><div><label for="crosshair-style">Pointer style</label><p>Default keeps the game's own pointer.</p></div><select id="crosshair-style"><option value="default">Default game pointer</option><option value="cross">Cross</option><option value="dot">Dot</option><option value="ring">Ring</option></select></div>
+          <div class="option row"><div><label for="crosshair-style">Pointer style</label><p>Keep the original, recolor its shape, or choose a new crosshair.</p></div><select id="crosshair-style"><option value="default">Default game pointer</option><option value="original">Original, recolored</option><option value="cross">Cross</option><option value="dot">Dot</option><option value="ring">Ring</option></select></div>
           <div class="option row"><div><label for="crosshair-color">Color</label></div><input id="crosshair-color" type="color" value="#8cff65"></div>
           <div class="option row"><div><label for="crosshair-size">Size</label><p>Scales with your monitor's display density.</p></div><select id="crosshair-size"><option value="16">Small · 16 px</option><option value="24">Medium · 24 px</option><option value="32">Large · 32 px</option><option value="48">Extra large · 48 px</option></select></div>
           <div class="option check"><div><label for="crosshair-outline">Dark outline</label><p>Keep the pointer visible over bright scenery.</p></div><input id="crosshair-outline" type="checkbox"></div>
@@ -81,6 +81,7 @@
         <div class="section-heading"><h2>Updates</h2><p>Keep the launcher and game enhancements up to date.</p></div>
         <div class="setting-group"><div class="option check"><div><label for="auto-updates">Automatic launcher updates</label><p id="update-hint">Download signed releases. Install after you close the launcher.</p></div><input id="auto-updates" type="checkbox" aria-describedby="update-hint"></div></div>
         <div class="update-state"><h3>Launcher status</h3><p id="update-status" role="status"></p><div class="button-row"><button id="check-updates" class="secondary">Check for updates</button><button id="install-update" class="secondary" hidden>Install &amp; restart launcher</button></div></div>
+        <div class="update-state"><h3>Previous version</h3><p id="rollback-status" role="status">Checking saved previous version…</p><button id="restore-previous" class="secondary" disabled>Restore previous version &amp; restart</button><p>Verifies the signed release, closes this game and restarts the saved launcher. Keeps your preferences and turns automatic updates off.</p></div>
         <p class="hint">Automatic updates never interrupt your game. Install &amp; restart closes the launcher immediately.</p>
       </section>
     </div>

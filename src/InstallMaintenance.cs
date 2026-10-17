@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.Win32;
 
 // Shared by the signed updater and the setup/uninstall helper. No recursive
@@ -63,6 +64,16 @@ public static class ManagedInstallation {
    key.SetValue("DisplayVersion",version,RegistryValueKind.String);
   }
  }
+ public static void Remember(string root){
+  root=Root(root);Check(root);string current=Path.Combine(root,"Dungeon Blitz Launcher.exe"),previous=Path.Combine(root,"Dungeon Blitz Launcher.previous.exe");if(!File.Exists(current))return;
+  string backups=Path.Combine(root,".launcher-install","shims");Directory.CreateDirectory(backups);Root(backups);
+  foreach(string file in new[]{current,previous})if(File.Exists(file)){
+   NoLink(file);var info=FileVersionInfo.GetVersionInfo(file);string version=info.FileMajorPart+"."+info.FileMinorPart+"."+info.FileBuildPart;string hash;
+   using(var sha=SHA256.Create())using(var input=File.OpenRead(file))hash=BitConverter.ToString(sha.ComputeHash(input)).Replace("-","").ToLowerInvariant();
+   string backup=Path.Combine(backups,version+"-"+hash+".exe");NoLink(backup);if(!File.Exists(backup))File.Copy(file,backup,false);
+  }
+  string temp=Path.Combine(root,".previous-"+Guid.NewGuid().ToString("N")+".exe");File.Copy(current,temp,false);if(File.Exists(previous))File.Replace(temp,previous,null);else File.Move(temp,previous);
+ }
  public static void Cleanup(string root){
   root=Root(root);Check(root);string state=Path.Combine(root,".launcher-install");Root(state);
   string identity=Path.Combine(state,"app-id.txt");Guid id;
@@ -84,8 +95,8 @@ public static class ManagedInstallation {
 }
 public static class InstallMaintenance {
  public static int Main(string[] args){try{
-  if(args.Length!=3||(args[0]!="check"&&args[0]!="cleanup"&&args[0]!="refresh"))throw new Exception("Invalid installation operation");
-  if(args[0]=="check")ManagedInstallation.Check(args[1]);else if(args[0]=="cleanup")ManagedInstallation.Cleanup(args[1]);else {
+  if(args.Length!=3||(args[0]!="check"&&args[0]!="cleanup"&&args[0]!="refresh"&&args[0]!="remember"))throw new Exception("Invalid installation operation");
+  if(args[0]=="check")ManagedInstallation.Check(args[1]);else if(args[0]=="cleanup")ManagedInstallation.Cleanup(args[1]);else if(args[0]=="remember")ManagedInstallation.Remember(args[1]);else {
    string root=ManagedInstallation.Root(args[1]);var info=FileVersionInfo.GetVersionInfo(Path.Combine(root,"Dungeon Blitz Launcher.exe"));
    ManagedInstallation.RefreshVersion(root,info.FileMajorPart+"."+info.FileMinorPart+"."+info.FileBuildPart);
   }

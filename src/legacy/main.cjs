@@ -8,16 +8,38 @@ const {adaptClient,localAddress}=require('./client-adapter.cjs');
 const {patchLocalIcons,localIconAsset}=require('./local-icon-patch.cjs');
 const {canonicalGameAddress}=require('./game-address.cjs');
 const {classifyLink}=require('./links.cjs');
-const adaptiveContract=[];for(const name of ['adaptive-contract.json','adaptive-contract-oct15.json','adaptive-contract-oct16.json'])try{adaptiveContract.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
+const adaptiveContract=[];for(const name of ['adaptive-contract.json','adaptive-contract-oct15.json','adaptive-contract-oct16.json','adaptive-contract-oct17.json'])try{adaptiveContract.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
 let singleplayerContract;try{singleplayerContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract-singleplayer.json'),'utf8'));}catch(_){}
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
 const crosshairArtwork=require('./crosshair.js');
-let gameWindow,crosshair=crosshairArtwork.valid(),appliedCrosshair='',cursorType='default';
+let gameWindow,crosshair=crosshairArtwork.valid(),appliedCrosshair='',cursorType='default',originalPointer=null;
+function readOriginalPointer(type,image,hotspot){
+  if(!gameWindow)return;
+  if(type==='custom'&&(!image||image.isEmpty())){originalPointer=null;emit({type:'original-pointer',value:null});return;}
+  if(type==='custom'&&image&&!image.isEmpty()){
+    const {width,height}=image.getSize(),size=Math.max(width,height)|1;
+    if(size>145||width<1||height<1){originalPointer=null;emit({type:'original-pointer',value:null});return;}
+    const bitmap=image.toBitmap(),rgba=Buffer.alloc(size*size*4);
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){const a=(y*width+x)*4,b=(y*size+x)*4;rgba[b]=bitmap[a+2];rgba[b+1]=bitmap[a+1];rgba[b+2]=bitmap[a];rgba[b+3]=bitmap[a+3];}
+    originalPointer={width:size,hotspotX:Math.max(0,Math.min(size-1,Math.round(hotspot?.x||0))),hotspotY:Math.max(0,Math.min(size-1,Math.round(hotspot?.y||0))),rgba};
+  }else{
+    const data=gameWindow.originalPixels(type==='hand'?1:type==='crosshair'?2:0);
+    originalPointer={width:data.readUInt32LE(0),hotspotX:data.readUInt32LE(8),hotspotY:data.readUInt32LE(12),rgba:data.subarray(16)};
+  }
+  const compressed=require('zlib').deflateSync(originalPointer.rgba);
+  if(compressed.length<20000)emit({type:'original-pointer',value:{width:originalPointer.width,hotspotX:originalPointer.hotspotX,hotspotY:originalPointer.hotspotY,compressed:compressed.toString('base64')}});
+}
 function applyCrosshair(){
   if(!gameWindow||!win||win.isDestroyed())return;
   const density=screen.getDisplayMatching(win.getBounds()).scaleFactor;
-  const key=JSON.stringify([crosshair,density]);if(key===appliedCrosshair)return;
+  const key=JSON.stringify([crosshair,density,cursorType]);if(key===appliedCrosshair)return;
+  if(crosshair.style==='original'){
+    if(!originalPointer&&cursorType!=='custom')readOriginalPointer(cursorType);
+    if(originalPointer){const p=originalPointer;gameWindow.crosshair(Buffer.from(crosshairArtwork.recolor(p.rgba,crosshair.color)),p.width,p.hotspotX,p.hotspotY);}
+    else gameWindow.crosshair(Buffer.alloc(0),0);
+    appliedCrosshair=key;return;
+  }
   const image=crosshairArtwork.pixels(crosshair,density);
   gameWindow.crosshair(crosshair.style==='default'?Buffer.alloc(0):Buffer.from(image.rgba),crosshair.style==='default'?0:image.width);
   appliedCrosshair=key;
@@ -171,7 +193,11 @@ app.whenReady().then(async () => {
   // native placement events: our owner uses SetWindowPos to synchronize position.
   gameWindow=require(path.join(process.resourcesPath,'game-window.node'));gameWindow.attach(win.getNativeWindowHandle());
   win.on('move',applyCrosshair);
-  win.webContents.on('cursor-changed',(_event,type)=>{cursorType=type;gameWindow.cursorType(['default','pointer','hand','crosshair'].includes(type));});
+  win.webContents.on('cursor-changed',(_event,type,image,_scale,_size,hotspot)=>{
+    cursorType=type;const allowed=['default','pointer','hand','crosshair','custom'].includes(type);
+    if(allowed){readOriginalPointer(type,image,hotspot);appliedCrosshair='';applyCrosshair();}
+    gameWindow.cursorType(allowed);
+  });
   win.setMenuBarVisibility(false);
   win.on('focus',()=>emit({type:'focused'}));
   // Alt+F4 on the game surface closes its launcher without a confirmation.
@@ -346,7 +372,7 @@ readMessages(pipe, async cmd => {
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`).catch(error=>({probeError:error.message}));
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`).catch(error=>({probeError:error.message}));
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      const cursorPixels=gameWindow.cursorPixels();
+      const cursorPixels=gameWindow.cursorPixels();geometry.cursorScope=Array.from(gameWindow.cursorScope());
       require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,testRequests,testIconRepairs,probeDurationMs,crosshair:{...crosshair,cursorType,density:screen.getDisplayMatching(win.getBounds()).scaleFactor,pixels:cursorPixels.toString('base64'),eligible:gameWindow.cursorPolicy(),active:gameWindow.cursorActive(),dryRun:true}}));
       if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
     }

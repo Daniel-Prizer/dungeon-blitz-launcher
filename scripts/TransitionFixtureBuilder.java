@@ -39,7 +39,7 @@ public class TransitionFixtureBuilder {
      MethodBody crop=sourceTag.getABC().findBodyByClassAndName("SuperAnimData","method_200");
      if(crop!=null)originalCrop=crop.getCodeBytes();
     }
-    if(originalCrop==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(originalCrop)).equals("c587e8238e1571a12664a441d153dbcbacff303069dc6740c8b7ba192cbff28e"))throw new IllegalStateException("Unreviewed crop baseline");
+    if(originalCrop==null||!Set.of("c587e8238e1571a12664a441d153dbcbacff303069dc6740c8b7ba192cbff28e","66152de513bdd9b7974607fdb187d3402430b16f4731046eed324f3f068bfd35").contains(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(originalCrop))))throw new IllegalStateException("Unreviewed crop baseline");
     MethodBody cropBaseline=abc.findBodyByClassAndName("SuperAnimData","method_200");cropBaseline.setCodeBytes(originalCrop);cropBaseline.getCode();
     // Retain the preceding revision's actual fixed-size allocator only in
     // this unshipped negative control. Production preserves the upstream fix.

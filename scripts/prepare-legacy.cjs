@@ -41,6 +41,7 @@ const target = path.join(root, 'runtime/game');
   execFileSync(process.execPath,[path.join(__dirname,'prepare-adaptive.cjs')],{stdio:'inherit',windowsHide:true});
   execFileSync(process.execPath,[path.join(__dirname,'prepare-transition-contract.cjs')],{stdio:'inherit',windowsHide:true});
   execFileSync(process.execPath,[path.join(__dirname,'prepare-interface-contract.cjs')],{stdio:'inherit',windowsHide:true});
+  execFileSync(process.execPath,[path.join(__dirname,'prepare-crop-contract.cjs')],{stdio:'inherit',windowsHide:true});
   execFileSync(process.execPath,[path.join(__dirname,'prepare-singleplayer.cjs')],{stdio:'inherit',windowsHide:true});
   fs.copyFileSync(path.join(root,'src/crosshair.js'),path.join(root,'src/legacy/crosshair.js'));
   await asar.createPackage(path.join(root, 'src/legacy'), path.join(target, 'resources/app.asar'));

@@ -22,7 +22,26 @@ async function verifyFiles(root,manifest,signal,progress=()=>{}){
 class Updater extends EventEmitter {
  constructor({current,cache,installRoot,helper,enabled=true,publicKey,waitPids=()=>[]}){super();this.current=current;this.cache=cache;this.installRoot=installRoot;this.helper=helper;this.enabled=enabled;this.waitPids=waitPids;this.publicKey=publicKey||fs.readFileSync(path.join(__dirname,'update-key.pem'));this.status={phase:'idle',version:'',percent:0,error:''};this.busy=false;}
  publish(patch){Object.assign(this.status,patch);this.emit('state');}
- start(){this.stop(false);if(this.enabled){this.first=setTimeout(()=>void this.check(),10000);this.first.unref();this.timer=setInterval(()=>void this.check(),6*60*60*1000);this.timer.unref();}}
+ start(){this.stop(false);void this.refreshPrevious();if(this.enabled){this.first=setTimeout(()=>void this.check(),10000);this.first.unref();this.timer=setInterval(()=>void this.check(),6*60*60*1000);this.timer.unref();}}
+ async refreshPrevious(){
+  try{const version=await new Promise((resolve,reject)=>execFile(this.helper,['previous',this.installRoot],{windowsHide:true,timeout:10000},(error,out)=>error?reject(error):resolve(out.trim())));if(!/^\d{1,5}\.\d{1,5}\.\d{1,5}$/.test(version)||version===this.current)throw Error('No distinct previous version');this.publish({previousVersion:version,rollbackError:''});}
+  catch{this.publish({previousVersion:'',rollbackError:''});}
+ }
+ async prepareRollback(){
+  if(this.busy)throw Error('Wait for the current update operation to finish.');
+  this.busy=true;this.stop();this.controller=new AbortController();const signal=AbortSignal.any([this.controller.signal,AbortSignal.timeout(120000)]);let dir;
+  try{
+   await this.refreshPrevious();const version=this.status.previousVersion;if(!version)throw Error('No complete previous launcher is saved.');
+   this.publish({phase:'rollback',rollbackError:'',percent:0});
+   const envelope=await json(releaseAsset(version,`Dungeon-Blitz-Launcher-${version}-update.json`),6000000,signal);
+   disk.mkdirSync(this.cache,{recursive:true});dir=disk.mkdtempSync(path.join(this.cache,'rollback-'));
+   await new Promise((resolve,reject)=>execFile(this.helper,['protect',dir],{windowsHide:true,timeout:10000},e=>e?reject(e):resolve()));
+   const source=path.join(dir,'files');const manifest=await require('./rollback.cjs').stagePrevious({envelope,key:this.publicKey,version,current:this.current,root:this.installRoot,stage:source,signal,progress:(n,total)=>this.publish({percent:Math.floor(100*n/total)})});
+   disk.writeFileSync(path.join(dir,'install.json'),JSON.stringify({version,source,destination:this.installRoot,pid:process.pid,files:manifest.files}));
+   this.stage=dir;this.publish({phase:'rollback-ready',version,percent:100});return true;
+  }catch(e){if(dir&&path.dirname(path.resolve(dir))===path.resolve(this.cache)&&/^rollback-[A-Za-z0-9]+$/.test(path.basename(dir)))await disk.promises.rm(dir,{recursive:true,force:true});this.publish({phase:'error',rollbackError:String(e.message).slice(0,200)});throw e;}
+  finally{this.busy=false;this.controller=null;}
+ }
  stop(cancel=true){clearTimeout(this.first);clearInterval(this.timer);if(cancel)this.controller?.abort();}
  checkForClientUpdate(){
   // One extra automatic check per launcher session. Remote game reloads must
@@ -46,6 +65,6 @@ class Updater extends EventEmitter {
    disk.writeFileSync(path.join(dir,'install.json'),JSON.stringify({version:next,source:extracted,destination:this.installRoot,pid:process.pid,files:manifest.files}));this.publish({phase:'ready',percent:100});
   }catch(error){const stage=this.stage;this.stage=null;this.publish({phase:signal.aborted?'idle':'error',error:signal.aborted?'':String(error.message).slice(0,200)});if(stage&&path.dirname(path.resolve(stage))===path.resolve(this.cache)&&/^stage-[A-Za-z0-9]+$/.test(path.basename(stage))){try{await disk.promises.rm(stage,{recursive:true,force:true,maxRetries:3,retryDelay:200});}catch{}}}finally{this.busy=false;this.controller=null;}
  }
- installAfterExit(restart=false){if(this.status.phase!=='ready')return false;try{const configPath=path.join(this.stage,'install.json'),config=JSON.parse(disk.readFileSync(configPath,'utf8'));config.pids=[...new Set([process.pid,...this.waitPids()].filter(pid=>Number.isInteger(pid)&&pid>0&&pid<=2147483647))];disk.writeFileSync(configPath,JSON.stringify(config));const helper=path.join(this.stage,'UpdateInstaller.exe');disk.copyFileSync(this.helper,helper);const child=spawn(helper,['install',configPath,restart?'restart':'close'],{detached:true,windowsHide:true,stdio:'ignore'});child.on('error',error=>this.publish({phase:'error',error:String(error.message).slice(0,200)}));child.unref();return true;}catch(error){this.publish({phase:'error',error:String(error.message).slice(0,200)});return false;}}
+ installAfterExit(restart=false,explicitRollback=false){if(this.status.phase!=='ready'&&!(explicitRollback&&this.status.phase==='rollback-ready'))return false;try{const configPath=path.join(this.stage,'install.json'),config=JSON.parse(disk.readFileSync(configPath,'utf8'));config.pids=[...new Set([process.pid,...this.waitPids()].filter(pid=>Number.isInteger(pid)&&pid>0&&pid<=2147483647))];disk.writeFileSync(configPath,JSON.stringify(config));const helper=path.join(this.stage,'UpdateInstaller.exe');disk.copyFileSync(this.helper,helper);const child=spawn(helper,['install',configPath,restart?'restart':'close'],{detached:true,windowsHide:true,stdio:'ignore'});child.on('error',error=>this.publish({phase:'error',error:String(error.message).slice(0,200)}));child.unref();return true;}catch(error){this.publish({phase:'error',error:String(error.message).slice(0,200)});return false;}}
 }
 module.exports={Updater,verifyFiles};

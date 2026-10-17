@@ -366,7 +366,10 @@ package {
   }
   private function drawWorld():void {
    try{
-    game.mTimeThisTick=tiedTime?1000:getTimer();game.levelLayer.x=-pan;game.levelLayer.y=-vertical;
+    // Keep many tied timestamps for LRU stress, but within the new native
+    // three-second render budget. A forever-fixed 1000ms fixture clock now
+    // correctly causes the upstream renderer to abort stale work.
+    game.mTimeThisTick=tiedTime?Math.floor(getTimer()/1000)*1000:getTimer();game.levelLayer.x=-pan;game.levelLayer.y=-vertical;
     game.var_107.method_1753();if(cacheIdentity!=game.var_107.var_986){++cacheRebuilds;cacheIdentity=game.var_107.var_986;}
     main.var_147.bitmapData.fillRect(main.var_147.bitmapData.rect,0x607065);game.method_1946();++worldFrames;
     if(!sceneEnabled){

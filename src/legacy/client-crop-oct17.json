@@ -1,0 +1,11 @@
+{
+  "inputHash": "00f70827e747ad24fd3ca29e1de428cfd8b26e23f461c14388c98f3246946a8b",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-e6c72c0b1dd5",
+  "method": "SuperAnimData.method_200",
+  "bodyHash": "9cc739ba0047c17de35601497e23f841076475e75f43e9473c7df51d40f6e963",
+  "codeHash": "66152de513bdd9b7974607fdb187d3402430b16f4731046eed324f3f068bfd35",
+  "cropOffset": 2415,
+  "previousCropOffset": 2415,
+  "expression": "6218660e6218660d4fe35302",
+  "note": "Retain the native child cleanup loops and allocation recovery. Reapply only the identical 12-byte inverse crop-matrix expression at its reviewed location."
+}

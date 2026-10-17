@@ -134,6 +134,8 @@ begin
       if not KeepPayload and ((ExistingMS > SetupMS) or ((ExistingMS = SetupMS) and (ExistingLS > SetupLS))) then
         Result := 'A newer launcher is installed. Its update check could not finish; the installation was kept unchanged.';
     end;
+  if (Result = '') and not KeepPayload then
+    Result := Maintenance('remember', ExpandConstant('{app}'), ExpandConstant('{tmp}\setup-maintenance.exe'));
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

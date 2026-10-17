@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-16T19:07:09.935Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-83d18dee0daa",
-  "inputHash": "11e05b43317eb7028cad591a18a00b571a4a3a8d1ea9c48adf2da3c1481b435b",
-  "note": "October 16 changes one native constant in the complete semantic interface. Separate pinned contract preserves that interface, all 15 changed methods and eight added upstream ABC tags; prior and singleplayer contracts remain unchanged."
+  "checkedAt": "2026-10-17T00:05:01.963Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-e6c72c0b1dd5",
+  "inputHash": "00f70827e747ad24fd3ca29e1de428cfd8b26e23f461c14388c98f3246946a8b",
+  "note": "October 17 retains native rendering cleanup and recovery. Separate crop recipe reapplies only the existing twelve-byte inverse-matrix presentation fix. Previous recipes unchanged."
 }
