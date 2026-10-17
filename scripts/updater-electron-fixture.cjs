@@ -22,5 +22,8 @@ app.whenReady().then(async()=>{
  const envelope={payload:payload.toString('base64'),signature:crypto.sign(null,payload,pair.privateKey).toString('base64')};
  global.fetch=async url=>new Response(url.endsWith('/latest')?JSON.stringify({tag_name:'v9.9.9',assets:[{name:'Dungeon-Blitz-Launcher-9.9.9-update.json'}]}):url.endsWith('-update.json')?JSON.stringify(envelope):disk.readFileSync(config.zip));
  await rejected.check();assert.equal(rejected.status.phase,'error');assert.equal(rejected.stage,null);assert.deepEqual(disk.readdirSync(rejected.cache),[]);record.checks.push('Verification failure reports error and removes physical ASAR stage');
+ const previousRoot=path.join(config.directory,'previous-installed');disk.cpSync(config.source,previousRoot,{recursive:true});disk.renameSync(path.join(previousRoot,'Dungeon Blitz Launcher.exe'),path.join(previousRoot,'Dungeon Blitz Launcher.previous.exe'));
+ const {stagePrevious}=require(path.join(path.dirname(config.module),'rollback.cjs'));
+ const restore=path.join(config.directory,'restored-files');await stagePrevious({envelope:config.envelope,key:config.publicKey,version:'9.9.9',current:'10.0.0',root:previousRoot,stage:restore});await verifyFiles(restore,config.manifest);record.checks.push('Explicit signed rollback verifies and stages physical ASAR bytes under actual Electron');
  clearTimeout(deadline);finish();
 }).catch(error=>{clearTimeout(deadline);finish(error);});

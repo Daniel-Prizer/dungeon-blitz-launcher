@@ -26,6 +26,12 @@ public static class UpdateInstaller {
   }
  }
  static string Hash(string file){using(var sha=SHA256.Create())using(var stream=File.OpenRead(file))return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-","").ToLowerInvariant();}
+ static void Previous(string directory){
+  directory=ManagedInstallation.Root(directory);string previous=Path.Combine(directory,"Dungeon Blitz Launcher.previous.exe");
+  if((File.GetAttributes(previous)&FileAttributes.ReparsePoint)!=0)throw new Exception("Previous launcher links rejected");
+  CheckedRoot(previous);var info=FileVersionInfo.GetVersionInfo(previous);string version=info.FileMajorPart+"."+info.FileMinorPart+"."+info.FileBuildPart;
+  if(!Regex.IsMatch(version,@"^\d{1,5}\.\d{1,5}\.\d{1,5}$")||!File.Exists(Path.Combine(directory,"release",version,"Dungeon Blitz Launcher-win32-x64","Dungeon Blitz Launcher.exe")))throw new Exception("The saved previous build is incomplete");Console.WriteLine(version);
+ }
  static void BootstrapCheck(string root,int allowed){
   root=ManagedInstallation.Root(root);if(allowed<=0)throw new Exception("Invalid setup update process");
   using(var process=Process.GetProcessById(allowed)){
@@ -45,6 +51,7 @@ public static class UpdateInstaller {
   var waits=bootstrap!=0?new object[0]:config.ContainsKey("pids")?(System.Collections.IEnumerable)config["pids"]:new object[]{config["pid"]};
   DateTime deadline=DateTime.UtcNow.AddSeconds(120);
   foreach(var value in waits){int pid=Convert.ToInt32(value);if(pid<=0)throw new Exception("Invalid update wait process");try{using(var parent=Process.GetProcessById(pid)){int remaining=Math.Max(0,(int)(deadline-DateTime.UtcNow).TotalMilliseconds);if(!parent.WaitForExit(remaining))throw new Exception("Launcher or game has not closed; update was not installed");}}catch(ArgumentException){}}
+  if(bootstrap==0)ManagedInstallation.Check(destination);
   string releases=Path.Combine(destination,"release");Directory.CreateDirectory(releases);CheckedRoot(releases);string final=Path.Combine(releases,version);
   // Retry after an interrupted root-shim replacement only if this exact signed
   // version is already complete. Never overwrite an unrelated existing build.
@@ -55,9 +62,15 @@ public static class UpdateInstaller {
   ManagedInstallation.Record(destination,version,files);
   string rootExe=Path.Combine(destination,"Dungeon Blitz Launcher.exe"),replacement=Path.Combine(destination,"Dungeon Blitz Launcher."+Guid.NewGuid().ToString("N")+".new.exe");
   File.Copy(Path.Combine(source,"Dungeon Blitz Launcher.exe"),replacement,false);
+  // Preserve every previous shim before replacing the rolling backup.
+  foreach(string saved in new[]{rootExe,Path.Combine(destination,"Dungeon Blitz Launcher.previous.exe")})if(File.Exists(saved)){
+   if((File.GetAttributes(saved)&FileAttributes.ReparsePoint)!=0)throw new Exception("Saved launcher links rejected");
+   CheckedRoot(saved);var prior=FileVersionInfo.GetVersionInfo(saved);string priorVersion=prior.FileMajorPart+"."+prior.FileMinorPart+"."+prior.FileBuildPart;
+   string backups=Path.Combine(destination,".launcher-install","shims");Directory.CreateDirectory(backups);CheckedRoot(backups);string backup=Path.Combine(backups,priorVersion+"-"+Hash(saved)+".exe");if(!File.Exists(backup))File.Copy(saved,backup,false);
+  }
   if(File.Exists(rootExe))File.Replace(replacement,rootExe,Path.Combine(destination,"Dungeon Blitz Launcher.previous.exe"),true);else File.Move(replacement,rootExe);
   ManagedInstallation.RefreshVersion(destination,version);
   if(restart)Process.Start(new ProcessStartInfo(rootExe){UseShellExecute=false,WorkingDirectory=destination});
  }
- public static int Main(string[] args){try{if(args.Length==2&&args[0]=="protect")Protect(args[1]);else if(args.Length==2&&args[0]=="preflight")Preflight(args[1]);else if(args.Length==3&&args[0]=="extract")Extract(args[1],args[2]);else if(args.Length==3&&args[0]=="install"&&(args[2]=="restart"||args[2]=="close"))Install(args[1],args[2]=="restart");else if(args.Length==3&&args[0]=="install-bootstrap"){int pid=int.Parse(args[2]);if(pid<=0)throw new Exception("Invalid setup update process");Install(args[1],false,pid);}else throw new Exception("Invalid updater operation");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);if(args.Length>1&&File.Exists(args[1])&&(args[0]=="install"||args[0]=="install-bootstrap"))try{File.WriteAllText(Path.Combine(Path.GetDirectoryName(args[1]),"install-error.txt"),e.Message);}catch{}return 1;}}
+ public static int Main(string[] args){try{if(args.Length==2&&args[0]=="previous")Previous(args[1]);else if(args.Length==2&&args[0]=="protect")Protect(args[1]);else if(args.Length==2&&args[0]=="preflight")Preflight(args[1]);else if(args.Length==3&&args[0]=="extract")Extract(args[1],args[2]);else if(args.Length==3&&args[0]=="install"&&(args[2]=="restart"||args[2]=="close"))Install(args[1],args[2]=="restart");else if(args.Length==3&&args[0]=="install-bootstrap"){int pid=int.Parse(args[2]);if(pid<=0)throw new Exception("Invalid setup update process");Install(args[1],false,pid);}else throw new Exception("Invalid updater operation");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);if(args.Length>1&&File.Exists(args[1])&&(args[0]=="install"||args[0]=="install-bootstrap"))try{File.WriteAllText(Path.Combine(Path.GetDirectoryName(args[1]),"install-error.txt"),e.Message);}catch{}return 1;}}
 }

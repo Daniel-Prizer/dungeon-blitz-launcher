@@ -12,6 +12,7 @@ static HWND game;
 static HCURSOR crosshair;
 static bool cursor_eligible = true, dry_run;
 static DWORD owner_thread;
+static DWORD hotspot_x, hotspot_y;
 static const UINT_PTR subclass_id = 0xDB17;
 #define DECLARE(name) static __typeof__(&name) name##_ptr
 DECLARE(napi_get_cb_info);
@@ -25,10 +26,15 @@ DECLARE(napi_get_value_uint32);
 DECLARE(napi_get_value_bool);
 DECLARE(napi_create_buffer_copy);
 
-static bool foreground_game(void) {
-  HWND active = GetForegroundWindow();
-  return game && IsWindowVisible(game) && (active == game || IsChild(game, active));
+static bool cursor_scope(HWND active,HWND focus) {
+  // An embedded game is a child of the foreground launcher, so Windows may
+  // report the outer frame as active. Accept that ancestor only while this
+  // thread's focus is still inside the game; Settings keeps it hidden.
+  return game && IsWindowVisible(game) &&
+    (active == game || IsChild(game, active) ||
+     (IsChild(active,game) && (focus == game || IsChild(game,focus))));
 }
+static bool foreground_game(void){return cursor_scope(GetForegroundWindow(),GetFocus());}
 static bool apply_cursor(void) {
   if (!crosshair || !cursor_eligible || !foreground_game()) return false;
   if (!dry_run) SetCursor(crosshair);
@@ -86,15 +92,17 @@ static napi_value attach(napi_env env, napi_callback_info info) {
 }
 
 static napi_value configure_cursor(napi_env env, napi_callback_info info) {
-  size_t count = 2, length = 0;
-  napi_value args[2], result;
-  void *bytes; uint32_t size = 0;
+  size_t count = 4, length = 0;
+  napi_value args[4], result;
+  void *bytes; uint32_t size = 0, hx=0, hy=0;
   if (!game || owner_thread != GetCurrentThreadId() ||
-      napi_get_cb_info_ptr(env, info, &count, args, NULL, NULL) != napi_ok || count != 2 ||
+      napi_get_cb_info_ptr(env, info, &count, args, NULL, NULL) != napi_ok || (count != 2 && count != 4) ||
       napi_get_buffer_info_ptr(env, args[0], &bytes, &length) != napi_ok ||
       napi_get_value_uint32_ptr(env, args[1], &size) != napi_ok ||
       (size == 0 ? length != 0 : (size < 9 || size > 145 || !(size & 1) || length != size * size * 4)))
     return fail(env, "Invalid bounded game cursor artwork.");
+  hx=hy=size/2;
+  if(count==4&&(napi_get_value_uint32_ptr(env,args[2],&hx)!=napi_ok||napi_get_value_uint32_ptr(env,args[3],&hy)!=napi_ok||hx>=size||hy>=size))return fail(env,"Invalid cursor hotspot.");
   HCURSOR next = NULL;
   if (size) {
     BITMAPINFO bitmap; memset(&bitmap, 0, sizeof(bitmap));
@@ -116,7 +124,7 @@ static napi_value configure_cursor(napi_env env, napi_callback_info info) {
         dest[4*i] = source[4*i+2]; dest[4*i+1] = source[4*i+1];
         dest[4*i+2] = source[4*i]; dest[4*i+3] = source[4*i+3];
       }
-      ICONINFO icon = {0}; icon.fIcon = FALSE; icon.xHotspot = icon.yHotspot = size / 2;
+      ICONINFO icon = {0}; icon.fIcon = FALSE; icon.xHotspot = hx; icon.yHotspot = hy;
       icon.hbmColor = color; icon.hbmMask = mask;
       next = CreateIconIndirect(&icon);
     }
@@ -124,6 +132,7 @@ static napi_value configure_cursor(napi_env env, napi_callback_info info) {
     if (!next) return fail(env, "Could not create game crosshair.");
   }
   HCURSOR old = crosshair; crosshair = next;
+  hotspot_x=hx;hotspot_y=hy;
   // SetCursor is transient and belongs to this game's foreground window only.
   // Tests create/read cursor artwork but never change the shared OS pointer.
   if (!dry_run && foreground_game() && GetCursor() == old && old)
@@ -150,7 +159,7 @@ static napi_value cursor_pixels(napi_env env, napi_callback_info info) {
   if (crosshair && GetIconInfo(crosshair, &icon)) {
     BITMAP info; memset(&info, 0, sizeof(info)); GetObject(icon.hbmColor, sizeof(info), &info);
     if (info.bmWidth > 0 && info.bmWidth <= 145 && info.bmHeight == info.bmWidth &&
-        icon.xHotspot == (DWORD)info.bmWidth / 2 && icon.yHotspot == icon.xHotspot) {
+        icon.xHotspot == hotspot_x && icon.yHotspot == hotspot_y) {
       BITMAPINFO bitmap; memset(&bitmap, 0, sizeof(bitmap));
       bitmap.bmiHeader.biSize = sizeof(BITMAPINFOHEADER); bitmap.bmiHeader.biWidth = info.bmWidth;
       bitmap.bmiHeader.biHeight = -info.bmHeight; bitmap.bmiHeader.biPlanes = 1;
@@ -165,6 +174,28 @@ static napi_value cursor_pixels(napi_env env, napi_callback_info info) {
   napi_create_buffer_copy_ptr(env, length, pixels, NULL, &result); return result;
 }
 
+// Read original Windows cursor artwork in memory. Never capture the desktop or
+// change the shared cursor. Custom renderer cursors are supplied separately.
+static napi_value original_pixels(napi_env env,napi_callback_info info){
+  size_t count=1;napi_value arg,result;uint32_t type=0;
+  if(!game||owner_thread!=GetCurrentThreadId()||napi_get_cb_info_ptr(env,info,&count,&arg,NULL,NULL)!=napi_ok||count!=1||napi_get_value_uint32_ptr(env,arg,&type)!=napi_ok||type>2)return fail(env,"Invalid original cursor type.");
+  HCURSOR cursor=LoadCursor(NULL,type==1?IDC_HAND:type==2?IDC_CROSS:IDC_ARROW);ICONINFO icon;
+  if(!cursor||!GetIconInfo(cursor,&icon))return fail(env,"Original cursor unavailable.");
+  BITMAP native;memset(&native,0,sizeof(native));GetObject(icon.hbmColor?icon.hbmColor:icon.hbmMask,sizeof(native),&native);
+  int width=native.bmWidth,height=icon.hbmColor?native.bmHeight:native.bmHeight/2,size=(width>height?width:height)|1;
+  if(width<1||height<1||size>145){if(icon.hbmColor)DeleteObject(icon.hbmColor);DeleteObject(icon.hbmMask);return fail(env,"Original cursor too large.");}
+  BITMAPINFO bitmap;memset(&bitmap,0,sizeof(bitmap));bitmap.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);bitmap.bmiHeader.biWidth=size;bitmap.bmiHeader.biHeight=-size;bitmap.bmiHeader.biPlanes=1;bitmap.bmiHeader.biBitCount=32;bitmap.bmiHeader.biCompression=BI_RGB;
+  void *pixels=NULL;HBITMAP color=CreateDIBSection(NULL,&bitmap,DIB_RGB_COLORS,&pixels,NULL,0);HDC dc=CreateCompatibleDC(NULL);
+  if(!color||!dc||!pixels){if(color)DeleteObject(color);if(dc)DeleteDC(dc);if(icon.hbmColor)DeleteObject(icon.hbmColor);DeleteObject(icon.hbmMask);return fail(env,"Original cursor bitmap unavailable.");}
+  HGDIOBJ old=SelectObject(dc,color);memset(pixels,0,size*size*4);DrawIconEx(dc,0,0,cursor,width,height,0,NULL,DI_NORMAL);
+  unsigned char output[16+145*145*4];uint32_t header[4]={(uint32_t)size,(uint32_t)size,icon.xHotspot,icon.yHotspot};memcpy(output,header,16);
+  unsigned char *p=pixels;bool has_alpha=false;for(int i=0;i<size*size;i++)if(p[4*i+3])has_alpha=true;
+  HDC mask_dc=CreateCompatibleDC(NULL);HGDIOBJ old_mask=SelectObject(mask_dc,icon.hbmMask);
+  for(int y=0;y<size;y++)for(int x=0;x<size;x++){int i=y*size+x;output[16+4*i]=p[4*i+2];output[16+4*i+1]=p[4*i+1];output[16+4*i+2]=p[4*i];output[16+4*i+3]=has_alpha?p[4*i+3]:(x<width&&y<height&&(GetPixel(mask_dc,x,y)==RGB(0,0,0)||p[4*i]||p[4*i+1]||p[4*i+2])?255:0);}
+  SelectObject(mask_dc,old_mask);DeleteDC(mask_dc);SelectObject(dc,old);DeleteDC(dc);DeleteObject(color);if(icon.hbmColor)DeleteObject(icon.hbmColor);DeleteObject(icon.hbmMask);
+  napi_create_buffer_copy_ptr(env,16+size*size*4,output,NULL,&result);return result;
+}
+
 static napi_value cursor_active(napi_env env, napi_callback_info info) {
   if (!dry_run) return fail(env, "Cursor readback is test-only.");
   napi_value result;
@@ -176,6 +207,11 @@ static napi_value cursor_policy(napi_env env, napi_callback_info info) {
   napi_value result;
   napi_get_boolean_ptr(env, crosshair && cursor_eligible, &result);
   return result;
+}
+static napi_value cursor_scope_test(napi_env env,napi_callback_info info){
+  if(!dry_run)return fail(env,"Cursor scope readback is test-only.");
+  HWND root=GetAncestor(game,GA_ROOT);unsigned char cases[5]={cursor_scope(root,game),cursor_scope(root,root),cursor_scope(NULL,game),cursor_scope(game,game),root!=game};napi_value result;
+  napi_create_buffer_copy_ptr(env,5,cases,NULL,&result);return result;
 }
 
 // Resolve the small stable Node-API surface from the running Electron executable;
@@ -192,9 +228,9 @@ __declspec(dllexport) napi_value napi_register_module_v1(napi_env env, napi_valu
       napi_create_function_ptr(env, "attach", NAPI_AUTO_LENGTH, attach, NULL, &function) != napi_ok ||
       napi_set_named_property_ptr(env, exports, "attach", function) != napi_ok)
     return fail(env, "Could not initialize game input boundary.");
-  const char *names[] = {"crosshair", "cursorType", "cursorPixels", "cursorActive", "cursorPolicy"};
-  napi_callback methods[] = {configure_cursor, cursor_type, cursor_pixels, cursor_active, cursor_policy};
-  for (int i = 0; i < 5; i++) {
+  const char *names[] = {"crosshair", "cursorType", "cursorPixels", "cursorActive", "cursorPolicy", "originalPixels", "cursorScope"};
+  napi_callback methods[] = {configure_cursor, cursor_type, cursor_pixels, cursor_active, cursor_policy, original_pixels, cursor_scope_test};
+  for (int i = 0; i < 7; i++) {
     if (napi_create_function_ptr(env, names[i], NAPI_AUTO_LENGTH, methods[i], NULL, &function) != napi_ok ||
         napi_set_named_property_ptr(env, exports, names[i], function) != napi_ok)
       return fail(env, "Could not initialize game cursor.");

@@ -38,15 +38,16 @@ async function save(){
   return pending;
 }
 function crosshairPreview(s){
-  const image=window.blitzCrosshair.pixels(s),canvas=$('crosshair-preview'),ctx=canvas.getContext('2d');
+  let image=window.blitzCrosshair.pixels(s);const canvas=$('crosshair-preview'),ctx=canvas.getContext('2d');
+  if(s.style==='original'&&state.originalPointer){const p=state.originalPointer;try{const bytes=Uint8Array.from(atob(p.rgba),c=>c.charCodeAt(0));if(p.width<=145&&bytes.length===p.width*p.width*4)image={width:p.width,rgba:window.blitzCrosshair.recolor(bytes,s.color)};}catch{}}
   ctx.clearRect(0,0,canvas.width,canvas.height);
   const data=new ImageData(new Uint8ClampedArray(image.rgba),image.width,image.width);
   ctx.putImageData(data,(canvas.width-image.width)/2,(canvas.height-image.width)/2);
-  if(s.style==='default'){
+  if(s.style==='default'||s.style==='original'&&!state.originalPointer){
     ctx.beginPath();ctx.moveTo(66,59);ctx.lineTo(66,82);ctx.lineTo(72,76);ctx.lineTo(78,85);ctx.lineTo(82,82);ctx.lineTo(76,73);ctx.lineTo(85,73);ctx.closePath();
-    ctx.fillStyle='#f0e9d1';ctx.strokeStyle='#121820';ctx.lineWidth=2;ctx.fill();ctx.stroke();
+    ctx.fillStyle=s.style==='original'?s.color:'#f0e9d1';ctx.strokeStyle='#121820';ctx.lineWidth=2;ctx.fill();ctx.stroke();
   }
-  $('crosshair-preview-label').textContent=s.style==='default'?'Default game pointer':`${s.style[0].toUpperCase()+s.style.slice(1)} · ${s.size} px`;
+  $('crosshair-preview-label').textContent=s.style==='default'?'Default game pointer':s.style==='original'?'Original shape and hotspot · recolored':`${s.style[0].toUpperCase()+s.style.slice(1)} · ${s.size} px`;
 }
 function render(next) {
   state = next;
@@ -77,6 +78,7 @@ function render(next) {
     $('crosshair-style').value=s.crosshair.style;$('crosshair-color').value=s.crosshair.color;
     $('crosshair-size').value=s.crosshair.size;$('crosshair-outline').checked=s.crosshair.outline;
     for(const id of ['crosshair-color','crosshair-size','crosshair-outline'])$(id).disabled=s.crosshair.style==='default';
+    if(s.crosshair.style==='original')$('crosshair-size').disabled=$('crosshair-outline').disabled=true;
     crosshairPreview(s.crosshair);
     if(entering){feedback('Changes apply when you press Save.');selectSection(selectedSection);$('dismiss').focus();}
   }
@@ -106,7 +108,13 @@ function render(next) {
   $('compatibility').textContent=update.phase==='ready'?'Some enhancements need a compatibility update. A verified launcher update is ready; open Updates to install it.':'Some enhancements are unavailable for this game version. '+(s.autoUpdates?'The launcher checks for a compatible update automatically.':'Open Updates to check for a compatible launcher.')+' Your game keeps running.';
   $('update-status').textContent=update.phase==='ready'?`v${update.version} downloaded and verified. ${s.autoUpdates?'Installs when you close the launcher.':'Use Install & restart when convenient.'}`:update.phase==='downloading'?`Downloading v${update.version} · ${update.percent}%`:update.phase==='verifying'?`Verifying v${update.version} · ${update.percent}%`:update.phase==='error'?update.error:({current:'Up to date.',checking:'Checking GitHub…',development:'Updates are disabled in development builds.'}[update.phase]||(s.autoUpdates?'Checks GitHub automatically.':'Automatic updates are off.'));
   if(update.phase==='unavailable')$('update-status').textContent=update.error;
+  if(update.phase==='rollback')$('update-status').textContent=`Verifying the saved previous launcher · ${update.percent||0}%`;
   $('install-update').hidden=update.phase!=='ready';$('check-updates').disabled=['development','unavailable','checking','downloading','verifying'].includes(update.phase);
+  const rollbackBusy=['checking','downloading','verifying','rollback','rollback-ready'].includes(update.phase);
+  if(rollbackBusy)$('check-updates').disabled=true;
+  $('rollback-status').textContent=update.rollbackError|| (update.previousVersion?`Saved previous launcher: v${update.previousVersion}. Older versions may not support the current game.`:'No verified previous launcher is available in this installation.');
+  $('restore-previous').disabled=!update.previousVersion||rollbackBusy||!!Object.keys(edits).length||saving;
+  $('restore-previous').textContent=update.previousVersion?`Restore v${update.previousVersion} & restart`:'Restore previous version & restart';
   $('reconnect').textContent = state.pendingURL ? 'Apply URL & reconnect' : 'Reconnect game';
 }
 $('settings').onclick = () => call('settings'); $('fullscreen').onclick = () => call('fullscreen');
@@ -166,6 +174,7 @@ $('centered-hotbar').onchange=()=>edit({centeredHotbar:$('centered-hotbar').chec
 $('centered-camera').onchange=()=>edit({centeredCamera:$('centered-camera').checked});
 $('auto-updates').onchange=()=>edit({autoUpdates:$('auto-updates').checked});
 $('check-updates').onclick=()=>call('check-updates');$('install-update').onclick=()=>call('install-update');
+$('restore-previous').onclick=()=>call('restore-previous');
 $('hardware-acceleration').onchange = () => edit({ hardwareAcceleration: $('hardware-acceleration').checked });
 $('keep-awake').onchange = () => edit({ keepGameAwake: $('keep-awake').checked });
 for(const id of ['crosshair-style','crosshair-color','crosshair-size','crosshair-outline'])$(id).oninput=()=>edit({crosshair:{style:$('crosshair-style').value,color:$('crosshair-color').value,size:Number($('crosshair-size').value),outline:$('crosshair-outline').checked}});

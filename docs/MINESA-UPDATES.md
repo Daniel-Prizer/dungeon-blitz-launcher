@@ -1,5 +1,13 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 17 compatibility (0.25.0)
+
+Fresh official downloads serve `swf-e6c72c0b1dd5`, SHA-256 `00f70827e747ad24fd3ca29e1de428cfd8b26e23f461c14388c98f3246946a8b`, 942,611 bytes. Complete semantic interfaces and original pool prefixes remain unchanged; two multinames are appended. Nine main methods change, including `SuperAnimData.method_200`, an edited presentation dependency. The preceding recipes correctly reject the changed full hook envelope.
+
+Review retains native child-cleanup loops, reusable animation canvases and allocation/disposal safeguards in SuperAnimData, Game, class_23 and MathUtil, plus the native day/night and entity changes. `prepare-crop-contract.cjs` pins the full source/method/code hashes and rebuilds only the existing twelve-byte inverse crop expression at code offset 2415. That expression and its registers are identical; the added native cleanup remains outside the replaced range. The fourth complete recipe changes only this method's delta and its two verified helper relocation operands. Every byte outside that expression in the revised hook, every unrelated native method/tag, and all previous/singleplayer recipes remain intact. No runtime inference or relaxed method guard is introduced.
+
+All eleven relevant UI/Home/JC/BT/map assets match the October 16 review, including the already-reviewed seasonal lock decorations. Original-pointer recoloring and previous-version restore are launcher features independent of game hook compatibility.
+
 ## October 16 compatibility (0.24.2)
 
 Both official origins serve `swf-83d18dee0daa`, SHA-256 `11e05b43317eb7028cad591a18a00b571a4a3a8d1ea9c48adf2da3c1481b435b`, 942,622 bytes. All 31 launcher hook envelopes, six dependency envelopes, original pool prefixes, stage and root bindings remain unchanged. The complete semantic interface changes only at Game's private `const_950`, from 200 to 20, used by native `method_527`. Fifteen native bodies change and eight upstream ABC tags are added (seasonal lock, boss prewarming/voice, coffer keys, pet synchronization/egg handling, animation release and rankings). These remain intact; they are game changes, not launcher replacements.
