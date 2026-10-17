@@ -1,4 +1,12 @@
-# Current validation: 0.26.0 (minor)
+# Current validation: 0.26.1 (patch)
+
+Both official origins were fetched without authentication and serve the reviewed October 17 recovery client, `f4e87370…`. Earlier recipes reject its three changed presentation hooks. The fifth complete contract preserves native allocation catches, terrain healing, entity/removal methods, Discord links and every other fetched method/tag outside existing edits. Unit tests verify original-width geometry expressions, exact catch relocation, handler code, all unrelated methods, tamper rejection and unchanged singleplayer adaptation. All 58 unit groups pass without skips.
+
+The actual native UI/input/audio/Settings/fullscreen/Rankings/crosshair/Ö regression passes. Native camera/map/HUD tests pass 121 samples; transition/terrain/menu tests pass 134. A disposed owned bitmap exercises the new final-canvas catch at 1080p and 1440p; replacement succeeds with no clock change. Twelve focused samples cover live map-background redraw, fullscreen/window restoration at all rendering densities and the same disposed-canvas recovery with widescreen active, proving the helper yields to native recovery. These tests use no game account or saved authentication. Owned original-art fullscreen and fresh public-title captures were visually inspected, including new R branding and Discord Join. Actual multiplayer reward validation and private server changes remain untested.
+
+Package source/runtime/fuse checks pass. All 164 physical payload files are covered by the pinned signed manifest. Packaged Electron updater tests pass physical-ASAR verification, progress, tamper rejection, cleanup and signed rollback staging. The disposable installer passes fresh/repeat installation, busy-process refusal without termination, traversal/junction rejection, newer-build retention, complete signed rollback and managed uninstall. Canonical previous artifacts are preserved before refresh; running installed games and all agent-owned copies remain untouched.
+
+# Previous validation: 0.26.0 (minor)
 
 Ö autorun is a local typed-character shortcut. Native tests use the actual key manager and a typed, synthetic Entity facing holder, with account/player initialization omitted only in the unshipped fixture. Both directions, native movement-command aliases and matching held-key release pass. Manual direction input and Settings cancel; login, text input, key capture, an open map and disabled autorun do nothing. Pure policy tests cover Ö/ö, repeat, chords, opt-out and pending work cancellation on blur. No global key hook, OS input, account or player session is used. Existing Shift mounting, original bindings, Escape and normal typing retain the full native regression.
 

@@ -1,5 +1,15 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 17 graphics recovery (0.26.1)
+
+Both public origins serve `swf-2b02246b688c`, SHA-256 `f4e87370366d35197daf8c5df83e0c3506ba463153df64a3c69772b78601df8a`, 940,266 bytes. Ten main method bodies change; complete semantic interfaces remain equal. The prior contracts reject three changed presentation hooks. `client-recovery-oct17.json` pins the complete source and all three body/code hashes. `prepare-recovery-contract.cjs` and its build-only Java helper replay only the preceding compiled layout, rounding and frame-preparation expressions into a fifth independent complete contract. All prior recipes and the singleplayer contract remain intact.
+
+Raw instructions establish recovery paths that the decompiler displays incorrectly: Main.method_561 catches allocation errors over 327–367 and jumps back to normal cleanup; Game.method_1946 catches a disposed/missing canvas read, reallocates at current camera/raster dimensions and retries, with its own fallback catch. class_23.method_1753 retries undersized terrain bitmaps on a five-second schedule. Preserve all handlers, locals, branches and native cleanup. Restoring the stage operands before centering relocates Main's catch target from 595 to 601 and retains its jump back to 367. The terrain rounding expression moves from 131 to 321. PrepareFrame defers invalid bitmap access to the native renderer, allowing its new catch to execute.
+
+Other upstream changes remain byte-identical: Entity.method_1826 avoids the ThunderGolem appearance update for a dead entity; LinkUpdater.method_1408 marks an entity dead and records its defeat tick for removal reason 1. Five class_48 link handlers now target Minesa's Discord channels/invite. These observations do not prove which private server changes accompanied the deployment or that duplicate loot awards are prevented server-side. The launcher neither removes these changes nor edits dungeon rejoin, rewards, packets or server state.
+
+Ten relevant UI/level/map assets are unchanged. UI_0 changes to SHA-256 `196750e8a9457892c6ebbea4054709ac1a693bbd5da1e49519fb4b104fbd71a9`: the login/loading branding gains the R logo, and the old Like artwork becomes Discord Join. The original a_EdgeHud artwork is unchanged. Owned exported login/loading/link sprites and actual runtime captures are used for visual review.
+
 ## Launcher input and map presentation (0.26.0)
 
 The launcher-owned BlitzInput helper adds renderer-local Ö autorun. It reads `clientEnt.bLeftFacing` and the current normal-context left/right command bindings, dispatches the original stage key-down, and pairs the release on cancellation. It never writes entity movement, keymaps, physics, clocks or packets. Native key/context handlers remain byte-identical. Unsupported clients keep the feature inactive. Preserve explicit settings drafts and the normal typing, mount, modifier and focus behavior.

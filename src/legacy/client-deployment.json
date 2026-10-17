@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-17T11:37:27.775Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-80a212d8f997",
-  "inputHash": "bd8e2509b0291ce73fb0d3ee6a3feb00a3cc1b72d72779f12dcf8059cd0e0006",
-  "note": "Existing October 17 recipe remains valid. Only unedited DayNightManager.method_1268 changes; its new native method_193 call is preserved byte-identically. Rankings navigation is fixed in launcher URL routing without game edits."
+  "checkedAt": "2026-10-17T17:30:29.392Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-2b02246b688c",
+  "inputHash": "f4e87370366d35197daf8c5df83e0c3506ba463153df64a3c69772b78601df8a",
+  "note": "Reviewed recovery deployment: preserve new graphics exception handlers, cache healing, defeated-entity removal state and Discord links. Separate complete contract replays only existing presentation ranges."
 }

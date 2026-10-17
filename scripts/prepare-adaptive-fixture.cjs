@@ -5,7 +5,7 @@ const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 (async()=>{
  fs.mkdirSync(dir,{recursive:true});if(!fs.existsSync(source)){const response=await fetch(deployment.url,{signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error('Game HTTP '+response.status);const bytes=Buffer.from(await response.arrayBuffer());if(hash(bytes)!==deployment.inputHash)throw Error('Live deployment changed; review test provenance');fs.writeFileSync(source,bytes);}
  const input=fs.readFileSync(source);if(hash(input)!==deployment.inputHash)throw Error('Fixture provenance mismatch');
- const recipes=['adaptive-contract.json','adaptive-contract-oct15.json','adaptive-contract-oct16.json','adaptive-contract-oct17.json'].map(name=>JSON.parse(fs.readFileSync(path.join(root,'runtime/game/resources',name))));
+ const recipes=['adaptive-contract.json','adaptive-contract-oct15.json','adaptive-contract-oct16.json','adaptive-contract-oct17.json','adaptive-contract-recovery-oct17.json'].map(name=>JSON.parse(fs.readFileSync(path.join(root,'runtime/game/resources',name))));
  const output=require('../src/legacy/client-adapter.cjs').adaptClient(input,deployment.url,{multiplayer:recipes}).patched;if(!output)throw Error('Current deployment does not match reviewed hook contracts');
  const stamp=hash(Buffer.concat([output,fs.readFileSync(path.join(root,'test/audio-fixture/DungeonBlitz.as')),fs.readFileSync(path.join(root,'test/fps-fixture/DungeonBlitz.as'))])),stampFile=path.join(dir,'build-stamp');
  if(fs.existsSync(stampFile)&&fs.readFileSync(stampFile,'utf8')===stamp&&['audio.swf','fixture.swf','fps-fixture.swf'].every(file=>fs.existsSync(path.join(dir,file))))return;

@@ -56,8 +56,10 @@ public class TransitionFixtureBuilder {
     MethodBody cache=abc.findBodyByClassAndName("class_23","method_1753");
     byte[] original=cache.getCodeBytes().clone();
     byte[] guard=HexFormat.of().parseHex("62082a1203000029d27611040000");
-    System.arraycopy(guard,0,original,0x83,guard.length);
-    if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals("6eb2b5564dc4cfb3ad9afa62e7ef2d264f806416c013229edbcde107067f8a4c"))throw new IllegalStateException("Cache baseline reconstruction mismatch");
+    int cacheOffset=original.length==770?321:0x83;
+    System.arraycopy(guard,0,original,cacheOffset,guard.length);
+    String expectedCache=original.length==770?"e4ab29bedfa9af93e3256295f50b38698d3dba57eb7a510ac13960e79413ee6c":"6eb2b5564dc4cfb3ad9afa62e7ef2d264f806416c013229edbcde107067f8a4c";
+    if(!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals(expectedCache))throw new IllegalStateException("Cache baseline reconstruction mismatch");
     cache.setCodeBytes(original);cache.getCode().checkValidOffsets(cache);cache.setCodeBytes(original);
    }
    if(args.length>2&&args[2].equals("reuse-baseline")){

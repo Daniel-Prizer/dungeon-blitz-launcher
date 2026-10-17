@@ -510,6 +510,9 @@ package {
    // the map. Refresh only its presentation cache; simulation is untouched.
    if(game.gameState==Game.STATE_PLAY&&game.screenMap&&game.screenMap.mbVisible)game.var_1778=false;
    if(!wideRequested)return;
+   // A disposed native canvas is repaired by the game's final renderer.
+   // Do not touch its pixels before that renderer reaches its recovery catch.
+   try{if(main.var_147.bitmapData)main.var_147.bitmapData.width;}catch(invalidCanvas:Error){return;}
    UpdateWidescreen();
    if(game.gameState==Game.STATE_PLAY&&(!(game.screenMap.mbVisible||game.screenForge.mbVisible)||!game.var_1778)&&main.var_147.bitmapData){
     // Transparent terrain/parallax edges must never leave scenery from an

@@ -1,0 +1,21 @@
+{
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-2b02246b688c",
+  "inputHash": "f4e87370366d35197daf8c5df83e0c3506ba463153df64a3c69772b78601df8a",
+  "methods": [
+    {
+      "name": "Main.method_561",
+      "bodyHash": "46cb116db8509755d218315651227c05cb07c4b8e6c5cc42a3472a40d5f3f136",
+      "codeHash": "9c4e65e8f28a4ce6258b97e7d798416967282913fead8354fe2c82300a337f0a"
+    },
+    {
+      "name": "class_23.method_1753",
+      "bodyHash": "cd7654174033cbc078edd3cc36e2caa93fa55b6919921555dec6e0c0d4841748",
+      "codeHash": "e4ab29bedfa9af93e3256295f50b38698d3dba57eb7a510ac13960e79413ee6c"
+    },
+    {
+      "name": "Game.method_1946",
+      "bodyHash": "58707d881dda53ac6ab706ba330679b3a3869d9514f40870ad5fce68d48c07ba",
+      "codeHash": "33b9d40e99af5371046d967a551f12a6c314673fac84db9dc7fbff523f978d6b"
+    }
+  ]
+}
