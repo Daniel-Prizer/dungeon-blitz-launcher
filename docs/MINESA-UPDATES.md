@@ -1,5 +1,11 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 17 follow-up (0.25.1)
+
+Public deployment `swf-80a212d8f997`, SHA-256 `bd8e2509b0291ce73fb0d3ee6a3feb00a3cc1b72d72779f12dcf8059cd0e0006`, is 942,619 bytes. The complete main interface and every original pool entry are unchanged. Only unedited `DayNightManager.method_1268` changes: a two-pop sequence becomes `pushtrue; callpropvoid method_193, 2`, with corresponding branch relocations and no exception entries. The existing guarded contract applies and retains this native method byte-identically. No new game recipe or weaker guards are needed.
+
+The Rankings reload was launcher URL classification: same-game and historical dungeonblitz.com links were all reloads. `/rankings` paths now hand off to the default browser, resolving official aliases to the working HTTPS Minesa rankings page and retaining level/category query parameters. Local/custom server rankings keep their URL. Genuine game reloads and activation checks are unchanged. No dungeon exit, session, rejoin or gameplay logic is edited.
+
 ## October 17 compatibility (0.25.0)
 
 Fresh official downloads serve `swf-e6c72c0b1dd5`, SHA-256 `00f70827e747ad24fd3ca29e1de428cfd8b26e23f461c14388c98f3246946a8b`, 942,611 bytes. Complete semantic interfaces and original pool prefixes remain unchanged; two multinames are appended. Nine main methods change, including `SuperAnimData.method_200`, an edited presentation dependency. The preceding recipes correctly reject the changed full hook envelope.

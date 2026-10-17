@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-17T00:05:01.963Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-e6c72c0b1dd5",
-  "inputHash": "00f70827e747ad24fd3ca29e1de428cfd8b26e23f461c14388c98f3246946a8b",
-  "note": "October 17 retains native rendering cleanup and recovery. Separate crop recipe reapplies only the existing twelve-byte inverse-matrix presentation fix. Previous recipes unchanged."
+  "checkedAt": "2026-10-17T11:37:27.775Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-80a212d8f997",
+  "inputHash": "bd8e2509b0291ce73fb0d3ee6a3feb00a3cc1b72d72779f12dcf8059cd0e0006",
+  "note": "Existing October 17 recipe remains valid. Only unedited DayNightManager.method_1268 changes; its new native method_193 call is preserved byte-identically. Rankings navigation is fixed in launcher URL routing without game edits."
 }

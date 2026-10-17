@@ -17,7 +17,9 @@ package {
   private function onClick(event:MouseEvent):void {
    if(stage.mouseY>100)return;
    if(stage.mouseX<180)navigateToURL(new URLRequest('https://www.paypal.com/donate/?from=flash'),'_blank');
-   else navigateToURL(new URLRequest(String(loaderInfo.parameters.gameURL)+'/other'),'_blank');
+   else if(stage.mouseX<360)navigateToURL(new URLRequest(String(loaderInfo.parameters.gameURL)+'/other'),'_blank');
+   else if(stage.mouseX<540)navigateToURL(new URLRequest('http://www.dungeonblitz.com/rankings/?level=Temple%20of%20Umbra&mode=heroic'),'_blank');
+   else navigateToURL(new URLRequest('https://dungeonblitzr.theminesa.studio/rankings/'),'_blank');
   }
  }
 }

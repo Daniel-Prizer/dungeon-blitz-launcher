@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.25.0** (minor: original-pointer recoloring and signed previous-version restore).
+Version **0.25.1** (patch: Rankings opens in your default browser without reloading the game).
 
 Settings changes stay pending until you press **Save**. Switching categories keeps the draft. **Discard**, closing Settings, **Back to game** and Escape discard unsaved changes. A failed save leaves your edits available to correct. Saving applies game/display/audio options without reconnecting; a saved server address needs an explicit reconnect, and graphics acceleration needs a launcher restart.
 
