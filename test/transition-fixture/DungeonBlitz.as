@@ -41,6 +41,7 @@ package {
   private var cacheIdentity:Object;
   private var cacheRebuilds:uint=0;
   private var worldFrames:uint=0;
+  private var liveMap:Boolean=false;
   private var pixelErrors:uint=0;
   private var worldError:String="";
   private var assets:Array=[];
@@ -201,6 +202,10 @@ package {
    return true;
   }
   private function world(value:Number,scene:Boolean,oldCoverage:Boolean=false,reuse:Boolean=false,y:Number=250,ties:Boolean=false,art:String="a_Room_Main"):Boolean {
+   if(art=="a_Room_LiveMapProbe"){
+    world(0,false,false,false,250,false,"a_Room_Main");liveMap=true;game.screenMap.mbVisible=true;game.var_1778=true;return true;
+   }
+   liveMap=false;
    if(art=="a_Room_RecoveryProbe"){
     worldEnabled=false;
     if(main.var_374){game.mTimeThisTick=main.var_903+1;game.method_1947();}
@@ -371,6 +376,7 @@ package {
     // correctly causes the upstream renderer to abort stale work.
     game.mTimeThisTick=tiedTime?Math.floor(getTimer()/1000)*1000:getTimer();game.levelLayer.x=-pan;game.levelLayer.y=-vertical;
     game.var_107.method_1753();if(cacheIdentity!=game.var_107.var_986){++cacheRebuilds;cacheIdentity=game.var_107.var_986;}
+    if(liveMap){pan+=3;game.levelLayer.x=-pan;game.var_107.method_1753();}
     main.var_147.bitmapData.fillRect(main.var_147.bitmapData.rect,0x607065);game.method_1946();++worldFrames;
     if(!sceneEnabled){
      for(var x:int=2;x<main.var_147.bitmapData.width-2;x++){

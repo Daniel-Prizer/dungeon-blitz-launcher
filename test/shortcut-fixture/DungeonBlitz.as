@@ -44,7 +44,19 @@ package {
    if(event.type==KeyboardEvent.KEY_DOWN&&event.keyCode==27)panel=false;
   }
   private function control(mode:String):Boolean {
+   try {
+   BlitzInput.StopAutorun();
    events=[];stage.focus=null;game.gameState=Game.STATE_PLAY;game.mKeybindManager.mbStatePickKey=false;
+   game.mKeybindManager=new class_108(40);game.method_1880();
+   game.clientEnt=null;game.screenMap=null;game.screenForge=null;
+   if(mode=="left"||mode.indexOf("run-")==0){
+    game.level=new Level(game);game.var_89=new Sprite();game.var_245=new Sprite();
+    game.clientEnt=new Entity(game,"",null,0,0,0,0,0,0,0,null,null,"",null,null,null);game.clientEnt.bLeftFacing=mode=="left";
+    game.screenMap=new class_119(game);game.screenForge=new class_75(game);
+    game.CONTEXT_NORMAL=game.mKeybindManager.method_794();game.mKeybindManager.SetContext(game.CONTEXT_NORMAL);
+    game.mKeybindManager.method_32(Game.const_153,37);
+    if(mode!="run-unbound")game.mKeybindManager.method_32(Game.const_151,mode=="run-rebind"?68:39);
+   }
    game.mKeybindManager.method_32(Game.const_274,56);
    if(mode=="login")game.gameState="Login";
    if(mode=="typing"){field.text="";stage.focus=field;}
@@ -52,7 +64,9 @@ package {
    if(mode=="rebind")game.mKeybindManager.method_32(Game.const_274,81);
    if(mode=="unbound")game.mKeybindManager.method_32(Game.const_274,255);
    if(mode=="menu")panel=true;
+   if(mode=="run-map")game.screenMap.mbVisible=true;
    return true;
+   }catch(error:Error){fixtureError=mode+": "+error.toString()+" "+error.getStackTrace();return false;}
   }
   private function snapshot():Object {return {phase:phase,error:fixtureError,events:events,key:phase=="ready"?BlitzInput.MountKey(game):0,mountCommand:Game.const_274,panel:panel,typing:stage.focus==field,text:field?field.text:"",gameState:game?game.gameState:""};}
  }

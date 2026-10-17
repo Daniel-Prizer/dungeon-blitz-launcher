@@ -35,6 +35,23 @@ module.exports=(async()=>{
    records.push({name,...record});return record;
   }
 
+  if(process.env.BLITZ_PRIVATE_TEST==='map-fullscreen'){
+   await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,experimentalWidescreen:true});await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await cmd({type:'test-transition-control',play:true,transition:false});await wait(500);
+  await cmd({type:'test-world-control',pan:0,scene:false,oldCoverage:false,art:'a_Room_LiveMapProbe'});await wait(300);
+  const liveMap=await sample('map-live-background',true);assert.equal(liveMap.renderProbe.fixture.worldError,'');assert.equal(liveMap.renderProbe.fixture.pixelErrors,0,'Native world canvas keeps refreshing behind the open map');
+  const mapFrames=liveMap.renderProbe.fixture.worldFrames;await wait(300);assert((await sample('map-background-continues')).renderProbe.fixture.worldFrames>mapFrames);
+  await call('fullscreen');await wait(450);assert.equal((await sample('map-background-fullscreen',true)).renderProbe.fixture.pixelErrors,0,'Fullscreen rebuilds the map background at its new canvas size');
+  await call('exit-fullscreen');await wait(450);assert.equal((await sample('map-background-window-restored')).renderProbe.fixture.pixelErrors,0);
+  await cmd({type:'test-world-control',pan:500,scene:false,oldCoverage:false});await wait(250);
+  for(const density of [1,.75,.5]){
+   await call('save-settings',{renderResolution:density});await call('fullscreen');await wait(450);
+   const full=await sample('terrain-fullscreen-'+density,true);assert.equal(full.renderProbe.fixture.worldError,'');assert.equal(full.renderProbe.fixture.pixelErrors,0,'Fullscreen retains actual terrain/cache alignment at each density');
+   await call('exit-fullscreen');await wait(450);assert.equal((await sample('terrain-window-restored-'+density)).renderProbe.fixture.pixelErrors,0,'Returning from fullscreen preserves texture coordinates');
+  }
+  await call('save-settings',{renderResolution:1});await wait(200);
+   fs.writeFileSync(path.join(out,'map-fullscreen-results.json'),JSON.stringify({passed:true,version:require('../package.json').version,records},null,2));console.log('PASS live map background and fullscreen terrain alignment: '+records.length+' samples');return;
+  }
+
   for(mode of ['camera-baseline','fixed']){
    await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,showFPS:false,experimentalWidescreen:true,centeredHotbar:false,centeredCamera:false});await call('restart-game');
    await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await wait(900);await cmd({type:'test-transition-control',play:true,transition:false});await wait(700);

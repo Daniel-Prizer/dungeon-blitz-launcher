@@ -12,6 +12,7 @@ const adaptiveContract=[];for(const name of ['adaptive-contract.json','adaptive-
 let singleplayerContract;try{singleplayerContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract-singleplayer.json'),'utf8'));}catch(_){}
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
+const {AutorunShortcut}=require('./autorun-shortcut.cjs');
 const crosshairArtwork=require('./crosshair.js');
 let gameWindow,crosshair=crosshairArtwork.valid(),appliedCrosshair='',cursorType='default',originalPointer=null;
 function readOriginalPointer(type,image,hotspot){
@@ -65,6 +66,10 @@ const mountShortcut=new MountShortcut(async()=>{
  return win.webContents.executeJavaScript("(() => {const e=document.getElementById('DungeonBlitz');return document.hasFocus()&&document.activeElement===e&&typeof e?.BlitzMount==='function'&&e.BlitzMount();})()").catch(()=>false);
 });
 let widescreen=false,appliedWidescreen=null;
+const autorunShortcut=new AutorunShortcut(async()=>{
+ if(!win||win.isDestroyed()||!win.isVisible()||!win.isFocused()||!clientIntegration||!audioIntegration)return false;
+ return win.webContents.executeJavaScript("(() => {const e=document.getElementById('DungeonBlitz');return document.hasFocus()&&document.activeElement===e&&typeof e?.BlitzAutorun==='function'&&e.BlitzAutorun();})()").catch(()=>false);
+},()=>!win||win.isDestroyed()?false:win.webContents.executeJavaScript("(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzStopAutorun==='function'&&e.BlitzStopAutorun();})()").catch(()=>false));
 let centeredHotbar=false,appliedCenteredHotbar=null;
 let centeredCamera=false,appliedCenteredCamera=null;
 async function applyCenteredCamera(){
@@ -289,7 +294,7 @@ app.whenReady().then(async () => {
   wc.on('will-redirect', (event,url) => { if (!gameURL(url)) event.preventDefault(); });
   wc.on('new-window', (event,url) => { event.preventDefault(); void routeLink(url); });
   if (wc.setWindowOpenHandler) wc.setWindowOpenHandler(({url}) => { void routeLink(url); return { action: 'deny' }; });
-  wc.on('did-start-loading', () => {mountShortcut.reset();clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;appliedWidescreen=null;appliedCenteredHotbar=null;appliedCenteredCamera=null;appliedMountShortcut=null;emit({ type: 'loading', value: true });});
+  wc.on('did-start-loading', () => {mountShortcut.reset();autorunShortcut.reset();clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;appliedWidescreen=null;appliedCenteredHotbar=null;appliedCenteredCamera=null;appliedMountShortcut=null;emit({ type: 'loading', value: true });});
   wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
   wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
   wc.on('dom-ready', applyZoom);
@@ -303,6 +308,7 @@ app.whenReady().then(async () => {
   wc.on('enter-html-full-screen', () => { win.setFullScreen(false); emit({ type: 'fullscreen' }); });
   wc.on('before-input-event', (event, input) => {
     mountShortcut.input(input);
+    autorunShortcut.input(input);
     const edit=editingCommand(input);
     if(edit){
       event.preventDefault();
@@ -315,6 +321,7 @@ app.whenReady().then(async () => {
     if ((input.control || input.meta) && input.key === ',') { event.preventDefault(); emit({type:'settings'}); }
   });
   win.on('blur',()=>mountShortcut.reset());
+  win.on('blur',()=>autorunShortcut.reset());
   const hwnd = win.getNativeWindowHandle();
   emit({ type: 'ready', hwnd: hwnd.length === 8 ? hwnd.readBigUInt64LE().toString() : String(hwnd.readUInt32LE()), electron: process.versions.electron, chromium: process.versions.chrome });
   wc.loadURL(LIVE).catch(() => {});
@@ -332,6 +339,8 @@ readMessages(pipe, async cmd => {
     if(cmd.type==='centered-hotbar'&&typeof cmd.value==='boolean'){centeredHotbar=cmd.value;await applyCenteredHotbar();}
     if(cmd.type==='centered-camera'&&typeof cmd.value==='boolean'){centeredCamera=cmd.value;await applyCenteredCamera();}
     if(cmd.type==='shift-mount'&&typeof cmd.value==='boolean'){mountShortcut.configure(cmd.value);await applyMountShortcut();}
+    if(cmd.type==='autorun'&&typeof cmd.value==='boolean')autorunShortcut.configure(cmd.value);
+    if(cmd.type==='test-autorun-key'&&process.env.BLITZ_HOST_TEST==='1'&&['keyDown','keyUp'].includes(cmd.value))autorunShortcut.input({type:cmd.value,key:'ö'});
     if(cmd.type==='crosshair'&&cmd.value){crosshair=crosshairArtwork.valid(cmd.value);applyCrosshair();}
     if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
     if (['viewport','test-viewport'].includes(cmd.type) && Number.isInteger(cmd.width) && Number.isInteger(cmd.height)) {
@@ -347,7 +356,7 @@ readMessages(pipe, async cmd => {
       const exists=await win.webContents.executeJavaScript("typeof document.getElementById('DungeonBlitz')?.BlitzInputFixtureControl==='function'").catch(()=>false);
       if(exists){clientIntegration=true;audioIntegration=true;emit({type:'client-integration',value:true});emit({type:'audio-integration',value:true});}
     }
-    if(cmd.type==='test-shortcut-control'&&process.env.BLITZ_HOST_TEST==='1'&&['play','login','typing','capture','rebind','unbound','menu'].includes(cmd.value))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzInputFixtureControl(${JSON.stringify(cmd.value)})`);
+    if(cmd.type==='test-shortcut-control'&&process.env.BLITZ_HOST_TEST==='1'&&['play','login','typing','capture','rebind','unbound','menu','left','run-play','run-rebind','run-unbound','run-map'].includes(cmd.value))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzInputFixtureControl(${JSON.stringify(cmd.value)})`);
     if(cmd.type==='test-transition-fixture'&&process.env.BLITZ_HOST_TEST==='1'){
       let exists=false;
       for(let attempt=0;attempt<150&&!exists&&win&&!win.isDestroyed();attempt++){
@@ -363,7 +372,7 @@ readMessages(pipe, async cmd => {
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();
     if (cmd.type === 'focus' && win.isVisible()) { win.focus(); win.webContents.focus(); }
-    if (cmd.type === 'visibility') { if (cmd.value) win.showInactive(); else {mountShortcut.reset();win.hide();} }
+    if (cmd.type === 'visibility') { if (cmd.value) win.showInactive(); else {mountShortcut.reset();autorunShortcut.reset();win.hide();} }
     if (cmd.type === 'clear-cache') await win.webContents.session.clearCache();
     if (cmd.type === 'clear-data') await win.webContents.session.clearStorageData();
     if (['capture','test-geometry'].includes(cmd.type) && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.path === 'string') {

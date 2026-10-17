@@ -372,6 +372,20 @@ async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();i
       await control('menu');await call('fullscreen');await wait(400);await key('Escape');assert.equal((await call('state')).fullscreen,true);assert.equal((await probe()).panel,false,'Escape must reach Flash stage to close its panel');
       await call('exit-fullscreen');await call('settings');await checkbox.uncheck();await commitUI();await until(async()=>!(await call('state')).settings.shiftMount,'Mount opt-out saves');await call('dismiss');await wait(400);await control('play');await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0);
       checks.push('Real Flash stage Esc remains fullscreen; actual reviewed key manager and new helper prove opt-in Left Shift/current mount rebind, one paired event, original key, typing/login/capture/unbound/chord guards and saved checkbox; right-side filtering separately unit-tested');
+      const run=async()=>{await command({type:'test-autorun-key',value:'keyDown'});await command({type:'test-autorun-key',value:'keyUp'});await wait(180);};
+      await call('save-settings',{autorun:true});
+      await call('dismiss');await wait(400);await clickGame(600,300);await wait(250);
+      fs.writeFileSync(path.join(out,'autorun-start-state.json'),JSON.stringify(await call('state'),null,2));
+      assert((await measure('autorun-start')).visible,'Autorun test needs a visible game');
+      for(const [mode,expected] of [['run-play',39],['left',37],['run-rebind',68]]){
+       await control(mode);await run();let events=(await probe()).events;const pressed=events.filter(e=>e.type==='keyDown'&&e.command===(mode==='left'?1:2));assert.equal(pressed.length,1,'Autorun reads facing/current movement command');const held=pressed[0].code;assert.equal(events.filter(e=>e.type==='keyUp'&&e.code===held).length,0,'Movement stays held');
+       await run();events=(await probe()).events;assert.equal(events.filter(e=>e.type==='keyUp'&&e.code===held).length,1,'Second Ö releases the exact held key');
+      }
+      for(const mode of ['login','typing','capture','run-map']){await control(mode);await run();assert.equal((await probe()).events.filter(e=>[37,39,68].includes(e.code)).length,0,mode+' must not autorun');}
+      await control('run-play');await run();await key('Left');assert((await probe()).events.some(e=>e.type==='keyUp'&&e.code===39),'Manual direction stops autorun before native movement');
+      await control('run-play');await run();await call('settings');await wait(250);assert((await probe()).events.some(e=>e.type==='keyUp'&&e.code===39),'Opening Settings releases the held movement');await call('dismiss');await wait(250);
+      await control('run-play');await call('save-settings',{autorun:false});await run();assert.equal((await probe()).events.filter(e=>e.code===39).length,0,'Disabled autorun leaves Ö alone');await call('save-settings',{autorun:true});
+      checks.push('Ö autorun uses actual facing and current native movement bindings; toggle/manual movement/Settings release paired input; typing, login, key capture, map and disabled cases do nothing; alias text/repeat/chord policy separately unit-tested');
     }
     await call('save-settings',{gameURL:LIVE,volume:100,cursorLock:false,unlockKey:'AltLeft',gameZoom:1,shiftMount:false});
     const stored=JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8'));assert.equal(stored.settings.volume,100);assert(!stored.tabs&&!stored.history);
