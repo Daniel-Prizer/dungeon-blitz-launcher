@@ -16,6 +16,7 @@ package {
   private static var labels:Dictionary=new Dictionary(true);
   private static var runningKey:int=0;
   private static var runningGame:Game;
+  private static var runningCommand:int=0;
   private static var dispatching:Boolean=false;
   public static function Attach(value:Main):void {
    main=value;
@@ -41,19 +42,30 @@ package {
   public static function Autorun():Boolean {
    if(runningKey){StopAutorun();return true;}
    var game:Game=CurrentGame();if(!game)return false;
-   var key:int=MovementKey(game,game.clientEnt.bLeftFacing?Game.const_153:Game.const_151);if(!key)return false;
-   runningKey=key;runningGame=game;dispatching=true;
+   var command:int=game.clientEnt.bLeftFacing?Game.const_153:Game.const_151;
+   var key:int=MovementKey(game,command);if(!key)return false;
+   runningKey=key;runningGame=game;runningCommand=command;dispatching=true;
    try{main.stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_DOWN,true,false,0,key));}
    finally{dispatching=false;}
    return true;
   }
   public static function StopAutorun():Boolean {
-   var key:int=runningKey;runningKey=0;runningGame=null;
+   var key:int=runningKey;runningKey=0;runningGame=null;runningCommand=0;
    if(key&&main&&main.stage){dispatching=true;try{main.stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,key));}finally{dispatching=false;}}
    return true;
   }
   private static function StopAutorunEvent(event:Event):void {StopAutorun();}
-  private static function CheckAutorun(event:Event):void {if(runningKey&&(CurrentGame()!=runningGame||MovementKey(runningGame,runningGame.clientEnt.bLeftFacing?Game.const_153:Game.const_151)!=runningKey))StopAutorun();}
+  private static function CheckAutorun(event:Event):void {
+   if(!runningKey)return;
+   if(CurrentGame()!=runningGame||MovementKey(runningGame,runningCommand)!=runningKey){StopAutorun();return;}
+   // Native key-up removes a movement command even when a synthetic key-down
+   // is holding it. Reassert only when absent, through the original handler.
+   // Facing can change while aiming; keep the direction chosen at activation.
+   if(runningGame.var_406&&runningGame.var_406.indexOf(runningCommand)<0){
+    dispatching=true;
+    try{main.stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_DOWN,true,false,0,runningKey));}finally{dispatching=false;}
+   }
+  }
   private static function ManualInput(event:KeyboardEvent):void {
    if(!runningKey||dispatching)return;
    var command:int=runningGame.mKeybindManager.method_907(event.keyCode);

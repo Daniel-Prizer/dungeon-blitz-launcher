@@ -2,6 +2,7 @@
 const {_electron:electron}=require('playwright'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {validSettings}=require('../src/policy.cjs'),review=require('../src/legacy/client-singleplayer.json');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/singleplayer-tests');fs.mkdirSync(out,{recursive:true});
+const offline=process.env.BLITZ_SINGLEPLAYER_OFFLINE==='1';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)return value;await wait(100);}throw Error('Singleplayer check timed out');}
 (async()=>{
@@ -15,9 +16,9 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   const call=(name,value)=>page.evaluate(([name,value])=>window.blitz.action(name,value),[name,value]);
   const cmd=value=>app.evaluate(({},value)=>global.__blitzTest.nativeCommand(null,value),value);
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setContentSize(1920,1112);w.showInactive();w.focus();});
-  await until(async()=>(await call('state')).clientIntegration===true);await wait(15000);
+  if(!offline){await until(async()=>(await call('state')).clientIntegration===true);await wait(15000);}
   async function sample(name){const file=path.join(out,name+'.png');if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');await cmd({type:'capture',path:file});let record;await until(()=>{try{record=JSON.parse(fs.readFileSync(file+'.json'));return fs.existsSync(file);}catch{return false;}});records.push({name,...record});return record;}
-  for(const address of ['http://localhost:8000/','http://127.0.0.1:8000/']){
+  for(const address of (offline?[]:['http://localhost:8000/','http://127.0.0.1:8000/'])){
    if((await call('state')).gameURL!==address){await call('save-settings',{gameURL:address});await call('restart-game');await until(async()=>(await call('state')).clientIntegration===true);await wait(4500);}
    const r=await sample(address.includes('127.0')?'loopback-alias-title':'localhost-title');
    assert.equal(r.testClientHash,review.inputHash);assert.equal(r.testAdapterMode,'contract');assert(r.clientIntegration&&r.audioIntegration);assert(r.renderProbe);assert(r.renderProbe.centeredCamera);assert(r.renderProbe.widescreen.requested);assert.equal(r.renderProbe.widescreen.active,false,'Title artwork remains in its native layout');assert(r.renderProbe.bitmapWidth>1000);assert(r.geometry.rect.width>1000);assert.equal((await call('state')).error,'');
@@ -45,7 +46,7 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
    for(const art of ['a_Room_GreatHall','a_Room_Library','a_Room_Armory','a_Room_Stables']){await cmd({type:'test-world-control',pan:250,vertical:250,scene:true,oldCoverage:false,art});await wait(500);const r=(await sample(art)).renderProbe;assert(r.widescreen.active);assert.equal(r.widescreen.interiorLimited,false);assert.equal(r.fixture.worldError,'');}
   }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
  }finally{if(app)await app.close();}
- fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({records,limits:'Unauthenticated local title plus offline original-controller fixtures on an inactive desktop; no saved authentication or gameplay, no OS input/cursor confinement.'},null,2));
- console.log('PASS Singleplayer local/loopback title, integration, URL presets without reconnect, original local menus/HUD/loading/interiors/cache');
+ fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({records,offline,titleVerified:!offline,limits:(offline?'Local-server title omitted: server is off. ':'')+'Unauthenticated local title plus offline original-controller fixtures on an inactive desktop; no saved authentication or gameplay, no OS input/cursor confinement.'},null,2));
+ console.log('PASS Singleplayer '+(offline?'offline controllers (local-server title omitted)':'local/loopback title')+', integration, URL presets without reconnect, original local menus/HUD/loading/interiors/cache');
  await require('./camera-map-test.cjs');
 })().catch(error=>{console.error(error);process.exitCode=1;});

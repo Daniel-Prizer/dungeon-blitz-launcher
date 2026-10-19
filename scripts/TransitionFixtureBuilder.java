@@ -81,7 +81,11 @@ public class TransitionFixtureBuilder {
       MethodBody candidate=sourceTag.getABC().findBodyByClassAndName(method[0],method[1]);if(candidate!=null)original=candidate.getCodeBytes();
      }
      String expected=singleplayer&&method[1].equals("OnRefreshScreen")?"dd6949bfaa4212bb0f1e8b089f04e5171682902b8ac180657f9d8d7aa320f630":method[2];
-     if(original==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original)).equals(expected))throw new IllegalStateException("Unreviewed camera/map baseline: "+method[1]);
+     // October 19 adds a reviewed native map recovery catch. Restore its own
+     // original width expression for the negative control, retaining its handler.
+     Set<String> accepted=new HashSet<>(Set.of(expected));
+     if(!singleplayer&&method[1].equals("OnRefreshScreen"))accepted.add("2f9d567fcc26def1547accc063b8e6aaef3f9fe71e316b4020952238c3f77fe6");
+     if(original==null||!accepted.contains(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original))))throw new IllegalStateException("Unreviewed camera/map baseline: "+method[1]);
      MethodBody body=abc.findBodyByClassAndName(method[0],method[1]);body.setCodeBytes(original);body.getCode().checkValidOffsets(body);body.setCodeBytes(original);
     }
    }
