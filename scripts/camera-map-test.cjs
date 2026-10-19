@@ -9,7 +9,7 @@ module.exports=(async()=>{
  execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
  let mode='fixed';
  const server=http.createServer((req,res)=>{
-  if(['/assets/UI_0.swf','/assets/UI_0_1.swf','/assets/UI_0_2.swf','/assets/UI_0_3.swf','/assets/UI_1.swf','/assets/UI_2.swf','/assets/UI_4.swf','/assets/UI_Library.swf','/assets/UI_Seasonal.swf','/assets/LevelsHome.swf','/assets/LevelsJC.swf','/assets/LevelsBT.swf','/assets/GlobalMap01.swf'].includes(req.url)){
+  if(['/assets/UI_0.swf','/assets/UI_0_1.swf','/assets/UI_0_2.swf','/assets/UI_0_3.swf','/assets/UI_1.swf','/assets/UI_2.swf','/assets/UI_4.swf','/assets/UI_Library.swf','/assets/UI_Seasonal.swf','/assets/LevelsHome.swf','/assets/LevelsJC.swf','/assets/LevelsBT.swf','/assets/LevelsOMM.swf','/assets/GlobalMap01.swf'].includes(req.url)){
    // The current client's controllers require current UI assets. Falling back
    // to the archived server checkout can silently test mismatched artwork.
    const assets=process.env.BLITZ_TEST_ASSET_DIR||path.join(root,'.test-tools/wide-live-assets');
@@ -35,6 +35,18 @@ module.exports=(async()=>{
    records.push({name,...record});return record;
   }
 
+  if(process.env.BLITZ_PRIVATE_TEST==='backdrop'){
+   for(mode of ['backdrop-baseline','fixed']){
+    await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',experimentalWidescreen:false});await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await cmd({type:'test-transition-control',play:true,transition:false});
+    for(const scale of [.5,1,1.5,2,3]){await cmd({type:'test-world-control',pan:scale,scene:false,oldCoverage:false,art:'a_Room_BackdropProbe'});await until(async()=>{const p=(await sample(mode+'-backdrop-'+scale)).renderProbe?.fixture.backdrop;if(p?.error)throw Error(p.error);return p?.ready;});
+     const p=records.at(-1).renderProbe.fixture.backdrop;assert.equal(p.pieces.length,2);
+     if(mode==='fixed')for(const piece of p.pieces){assert(piece.ok);assert.equal(piece.rasterWidth,Math.ceil(piece.width*piece.matrix));assert.equal(piece.rasterHeight,Math.ceil(piece.height*piece.matrix));assert(piece.rasterWidth*piece.rasterHeight<=4194304);assert(Math.abs(piece.displayScale*piece.matrix-1)<.00001);if(scale<=1)assert.equal(piece.matrix,scale,'Small rasters retain original density');}
+     else if(scale>=2)assert(p.pieces.every(v=>v.rasterWidth===128&&v.rasterHeight===128),'Original native cache reproduces missing cavern layers');
+    }
+    await sample(mode+'-cavern-art',true);await call('fullscreen');await wait(400);await cmd({type:'test-world-control',pan:2,scene:false,art:'a_Room_BackdropProbe'});await wait(300);const full=await sample(mode+'-fullscreen-cavern',true);assert.equal(full.renderProbe.fixture.backdrop.ready,true);await call('exit-fullscreen');await wait(250);
+   }
+   fs.writeFileSync(path.join(out,'backdrop-results.json'),JSON.stringify({passed:true,version:require('../package.json').version,records,limits:'Actual native class_82 with original Eye of the Tyrant parallax artwork, owned synthetic cache state; no account or gameplay.'},null,2));console.log('PASS Native cavern background budget failure reproduced; complete rasters, pixel budget, inverse display size, small-scale identity and fullscreen restoration verified');return;
+  }
   if(process.env.BLITZ_PRIVATE_TEST==='map-fullscreen'){
    await call('save-settings',{gameURL:'http://localhost:'+server.address().port+'/',gameZoom:1,cursorLock:false,renderResolution:1,experimentalWidescreen:true});await call('restart-game');await until(async()=>!(await call('state')).loading);await wait(1800);await cmd({type:'test-transition-fixture'});await until(async()=>(await call('state')).clientIntegration===true);await cmd({type:'test-transition-control',play:true,transition:false});await wait(500);
   await cmd({type:'test-world-control',pan:0,scene:false,oldCoverage:false,art:'a_Room_LiveMapProbe'});await wait(300);

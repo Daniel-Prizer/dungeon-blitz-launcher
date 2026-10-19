@@ -28,6 +28,7 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   for(const file of ['client-patch.cjs','client-layout.json','client-layout-current.json','client-layout-latest.json','client-layout-oct11.json','client-deployment.json','adaptive-patch.cjs','swf-contract.cjs','links.cjs','audio-patch.cjs','rendering.cjs','transport.cjs','mount-shortcut.cjs','BlitzInput.as','BlitzAudio.as','BlitzDisplay.as','BlitzFrameCounter.as'])assert.deepEqual(asar.extractFile(legacy,file),fs.readFileSync(path.join(root,'src/legacy',file)));
   assert.equal(JSON.parse(asar.extractFile(legacy,'package.json')).version,version);
   assert.deepEqual(asar.extractFile(legacy,'crosshair.js'),fs.readFileSync(path.join(root,'src/crosshair.js')));
+  assert.deepEqual(asar.extractFile(legacy,'autorun-binding.js'),fs.readFileSync(path.join(root,'src/autorun-binding.js')));
   assert.deepEqual(asar.extractFile(legacy,'client-transition-oct15.json'),fs.readFileSync(path.join(root,'src/legacy/client-transition-oct15.json')));
   assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-oct15.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-oct15.json')));
   assert.deepEqual(asar.extractFile(legacy,'client-interface-oct16.json'),fs.readFileSync(path.join(root,'src/legacy/client-interface-oct16.json')));
@@ -37,6 +38,8 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   assert.deepEqual(asar.extractFile(legacy,'client-recovery-oct17.json'),fs.readFileSync(path.join(root,'src/legacy/client-recovery-oct17.json')));
   assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-recovery-oct17.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-recovery-oct17.json')));
   assert.deepEqual(asar.extractFile(legacy,'client-map-recovery-oct19.json'),fs.readFileSync(path.join(root,'src/legacy/client-map-recovery-oct19.json')));
+  assert.deepEqual(asar.extractFile(legacy,'client-backdrop-oct19.json'),fs.readFileSync(path.join(root,'src/legacy/client-backdrop-oct19.json')));
+  assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-backdrop-oct19.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-backdrop-oct19.json')));
   assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-map-oct19.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-map-oct19.json')));
   for(const file of ['client-adapter.cjs','client-singleplayer.json','game-address.cjs','local-icon-patch.cjs','local-icon-fallback.json','icon-fallback/a_PowerIcon_MeteorROR.as','icon-fallback/a_PowerIcon_CrimsonShot.as'])assert.deepEqual(asar.extractFile(legacy,file),fs.readFileSync(path.join(root,'src/legacy',file)));
   assert.equal(hash(path.join(output,'resources/runtime/game/resources/adaptive-contract-singleplayer.json')),hash(path.join(root,'runtime/game/resources/adaptive-contract-singleplayer.json')));

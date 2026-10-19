@@ -51,6 +51,8 @@ package {
   private var cameraProbe:Object;
   private var mapProbe:Object;
   private var recoveryProbe:Object;
+  private var backdropProbe:Object;
+  private var backdropPreview:Bitmap;
   private var levelDomains:Object={};
   private var mapClick:String="";
   public function DungeonBlitz(){if(stage)setup();else addEventListener(Event.ADDED_TO_STAGE,setup);}
@@ -201,7 +203,23 @@ package {
    if(transition){game.mTimeThisTick=1000;game.method_1947();}
    return true;
   }
+  private function backdrop(scale:Number):Boolean {
+   worldEnabled=false;backdropProbe={requested:scale,ready:false,pieces:[]};
+   if(!levelDomains["LevelsOMM.swf"]){var loader:Loader=new Loader();levelDomains["LevelsOMM.swf"]=new ApplicationDomain(ApplicationDomain.currentDomain);loader.contentLoaderInfo.addEventListener(Event.COMPLETE,function(event:Event):void{backdrop(scale);});loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR,function(event:IOErrorEvent):void{backdropProbe.error=event.toString();});loader.load(new URLRequest("/assets/LevelsOMM.swf"),new LoaderContext(false,levelDomains["LevelsOMM.swf"]));return true;}
+   if(!levelDomains["LevelsOMM.swf"].hasDefinition("a_Scene_OMMParallax_Eye5Hard1"))return true;
+   var original:Number=main.var_2825;main.var_2825=scale;
+   try{var type:Class=levelDomains["LevelsOMM.swf"].getDefinition("a_Scene_OMMParallax_Eye5Hard1") as Class;var scene:MovieClip=new type() as MovieClip;freeze(scene);
+    var cache:class_82=new class_82(game);cache.var_745=new flash.utils.Dictionary();
+    for(var i:int=0;i<scene.numChildren;i++){var child:DisplayObject=scene.getChildAt(i);if(child.name.indexOf("am_Parallax_")!=0)continue;var bounds:Rectangle=MathUtil.method_138(child,child);if(!bounds||!bounds.width||!bounds.height)continue;
+     var piece:MagicObject=cache.method_412(child,true);var ok:Boolean=cache.method_193(piece,true);var pixels:BitmapData=piece.var_51.bitmapData;
+     if(child.name=="am_Parallax_15_15"&&pixels){if(backdropPreview){if(backdropPreview.parent)backdropPreview.parent.removeChild(backdropPreview);backdropPreview.bitmapData.dispose();}backdropPreview=new Bitmap(pixels.clone());backdropPreview.x=100;backdropPreview.y=120;backdropPreview.scaleX=backdropPreview.scaleY=Math.min(1100/pixels.width,650/pixels.height);addChild(backdropPreview);}
+     backdropProbe.pieces.push({name:child.name,width:bounds.width,height:bounds.height,ok:ok,rasterWidth:pixels?pixels.width:0,rasterHeight:pixels?pixels.height:0,matrix:piece.var_716?piece.var_716.a:0,displayScale:piece.var_51.scaleX});
+     cache.method_488(piece);
+    }backdropProbe.ready=true;
+   }catch(error:Error){backdropProbe.error=error.toString()+" "+error.getStackTrace();}finally{main.var_2825=original;}return true;
+  }
   private function world(value:Number,scene:Boolean,oldCoverage:Boolean=false,reuse:Boolean=false,y:Number=250,ties:Boolean=false,art:String="a_Room_Main"):Boolean {
+   if(art=="a_Room_BackdropProbe")return backdrop(value);
    if(art=="a_Room_LiveMapProbe"){
     world(0,false,false,false,250,false,"a_Room_Main");liveMap=true;game.screenMap.mbVisible=true;game.var_1778=true;return true;
    }
@@ -427,7 +445,7 @@ package {
     idolPanelWidth:game.screenBuyIdols.mWindow.mMovieClip.getChildByName("am_Panel").getBounds(game.var_89).width,trovePedestalWidth:trovePedestal?trovePedestal.getBounds(game.var_89).width:null,
     scene:sceneTree,roomInRootDomain:ApplicationDomain.currentDomain.hasDefinition("a_Room_GreatHall"),labels:labelProbes,social:tree(game.screenFriend.var_26,1),settings:tree(game.screenMenu.mWindow.mMovieClip,2),store:tree(extraMenus[1].mWindow.mMovieClip,1),barn:tree(game.screenBarn.mWindow.mMovieClip,2),questTree:tree(game.screenQuestTracker.var_2,1),topTree:tree(game.screenHudTop.var_2,2),hudTree:tree(game.screenHud.var_2,2),
     commandIcons:commandBounds(),mountLabel:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.text,mountLabelWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.width,mountTextWidth:game.screenHud.var_2.am_PowerButtons.am_Key8.am_KeyBindText.textWidth,
-    camera:cameraProbe,map:mapState(),recovery:recoveryProbe,worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
+    camera:cameraProbe,map:mapState(),recovery:recoveryProbe,backdrop:backdropProbe,worldEnabled:worldEnabled,worldFrames:worldFrames,cacheRebuilds:cacheRebuilds,pixelErrors:pixelErrors,worldError:worldError,assets:assets};return value;
   }
   private function commandBounds():Array {
    var result:Array=[];

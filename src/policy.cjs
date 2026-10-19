@@ -2,6 +2,7 @@
 const LIVE = 'https://dungeonblitzr.theminesa.studio/';
 const {canonicalGameAddress}=require('./legacy/game-address.cjs');
 const UNLOCK_KEYS = require('./shortcuts.js').codes;
+const {valid:validAutorunKey}=require('./autorun-binding.js');
 const {valid:validCrosshair}=require('./crosshair.js');
 function gameURL(value) {
   if (typeof value !== 'string' || value.length > 8192) return null;
@@ -23,6 +24,7 @@ function validSettings(input = {}) {
     cursorLock: input.cursorLock === true,
     shiftMount: input.shiftMount === true && input.unlockKey !== 'ShiftLeft',
     autorun: input.autorun !== false,
+    autorunKey: validAutorunKey(input.autorunKey)?input.autorunKey:'ö',
     unlockKey: Object.hasOwn(UNLOCK_KEYS, input.unlockKey) ? input.unlockKey : 'AltLeft',
     gameZoom: zoom(input.gameZoom ?? input.defaultZoom),
     renderResolution: [.5,.75,1].includes(input.renderResolution)?input.renderResolution:1,

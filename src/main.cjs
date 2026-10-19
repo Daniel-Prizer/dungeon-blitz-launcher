@@ -6,6 +6,7 @@ if(process.argv.includes('--setup-update')){void require('./setup-update.cjs').r
 const fs = require('node:fs'), path = require('node:path');
 const { gameURL, validSettings, AUDIO_BUSES } = require('./policy.cjs');
 const {valid:validCrosshair}=require('./crosshair.js');
+const {valid:validAutorunKey}=require('./autorun-binding.js');
 const { loadStore } = require('./store.cjs');
 const { LegacyRuntime } = require('./legacy-runtime.cjs');
 const { Updater } = require('./updater.cjs');
@@ -137,6 +138,8 @@ async function action(name, value) {
       if('autoUpdates' in value&&typeof value.autoUpdates!=='boolean')throw new Error('Automatic updates must be on or off.');
       if('shiftMount' in value&&typeof value.shiftMount!=='boolean')throw new Error('Left Shift mount shortcut must be on or off.');
       if('autorun' in value&&typeof value.autorun!=='boolean')throw new Error('Autorun must be on or off.');
+      if('autorunKey' in value&&!validAutorunKey(value.autorunKey))throw new Error('Choose one autorun key. Modifiers, F11 and Escape are reserved.');
+      if((value.autorun??store.data.settings.autorun)&&(value.autorunKey??store.data.settings.autorunKey)===(value.unlockKey??store.data.settings.unlockKey))throw new Error('Choose different keys for autorun and cursor lock.');
       if((value.shiftMount??store.data.settings.shiftMount)&&(value.unlockKey??store.data.settings.unlockKey)==='ShiftLeft')throw new Error('Choose a different cursor-lock shortcut before using Left Shift for your mount.');
       if('audioMix' in value&&(!value.audioMix||Array.isArray(value.audioMix)||!AUDIO_BUSES.every(key=>Number.isInteger(value.audioMix[key])&&value.audioMix[key]>=0&&value.audioMix[key]<=100)))throw new Error('Sound volumes must be whole numbers from 0 to 100.');
       if('crosshair' in value&&(!value.crosshair||typeof value.crosshair!=='object'||Array.isArray(value.crosshair)||Object.keys(value.crosshair).length!==4||!Object.entries(validCrosshair(value.crosshair)).every(([key,v])=>value.crosshair[key]===v)))throw new Error('Choose a valid crosshair style, color and size.');
@@ -160,7 +163,7 @@ async function start() {
   const ses = session.defaultSession;
   ses.protocol.handle('blitz', request => {
     const u = new URL(request.url), name = u.pathname.slice(1);
-    if (u.hostname !== 'app' || !['index.html', 'ui.js', 'ui.css','shortcuts.js','crosshair.js','icon.png','wordmark.png','titlebar-stone.svg','settings-frame.svg','settings-inset.svg','nunito.ttf'].includes(name)) return new Response('Not found', { status: 404 });
+    if (u.hostname !== 'app' || !['index.html', 'ui.js', 'ui.css','shortcuts.js','autorun-binding.js','crosshair.js','icon.png','wordmark.png','titlebar-stone.svg','settings-frame.svg','settings-inset.svg','nunito.ttf'].includes(name)) return new Response('Not found', { status: 404 });
     const file=/\.(png|svg|ttf)$/.test(name)?path.join(__dirname,'../assets',name):path.join(__dirname,name);
     return new Response(fs.readFileSync(file), { headers: {
       'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':name.endsWith('.svg')?'image/svg+xml':name.endsWith('.ttf')?'font/ttf':'text/html',

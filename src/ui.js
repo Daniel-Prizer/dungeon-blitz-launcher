@@ -88,7 +88,10 @@ function render(next) {
   $('discard').disabled=!settingsOpen||saving||!Object.keys(edits).length;
   $('save-settings').hidden=$('discard').hidden=!settingsOpen;
   if(!settingsOpen)recording=false;
-  if(!recording){$('unlock-key').textContent=window.blitzShortcuts.label(s.unlockKey);$('unlock-key').dataset.code=s.unlockKey;}
+  if(recording!=='unlock-key'){$('unlock-key').textContent=window.blitzShortcuts.label(s.unlockKey);$('unlock-key').dataset.code=s.unlockKey;}
+  if(recording!=='autorun-key')$('autorun-key').textContent=s.autorunKey==='ö'?'Ö':window.blitzShortcuts.label(s.autorunKey);
+  for(const id of ['unlock-key','autorun-key'])$(id).setAttribute('aria-pressed',String(recording===id));
+  $('autorun-key').disabled=$('autorun-default').disabled=!s.autorun||state.clientIntegration===false||state.audioIntegration===false;
   $('cursor-lock').checked = s.cursorLock;
   $('shift-mount').checked=s.shiftMount;
   $('autorun').checked=s.autorun;
@@ -149,26 +152,24 @@ $('multiplayer-url').onclick=()=>{$('game-url').value='https://dungeonblitzr.the
 $('cursor-lock').onchange = () => edit({ cursorLock: $('cursor-lock').checked });
 $('shift-mount').onchange=()=>edit({shiftMount:$('shift-mount').checked});
 $('autorun').onchange=()=>edit({autorun:$('autorun').checked});
-$('unlock-key').onclick = async () => {
-  recording=!recording;await call('capture-shortcut',recording);
-  $('unlock-key').setAttribute('aria-pressed',String(recording));
-  $('unlock-key').textContent=recording?'Press a key…':window.blitzShortcuts.label(draft().unlockKey);
-  $('shortcut-hint').textContent=recording?'Press one key. Escape cancels.':'Click the shortcut, then press a key. Escape cancels.';
+function keyHint(id){return id==='autorun-key'?'autorun-key-hint':'shortcut-hint';}
+async function finishCapture(){recording=false;await call('capture-shortcut',false);render(state);}
+for(const id of ['unlock-key','autorun-key'])$(id).onclick=async()=>{
+ const target=recording===id?false:id;recording=target;await call('capture-shortcut',!!target);render(state);
+ if(target){$(id).textContent='Press a key…';$(keyHint(id)).textContent='Press one key. Escape cancels.';}
 };
+$('autorun-default').onclick=()=>edit({autorunKey:'ö'});
 document.addEventListener('keydown',async e=>{
- if(!recording)return;
- e.preventDefault();e.stopImmediatePropagation();
- if(e.repeat)return;
- if(e.code==='Escape'){
-  recording=false;await call('capture-shortcut',false);$('unlock-key').setAttribute('aria-pressed','false');
-  $('unlock-key').textContent=window.blitzShortcuts.label(draft().unlockKey);$('shortcut-hint').textContent='Shortcut unchanged.';return;
- }
- const modifier=/^(Alt|Control|Shift)(Left|Right)$/.test(e.code);
- if(!Object.hasOwn(window.blitzShortcuts.codes,e.code)||(!modifier&&(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey))){$('shortcut-hint').textContent='Press one key by itself. F11 and Escape are reserved.';return;}
- recording=false;await call('capture-shortcut',false);edit({unlockKey:e.code});
- $('unlock-key').setAttribute('aria-pressed','false');$('shortcut-hint').textContent='Shortcut selected. Press Save to apply it.';
+ if(!recording)return;e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;
+ const target=recording,hint=keyHint(target);
+ if(e.code==='Escape'){await finishCapture();$(hint).textContent='Shortcut unchanged.';return;}
+ let selected=e.code;
+ if(target==='autorun-key')selected=window.blitzAutorunBinding.capture(e);
+ else{const modifier=/^(Alt|Control|Shift)(Left|Right)$/.test(e.code);if(!Object.hasOwn(window.blitzShortcuts.codes,e.code)||(!modifier&&(e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)))selected=null;}
+ if(!selected){$(hint).textContent='Press one key by itself. F11, Escape and autorun modifier keys are reserved.';return;}
+ await finishCapture();edit(target==='autorun-key'?{autorunKey:selected}:{unlockKey:selected});$(hint).textContent='Shortcut selected. Press Save to apply it.';
 },true);
-document.addEventListener('pointerdown',e=>{if(e.target.closest('#unlock-key'))return;if(recording){recording=false;call('capture-shortcut',false);$('unlock-key').setAttribute('aria-pressed','false');$('unlock-key').textContent=window.blitzShortcuts.label(draft().unlockKey);}},true);
+document.addEventListener('pointerdown',e=>{if(e.target.closest('#unlock-key, #autorun-key'))return;if(recording)void finishCapture();},true);
 $('game-zoom').onchange = () => edit({ gameZoom: Number($('game-zoom').value) });
 $('render-resolution').onchange=()=>edit({renderResolution:Number($('render-resolution').value)});
 $('show-fps').onchange=()=>edit({showFPS:$('show-fps').checked});

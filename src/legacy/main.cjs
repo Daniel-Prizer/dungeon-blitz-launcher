@@ -8,7 +8,7 @@ const {adaptClient,localAddress}=require('./client-adapter.cjs');
 const {patchLocalIcons,localIconAsset}=require('./local-icon-patch.cjs');
 const {canonicalGameAddress}=require('./game-address.cjs');
 const {classifyLink}=require('./links.cjs');
-const adaptiveContract=[];for(const name of ['adaptive-contract.json','adaptive-contract-oct15.json','adaptive-contract-oct16.json','adaptive-contract-oct17.json','adaptive-contract-recovery-oct17.json','adaptive-contract-map-oct19.json'])try{adaptiveContract.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
+const adaptiveContract=[];for(const name of ['adaptive-contract-backdrop-oct19.json','adaptive-contract.json','adaptive-contract-oct15.json','adaptive-contract-oct16.json','adaptive-contract-oct17.json','adaptive-contract-recovery-oct17.json','adaptive-contract-map-oct19.json'])try{adaptiveContract.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
 let singleplayerContract;try{singleplayerContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract-singleplayer.json'),'utf8'));}catch(_){}
 const {rasterPlan}=require('./rendering.cjs');
 const {MountShortcut}=require('./mount-shortcut.cjs');
@@ -339,7 +339,7 @@ readMessages(pipe, async cmd => {
     if(cmd.type==='centered-hotbar'&&typeof cmd.value==='boolean'){centeredHotbar=cmd.value;await applyCenteredHotbar();}
     if(cmd.type==='centered-camera'&&typeof cmd.value==='boolean'){centeredCamera=cmd.value;await applyCenteredCamera();}
     if(cmd.type==='shift-mount'&&typeof cmd.value==='boolean'){mountShortcut.configure(cmd.value);await applyMountShortcut();}
-    if(cmd.type==='autorun'&&typeof cmd.value==='boolean')autorunShortcut.configure(cmd.value);
+    if(cmd.type==='autorun'&&typeof cmd.value==='boolean')autorunShortcut.configure(cmd.value,cmd.key);
     if(cmd.type==='test-autorun-key'&&process.env.BLITZ_HOST_TEST==='1'&&['keyDown','keyUp'].includes(cmd.value))autorunShortcut.input({type:cmd.value,key:'ö'});
     if(cmd.type==='crosshair'&&cmd.value){crosshair=crosshairArtwork.valid(cmd.value);applyCrosshair();}
     if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
