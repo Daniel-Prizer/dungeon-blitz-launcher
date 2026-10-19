@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-17T17:30:29.392Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-2b02246b688c",
-  "inputHash": "f4e87370366d35197daf8c5df83e0c3506ba463153df64a3c69772b78601df8a",
-  "note": "Reviewed recovery deployment: preserve new graphics exception handlers, cache healing, defeated-entity removal state and Discord links. Separate complete contract replays only existing presentation ranges."
+  "checkedAt": "2026-10-19T21:26:37.596Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-9b46e54870f2",
+  "inputHash": "bb6410470881b5a13c3899e09ae38f49aff41b3c5d9fe396c57cc5c72afe3d89",
+  "note": "Fresh October 19 evening client accepted by complete reviewed map-recovery contract. Preserve upstream TowerUpgradePanel, boss-voice, level, tooltip and combat changes; no new game hooks."
 }
