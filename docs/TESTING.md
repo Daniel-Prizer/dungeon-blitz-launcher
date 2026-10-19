@@ -1,4 +1,18 @@
-# Current validation: 0.26.2 (patch)
+# Current validation: 0.27.0 (minor)
+
+62 unit groups pass with no skips. The new autorun binding retains typed Ö by default, validates replacement physical codes, resets held/pending work on rebind, and preserves chord/blur/disable guards. The focused native test exercises rendered Controls key capture, explicit Save and physical persistence, Escape cancellation, Default/discard, actual renderer R input, old Ö rejection and typing protection. The prior movement-release/facing retention checks also pass. Owned Controls captures were visually inspected.
+
+The original Eye of the Tyrant cavern parallax reproduces the user-reported missing backgrounds through actual native class_82.method_193: both layers fall back to 128x128 at scale 2; the larger layer also fails at 1.5. The new seventh complete contract adds one guarded cache-scale hook, keeps every original budget check/fallback and the native allocation catch, and preserves all unrelated methods/tags. Unit tests verify exact exception relocation and reject a changed cache method.
+
+Native negative-control and corrected fixtures test original downloaded cavern artwork at 0.5, 1, 1.5, 2 and 3 density. Corrected caches retain the complete ceil-rounded source bounds within 4,194,304 pixels, preserve inverse display geometry, and keep small requested scales identical. Actual fullscreen and window restoration retain the correction. Owned negative-control and corrected fullscreen images were visually compared: the original loses the cavern layer and the correction shows its original columns and glowing artwork. Tests use owned synthetic state, no account, saved authentication, OS pointer input or gameplay. This does not claim authenticated combat or hardware-GPU performance verification.
+
+The full native launcher regression and 121 camera/map/HUD samples pass with the new cache hook enabled. Controls retain the fixed Settings frame at 800x600 and 1440x900. Original/native pointer behavior, saved drafts, audio buses, Rankings browser handoff, mount shortcuts, fullscreen and default autorun guards retain their checks.
+
+134 transition/terrain/menu samples pass with the final background contract, retaining loading allocation and disposed-canvas recovery. The separately guarded singleplayer original-controller fixtures and 121 camera/map/HUD samples also pass; the local server is off, so its network title is explicitly omitted. No server or account is operated.
+
+Packaged source/runtime and security fuses pass. All 166 physical payload files are covered by the pinned signed manifest. Packaged Electron updater tests pass physical-ASAR verification/progress, tamper rejection, failure cleanup and signed rollback staging. The disposable installer passes fresh/repeat installs, payload hashes, registration/shortcuts, running-process refusal, traversal/junction rejection, newer-build retention, complete signed rollback and managed uninstall/profile preservation. Previous canonical 0.26.2 artifacts and builds are retained.
+
+# Previous validation: 0.26.2 (patch)
 
 The initial October 19 public deployment was swf-a2b2e9c2e69b, SHA-256 cb95e596615e673142add9eedc652ac96060130507034e1dc8270ace7c710c7d. All five previous contracts correctly reject the changed map refresh hook. The sixth complete contract pins its whole original method and replays only the existing six-byte width expression, retaining its new catch, cleanup and exception envelope. Every unrelated method/tag and all separately guarded local contracts remain intact; all eleven current UI/level/map assets match reviewed provenance. All 60 unit groups pass without skips.
 

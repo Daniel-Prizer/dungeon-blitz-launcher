@@ -14,7 +14,7 @@ test('launcher defaults and validation discard obsolete browser settings', () =>
   for (let i=0;i<=100;i++)assert.equal(validSettings({volume:i}).volume,i);
   assert.equal(validSettings({unlockKey:'F11'}).unlockKey,'AltLeft');assert.equal(validSettings({unlockKey:'F8'}).unlockKey,'F8');
   assert.equal(validSettings({unlockKey:'KeyG'}).unlockKey,'KeyG');assert.equal(validSettings({unlockKey:'ControlLeft'}).unlockKey,'ControlLeft');assert.equal(validSettings({unlockKey:'Escape'}).unlockKey,'AltLeft');
-  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','volume','audioMix','cursorLock','shiftMount','autorun','unlockKey','gameZoom','renderResolution','showFPS','experimentalWidescreen','centeredHotbar','centeredCamera','crosshair','autoUpdates','keepGameAwake','hardwareAcceleration']);
+  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','volume','audioMix','cursorLock','shiftMount','autorun','autorunKey','unlockKey','gameZoom','renderResolution','showFPS','experimentalWidescreen','centeredHotbar','centeredCamera','crosshair','autoUpdates','keepGameAwake','hardwareAcceleration']);
   assert.equal(defaults.shiftMount,false);assert.equal(validSettings({shiftMount:true}).shiftMount,true);
   assert.equal(defaults.autorun,true);assert.equal(validSettings({autorun:false}).autorun,false);assert.equal(validSettings({autorun:true}).autorun,true);
   assert.equal(validSettings({shiftMount:true,unlockKey:'ShiftLeft'}).shiftMount,false);

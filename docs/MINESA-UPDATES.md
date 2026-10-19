@@ -1,5 +1,13 @@
 # Diagnosing and adapting to Minesa updates
 
+## Changeable autorun and dungeon backdrops (0.27.0)
+
+Controls captures a validated single physical key for autorun and saves it only through explicit Save. Existing preferences retain typed Ö by default. Default edits the draft; Discard and Escape preserve the saved key. Renderer-local handling resets pending/held work and releases movement when a saved key changes. Modifier-only keys, F11, Escape and cursor-lock conflicts are rejected; choose a key unused by native game actions. No global hook or saved in-game keymap changes.
+
+The exact Eye of the Tyrant cavern layers reproduce the screenshot failure through original class_82.method_193: at render scale 2, both become 128x128 because their requested images exceed the native 4,194,304-pixel budget. At scale 1.5, the larger layer already fails. The seventh complete contract pins the whole current cache method and inserts only a call that bounds its requested density before the existing scale checks. Native dimensions, budget, caching, draw path, inverse display size, fallback and error handler remain. Small rasters retain their exact requested scale. The original allocation exception relocates by 14 bytes with its handler and type/name unchanged. No dungeon/session, collision, packet or gameplay code changes.
+
+The native negative control restores only the original cache method; original public LevelsOMM artwork is pinned in client-backdrop-oct19.json. Other multiplayer recipes and the separately guarded singleplayer recipe remain intact.
+
 ## October 19 map recovery and autorun (0.26.2)
 
 Evening deployment swf-9b46e54870f2, SHA-256 bb6410470881b5a13c3899e09ae38f49aff41b3c5d9fe396c57cc5c72afe3d89 (977,680 bytes), is accepted by this same complete sixth contract without changing its guards. Four unedited main methods add plot-repaint/tower-upgrade hooks and correct the damage supplied to one native Buff constructor. New TowerUpgradePanel and updated BossDeathVoice notice-packet code are retained with every unrelated tag/method. All eleven fresh assets remain unchanged. This describes downloaded client code, not independently verified private-server behavior.

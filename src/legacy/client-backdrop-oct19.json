@@ -1,0 +1,14 @@
+{
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-9b46e54870f2",
+  "inputHash": "bb6410470881b5a13c3899e09ae38f49aff41b3c5d9fe396c57cc5c72afe3d89",
+  "method": "class_82.method_193",
+  "codeHash": "82f2a3a5afc711433edf76e945cd5852646258b9081610a7b1cf1b4564ae0f06",
+  "bodyHash": "a75b22f3c30572175b2297f05eb32f313460ab23a78f25673f568fb531908fa4",
+  "insertionOffset": 536,
+  "pixelBudget": 4194304,
+  "asset": {
+    "url": "https://dungeonblitzr.theminesa.studio/p/cbp/LevelsOMM.swf",
+    "sha256": "0a05ee0ed833869db9d6e4faeb410e84c11424caef92380dbc0514a5f8a21516",
+    "bytes": 3372747
+  }
+}

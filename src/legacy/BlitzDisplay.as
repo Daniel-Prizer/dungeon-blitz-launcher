@@ -504,6 +504,17 @@ package {
    saved.frame.x=quest.x+base.x;saved.frame.y=quest.y+base.y;saved.frame.visible=quest.visible;
    hideEdge(base);
   }
+  // Keep the native per-bitmap budget and complete artwork. Its original
+  // fallback allocates 128x128 when a fullscreen-sized parallax exceeds it.
+  public static function BackgroundScale(bounds:Rectangle,requested:Number):Number {
+   if(!bounds||!isFinite(bounds.width)||!isFinite(bounds.height)||bounds.width<=0||bounds.height<=0||!isFinite(requested)||requested<=0||requested>16)return requested;
+   var width:Number=bounds.width;var height:Number=bounds.height;
+   var high:Number=Math.min(requested,8191/width,8191/height,Math.sqrt(4194304/(width*height)));
+   if(Math.ceil(width*high)*Math.ceil(height*high)<=4194304)return high;
+   var low:Number=0;
+   for(var i:int=0;i<28;i++){var middle:Number=(low+high)/2;if(Math.ceil(width*middle)*Math.ceil(height*middle)<=4194304)low=middle;else high=middle;}
+   return low;
+  }
   public static function PrepareFrame(game:Game):void {
    if(!main)return;
    // The native final renderer otherwise keeps a single still frame behind

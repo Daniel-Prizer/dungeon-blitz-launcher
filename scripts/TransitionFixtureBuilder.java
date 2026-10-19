@@ -32,6 +32,11 @@ public class TransitionFixtureBuilder {
    int entity=abc.findClassByName("Entity");
    MethodBody entityCtor=abc.findBody(abc.instance_info.get(entity).iinit_index);
    entityCtor.setCodeBytes(HexFormat.of().parseHex("d030d0490047"));entityCtor.getCode();entityCtor.exceptions=new com.jpexs.decompiler.flash.abc.types.ABCException[0];entityCtor.max_stack=1;entityCtor.setModified();
+   if(args.length>2&&args[2].equals("backdrop-baseline")){
+    MethodBody original=null;for(ABCContainerTag sourceTag:new SWF(new FileInputStream(args[3]),false).getAbcList()){var candidate=sourceTag.getABC().findBodyByClassAndName("class_82","method_193");if(candidate!=null)original=candidate;}
+    if(original==null||!HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original.getCodeBytes())).equals("82f2a3a5afc711433edf76e945cd5852646258b9081610a7b1cf1b4564ae0f06"))throw new IllegalStateException("Unreviewed background baseline");
+    MethodBody target=abc.findBodyByClassAndName("class_82","method_193");target.setCodeBytes(original.getCodeBytes().clone());target.exceptions=original.exceptions.clone();target.max_stack=original.max_stack;target.getCode();target.setModified();
+   }
    if(args.length>2&&args[2].equals("baseline")){
     SWF source=new SWF(new FileInputStream(args[3]),false);
     byte[] originalCrop=null;

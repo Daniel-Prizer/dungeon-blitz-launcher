@@ -6,7 +6,7 @@ console.log=(...v)=>fs.appendFileSync(log,v.map(x=>typeof x==='string'?x:JSON.st
 console.error=(...v)=>console.log(...v.map(x=>x?.stack||x));
 execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
 process.env.BLITZ_NATIVE_TEST='1';
-if(process.env.BLITZ_PRIVATE_TEST==='map-fullscreen'){require('./camera-map-test.cjs');return;}
+if(['map-fullscreen','backdrop'].includes(process.env.BLITZ_PRIVATE_TEST)){require('./camera-map-test.cjs');return;}
 if(process.env.BLITZ_PRIVATE_TEST==='autorun'){require('./autorun-test.cjs');return;}
 if(process.env.BLITZ_PRIVATE_TEST==='singleplayer'){require('./singleplayer-test.cjs');return;}
 if(process.env.BLITZ_PRIVATE_TEST==='local-icons'){require('./local-icon-test.cjs');return;}

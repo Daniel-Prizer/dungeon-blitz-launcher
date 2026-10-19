@@ -1,6 +1,10 @@
 # Dungeon Blitz Launcher
 
-Version **0.26.2** (patch: October 19 game compatibility and autorun movement retention).
+Version **0.27.0** (minor: changeable autorun key and fullscreen dungeon backdrops).
+
+Large dungeon backgrounds now keep their complete artwork in fullscreen by fitting each cached image within the original memory limit. Foreground geometry and game rules stay unchanged.
+
+Settings → Controls → **Autorun key** lets you choose a key, then **Save**. Ö is the default; **Default** restores it in the draft. Choose a key unused by your game bindings. Press the selected key again or a movement key to stop. Typing and game-context safeguards remain intact.
 
 Settings changes stay pending until you press **Save**. Switching categories keeps the draft. **Discard**, closing Settings, **Back to game** and Escape discard unsaved changes. A failed save leaves your edits available to correct. Saving applies game/display/audio options without reconnecting; a saved server address needs an explicit reconnect, and graphics acceleration needs a launcher restart.
 

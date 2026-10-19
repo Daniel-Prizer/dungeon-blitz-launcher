@@ -101,7 +101,7 @@ class LegacyRuntime extends EventEmitter {
     if(!previous || previous.centeredHotbar!==this.settings.centeredHotbar)this.send({type:'centered-hotbar',value:this.settings.centeredHotbar});
     if(!previous || previous.centeredCamera!==this.settings.centeredCamera)this.send({type:'centered-camera',value:this.settings.centeredCamera});
     if(!previous || previous.shiftMount!==this.settings.shiftMount)this.send({type:'shift-mount',value:this.settings.shiftMount});
-    if(!previous || previous.autorun!==this.settings.autorun)this.send({type:'autorun',value:this.settings.autorun});
+    if(!previous || previous.autorun!==this.settings.autorun||previous.autorunKey!==this.settings.autorunKey)this.send({type:'autorun',value:this.settings.autorun,key:this.settings.autorunKey});
     if(!previous || JSON.stringify(previous.crosshair)!==JSON.stringify(this.settings.crosshair))this.send({type:'crosshair',value:this.settings.crosshair});
     if(!previous || previous.keepGameAwake!==this.settings.keepGameAwake)this.send({type:'background',value:this.settings.keepGameAwake});
     if(!previous||JSON.stringify(previous.audioMix)!==JSON.stringify(this.settings.audioMix))this.send({type:'audio-mix',value:this.settings.audioMix});
