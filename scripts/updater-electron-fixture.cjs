@@ -1,8 +1,8 @@
 'use strict';
 const {app}=require('electron'),disk=require('original-fs'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
-const config=JSON.parse(disk.readFileSync(process.env.BLITZ_UPDATER_TEST_CONFIG,'utf8')),root=config.root||path.resolve(__dirname,'..');execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
+const config=JSON.parse(disk.readFileSync(process.env.BLITZ_UPDATER_TEST_CONFIG,'utf8')),root=config.root||path.resolve(__dirname,'..');execFileSync(config.desktopGuard||path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
 const record={version:config.version||require('../package.json').version,electron:process.versions.electron,packaged:app.isPackaged,passed:false,checks:[]};
-app.setPath('userData',path.join(config.directory,'profile'));app.enableSandbox();
+app.setPath('userData',path.join(config.directory,'profile'));app.disableHardwareAcceleration();app.enableSandbox();
 function finish(error){if(error)record.error=String(error.stack||error);else record.passed=true;disk.writeFileSync(path.join(config.directory,'result.json'),JSON.stringify(record,null,2));app.exit(error?1:0);}
 const deadline=setTimeout(()=>finish(Error('Electron updater did not complete within 15 seconds')),15000);
 app.whenReady().then(async()=>{

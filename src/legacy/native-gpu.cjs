@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+const {adaptGpuClient}=require('./gpu-client-adapter.cjs');
+class NativeGpu {
+ constructor({resources,origin,address,onStatus=()=>{}}){this.resources=path.join(resources,'gpu');this.origin=origin;this.address=address;this.onStatus=onStatus;this.client=false;this.page=false;this.artwork=true;this.foreground=false;this.visible=false;this.enabled=true;this.cap=1000;this.serial=0;this.reason='';this.recipes=['adapter.json','adapter-20261020.json'].map(n=>JSON.parse(fs.readFileSync(path.join(this.resources,n))));this.assets=new Map(JSON.parse(fs.readFileSync(path.join(this.resources,'assets.json'))).assets.map(a=>[a.path,a]));}
+ reset(){this.client=false;this.page=false;this.artwork=true;this.reason='';this.serial++;}
+ reject(reason){this.artwork=false;this.reason=reason;this.onStatus({phase:'native',reason,completedCanvasFPS:0});}
+ adapt(bytes){for(const recipe of this.recipes){const result=adaptGpuClient(bytes,recipe);if(result){this.client=true;return result;}}this.reject('The game client changed; Original rendering is retained.');return null;}
+ inspectAsset(url,bytes){const selected=this.assets.get(url.pathname);if(!selected||selected.bytes!==bytes.length||selected.sha256!==digest(bytes))this.reject('Artwork changed; Original rendering is retained.');}
+ html(bytes){if(bytes.length>1024*1024)return null;const text=bytes.toString('utf8'),anchor='wmode: flashWmode,';if(text.split(anchor).length!==2||!text.includes('object.id = "DungeonBlitz"')||!text.includes('const swfUrl = `/p/')||/<script[^>]+src=["'][^"']*ruffle/i.test(text)){this.reject('Game page changed; Original rendering is retained.');return null;}this.page=true;return Buffer.from(text.replace(anchor,'wmode: "transparent",'));}
+ async update(wc){if(wc.isDestroyed())return;const value={verified:this.client&&this.page&&this.artwork,foreground:this.foreground,visible:this.visible,enabled:this.enabled,cap:this.cap};await wc.executeJavaScript(`window.__blitzNativeGpu?.configure(${JSON.stringify(value)})`).catch(()=>{});}
+ async load(wc){const serial=this.serial;try{const code=require('./gpu-bundle.cjs').resources(this.resources);await wc.executeJavaScript(code.main+'.initializeNativeGpu('+JSON.stringify({worker:code.worker,art:code.art})+')');this.frontendError='';}catch(error){this.frontendError=String(error.message).slice(0,180);this.onStatus({phase:'native',reason:'GPU presentation module unavailable; Original rendering is retained.',completedCanvasFPS:0});}if(serial===this.serial)await this.update(wc);}
+ async status(wc){if(wc.isDestroyed())return;const result=await wc.executeJavaScript('window.__blitzNativeGpu?.status()').catch(()=>null);if(!result||!['native','warming','gpu'].includes(result.phase))return;const value={phase:result.phase,backend:'native-flash-webgl2'};for(const name of ['completedFrames','completedCanvasFPS','sourceSnapshotsFPS','elapsedMs'])if(Number.isFinite(result[name])&&result[name]>=0&&result[name]<=Number.MAX_SAFE_INTEGER)value[name]=result[name];if(typeof result.reason==='string')value.reason=result.reason.slice(0,160);if(!this.artwork)Object.assign(value,{phase:'native',reason:this.reason});this.onStatus(value);}
+}
+module.exports={NativeGpu};

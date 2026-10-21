@@ -1,6 +1,12 @@
 # Client audio and upscaling investigation — 9 October 2026
 
-## Optional GPU world renderer (0.28.0)
+## Native game with GPU world rendering (0.30.0)
+
+GPU mode now keeps Pepper Flash for gameplay, NPCs, dialogue and the native HUD. WebGL2 renders only retained world artwork in a separate worker, with bounded interpolation and artwork decoding. The old Ruffle gameplay path is no longer selected. Original remains default; local singleplayer remains Original. Existing native sign-in storage stays in place and old WebView2 storage is not copied.
+
+An account-free original artwork/HUD/camera fixture held about 60 native updates/s with GPU on and off and completed 406 changing world renders/s. Its source bridge supplied about 24 snapshots/s; extra renders interpolate continuous transforms. All three rates remain distinct. The HUD comparison is exact; world sampling has small subpixel differences. Renderer pixels, five repeated stop/restart cycles and width-change recovery are checked on the inactive desktop. This is not a live NPC/combat benchmark or 406 newly animated game frames/s. The cap remains 15–1000; physical scanout is unmeasured. See the [maintenance evidence](MINESA-UPDATES.md#october-21-native-gameplay-in-gpu-mode-0300).
+
+## Previous WebView2 GPU implementation (0.28.0–0.29.2)
 
 Display settings select Original (default) or GPU world (Beta) after Save and Reconnect. GPU mode uses a separate sandboxed WebView2 profile. An independent render worker composites retained native leaf artwork, with two bounded artwork decoding workers. Native HUD, menus, input, simulation and audio remain. Presentation transforms interpolate between unchanged game snapshots; poses, lifetimes, clipping, order, tints, teleports and room changes remain discrete. AS3 gameplay is not multithreaded.
 

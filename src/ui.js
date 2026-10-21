@@ -104,8 +104,8 @@ function render(next) {
   for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
   $('render-resolution').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('gpu-frame-cap').disabled=s.ownedSingleplayer||s.gameRenderer!=='gpu'||!s.hardwareAcceleration;
-  $('renderer-hint').textContent=s.ownedSingleplayer?'Singleplayer uses Original Flash. This renderer preference is kept for multiplayer.':'GPU uses a separate sign-in profile. Reconnect after saving.';
-  $('gpu-status').textContent=state.gpu?.completedFrames>0?`${state.gpu.phase==='gpu'?'Average':'Last average'}: ${Math.round(state.gpu.completedCanvasFPS||0)} completed GPU frames/s · monitor scanout is separate.`:state.gpu?.reason||'15–1000 changing world frames/s. Game simulation keeps its native rate.';
+  $('renderer-hint').textContent=s.ownedSingleplayer?'Singleplayer uses Original Flash. This renderer preference is kept for multiplayer.':'GPU keeps the native game, dialogue and existing Flash profile. Reconnect after saving.';
+  $('gpu-status').textContent=state.gpu?.completedFrames>0?`${state.gpu.phase==='gpu'?'Average':'Last average'}: ${Math.round(state.gpu.completedCanvasFPS||0)} world renders/s · ${Math.round(state.gpu.sourceSnapshotsFPS||0)} source snapshots/s. Native game FPS and monitor scanout are separate.`:state.gpu?.reason||'World render cap: 15–1000. Game updates, animation poses and dialogue retain their native rate.';
   if(s.ownedSingleplayer)$('gpu-status').textContent='Singleplayer uses Original Flash with launcher enhancements. Your GPU preference is kept for multiplayer.';
   $('fps-hint').textContent=s.gameRenderer==='gpu'&&!s.ownedSingleplayer?'The in-game counter measures native game ticks. GPU rendering is measured above.':'Current FPS and 30-second low / high averages, in the gray margin.';
   $('show-fps').disabled=state.clientIntegration===false||state.audioIntegration===false;
