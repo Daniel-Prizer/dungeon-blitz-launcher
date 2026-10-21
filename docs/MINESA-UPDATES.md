@@ -1,5 +1,9 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 21 archive admission (0.29.2)
+
+The 0.29.1 compact package was missing the secondary server archive in Electron's Windows INTEGRITY/ELECTRONASAR resource. Its production integrity fuse rejects even an existence check on that archive and exits before creating the window. The earlier independent fixture had not enabled that fuse, so its successful lifecycle was insufficient evidence. Version 0.29.2 registers both archive header hashes in the executable, preserves every security fuse, and checks that table during package verification. The independent packaged world fixture now copies the actual application/server archives under its own resources, registers all opened archives and enables the exact production fuses before exercising startup, artwork, shutdown and restart. Keep the failed 0.29.1 artifacts for diagnosis; do not select that build.
+
 ## October 21 upgrade compatibility (0.29.1)
 
 This patch packages the owned server code and pinned dependencies in one signed ASAR, retaining ordinary static content files for Express HTTP streaming. Node's asynchronous archive-file streaming rejected artwork despite synchronous reads working, so startup/client-hash checks alone were insufficient. The packaged utility-process check now fetches real UI and level assets, then verifies normal shutdown and restart. The upstream core/server filename is normalized to its existing lowercase import so archive lookup matches; gameplay code remains unchanged.

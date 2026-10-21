@@ -43,6 +43,7 @@ const root = path.resolve(__dirname, '..');
   const provenance=JSON.parse(fs.readFileSync(provenanceFile,'utf8'));
   provenance.importedFrom='Official Dungeon Blitz R installation (local path omitted)';
   fs.writeFileSync(provenanceFile,JSON.stringify(provenance,null,2));
+  require('./asar-integrity.cjs').register(executable,[path.join(output,'resources/app.asar'),path.join(packagedRuntime,'singleplayer.asar')]);
   await flipFuses(executable, { version: FuseVersion.V1,
     [FuseV1Options.RunAsNode]: false,
     [FuseV1Options.EnableCookieEncryption]: true,

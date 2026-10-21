@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.29.1** (patch: compact singleplayer packaging for safe upgrades from older launchers; includes the 0.29.0 multiplayer, GPU and loading-screen repairs).
+Version **0.29.2** (patch: register the singleplayer archive in Electron’s integrity table; includes the 0.29.0 multiplayer, GPU and loading-screen repairs and compact upgrade packaging).
 
 Singleplayer now includes its own local server. Settings → Connection → **Use singleplayer**, **Save**, then **Reconnect** starts a private instance on unused loopback ports. It stops and saves when this launcher closes or reconnects to multiplayer. Each launcher profile owns a separate local world; it does not import another server's accounts or saves. Local accounts are created inside that world through the game's own form. Internet or Minesa's server is not required for the bundled singleplayer content.
 
