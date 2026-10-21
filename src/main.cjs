@@ -11,6 +11,7 @@ const { loadStore } = require('./store.cjs');
 const { LegacyRuntime } = require('./legacy-runtime.cjs');
 const { ModernRuntime,modernAddress } = require('./modern-runtime.cjs');
 const { Updater } = require('./updater.cjs');
+const {Singleplayer}=require('./singleplayer.cjs');
 const { classifyLink } = require('./legacy/links.cjs');
 const smoke = !app.isPackaged && process.argv.includes('--smoke-test');
 const privateDesktop = smoke && process.argv.includes('--private-desktop');
@@ -25,6 +26,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'blitz', privileges: { standard:
 const UI = 'blitz://app/index.html';
 const TITLEBAR_HEIGHT=32;
 let win, game, updater, gameAddress = '', modal = null, error = '', loading = true, closing = false, blocker = null, fullscreenRevision = 0, capturingShortcut=false;
+let singleplayer,launchRevision=0,activeSettings=null;
 const externalLinks = []; let lastExternalLink = 0;
 async function openGameLink(event) {
   const link = classifyLink(event.url, gameAddress);
@@ -38,7 +40,7 @@ async function openGameLink(event) {
 function state() {
   return { settings: store.data.settings, gameURL: gameAddress, loading, error, modal, fullscreen: win?.isFullScreen() || false,
     cursor: game?.cursorState || { enabled: store.data.settings.cursorLock, active: false },
-    audio: game?.audioState || null, gpu:game?.gpuStatus||null, originalPointer:game?.originalPointer||null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: gameAddress !== store.data.settings.gameURL };
+    audio: game?.audioState || null, gpu:game?.gpuStatus||null, singleplayer:singleplayer?.status||{phase:'stopped'}, activeSingleplayer:activeSettings?.ownedSingleplayer===true, originalPointer:game?.originalPointer||null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: !!activeSettings&&(activeSettings.ownedSingleplayer!==store.data.settings.ownedSingleplayer||activeSettings.gameURL!==store.data.settings.gameURL||activeSettings.gameRenderer!==store.data.settings.gameRenderer) };
 }
 function publish() { if (win && !win.isDestroyed()) win.webContents.send('blitz:state', state()); }
 function layout() {
@@ -72,13 +74,19 @@ function keyboard(event, input) {
   else return;
   event.preventDefault();
 }
-function startGame() {
+async function startGame() {
+  const revision=++launchRevision,settings={...store.data.settings};
   capturingShortcut=false;
-  game?.close(); game = null; error = ''; loading = true; gameAddress = store.data.settings.gameURL;
+  game?.close(); game = null; error = ''; loading = true; activeSettings=settings;layout();
   try {
     const root = app.isPackaged ? path.join(process.resourcesPath, 'runtime') : path.join(__dirname, '../runtime');
-    const Runtime=store.data.settings.gameRenderer==='gpu'?ModernRuntime:LegacyRuntime;
-    const instance = new Runtime(root, win.getNativeWindowHandle(), smoke, privateDesktop, gameAddress,store.data.settings.hardwareAcceleration); game = instance;
+    const local=settings.ownedSingleplayer?await singleplayer.start():(await singleplayer.stop(),null);
+    if(closing||revision!==launchRevision)return;
+    gameAddress=local?.url||settings.gameURL;
+    // Preserve the saved GPU choice when switching to the separately reviewed
+    // local Flash client. Local GPU artwork has not been reviewed for parity.
+    const Runtime=settings.gameRenderer==='gpu'&&!local?ModernRuntime:LegacyRuntime;
+    const instance = new Runtime(root, win.getNativeWindowHandle(), smoke, privateDesktop, gameAddress,settings.hardwareAcceleration,{singleplayerPorts:local?.ports}); game = instance;
     const current = () => game === instance && !closing;
     instance.on('ready', () => { if (!current()) return; instance.configure(store.data.settings); layout(); if (win.isFocused()) focusGame(); });
     instance.on('failure', message => { if (!current()) return; error = String(message).slice(0, 300); loading = false; modal = 'error'; layout(); win.webContents.focus(); });
@@ -107,7 +115,7 @@ function startGame() {
       else if (key === 'fullscreen') setFullscreen(!win.isFullScreen());
     });
     layout();
-  } catch (e) { error = e.message; loading = false; modal = 'error'; layout(); }
+  } catch (e) { if(closing||revision!==launchRevision)return;error = e.message; loading = false; modal = 'error'; layout(); }
 }
 async function action(name, value) {
   switch (name) {
@@ -134,8 +142,9 @@ async function action(name, value) {
       if ('volume' in value && (!Number.isInteger(value.volume) || value.volume < 0 || value.volume > 100)) throw new Error('Volume must be a whole number from 0 to 100.');
       if('renderResolution' in value&&![.5,.75,1].includes(value.renderResolution))throw new Error('Choose 100%, 75% or 50% rendering resolution.');
       if('gameRenderer' in value&&!['original','gpu'].includes(value.gameRenderer))throw new Error('Choose Original or GPU rendering.');
+      if('ownedSingleplayer' in value&&typeof value.ownedSingleplayer!=='boolean')throw new Error('Choose a valid singleplayer mode.');
       if('gpuFrameCap' in value&&(!Number.isInteger(value.gpuFrameCap)||value.gpuFrameCap<15||value.gpuFrameCap>1000))throw new Error('GPU frame cap must be a whole number from 15 to 1000.');
-      if((value.gameRenderer??store.data.settings.gameRenderer)==='gpu'&&!modernAddress(value.gameURL??store.data.settings.gameURL))throw new Error('Choose Original rendering for a local or custom server.');
+      if(!(value.ownedSingleplayer??store.data.settings.ownedSingleplayer)&&(value.gameRenderer??store.data.settings.gameRenderer)==='gpu'&&!modernAddress(value.gameURL??store.data.settings.gameURL))throw new Error('Choose Original rendering for a local or custom server.');
       if('showFPS' in value&&typeof value.showFPS!=='boolean')throw new Error('Show FPS counter must be on or off.');
       if('experimentalWidescreen' in value&&typeof value.experimentalWidescreen!=='boolean')throw new Error('Experimental 16:9 must be on or off.');
       if('centeredHotbar' in value&&typeof value.centeredHotbar!=='boolean')throw new Error('Original centered hotbar must be on or off.');
@@ -159,9 +168,12 @@ async function action(name, value) {
   return { ok: true };
 }
 async function start() {
+  const runtimeRoot=app.isPackaged?path.join(process.resourcesPath,'runtime'):path.join(__dirname,'../runtime');
+  singleplayer=new Singleplayer({bundle:path.join(runtimeRoot,'singleplayer'),dataDir:path.join(app.getPath('userData'),'singleplayer'),fork:(entry,args,options)=>require('electron').utilityProcess.fork(entry,args,options)});
+  singleplayer.on('status',()=>{if(!closing&&activeSettings?.ownedSingleplayer&&singleplayer.status.phase==='error'){error=singleplayer.status.error;loading=false;modal='error';layout();}else publish();});
   if(app.isPackaged){
     const installRoot=require('./update-policy.cjs').installationRoot(process.execPath,app.getVersion());
-    if(installRoot){updater=new Updater({current:app.getVersion(),cache:path.join(app.getPath('userData'),'updates'),installRoot,helper:path.join(process.resourcesPath,'runtime/UpdateInstaller.exe'),enabled:store.data.settings.autoUpdates,waitPids:()=>[game?.child?.pid,game?.host?.pid]});updater.on('state',publish);updater.start();}
+    if(installRoot){updater=new Updater({current:app.getVersion(),cache:path.join(app.getPath('userData'),'updates'),installRoot,helper:path.join(process.resourcesPath,'runtime/UpdateInstaller.exe'),enabled:store.data.settings.autoUpdates,waitPids:()=>[game?.child?.pid,game?.host?.pid,singleplayer?.child?.pid]});updater.on('state',publish);updater.start();}
     else updater={status:{phase:'unavailable',error:'Install the launcher using Setup, or extract the complete portable ZIP, to enable automatic updates.'},stop:()=>{},start:()=>{},check:()=>{},installAfterExit:()=>false};
   }
   nativeTheme.themeSource = 'dark';
@@ -191,18 +203,23 @@ async function start() {
   await win.loadURL(UI); startGame(); if (saved.maximized && !smoke) win.maximize();
   for (const event of ['resize', 'move', 'show', 'hide', 'minimize', 'maximize', 'unmaximize', 'restore', 'enter-full-screen', 'leave-full-screen']) win.on(event, layout);
   for (const event of ['enter-full-screen', 'leave-full-screen']) win.on(event, () => { const revision = fullscreenRevision; setImmediate(() => finishFullscreen(revision, win?.isFullScreen())); });
-  win.on('close', event => {
-    if (closing) return; event.preventDefault(); closing = true;
+  win.on('close', async event => {
+    event.preventDefault();if (closing) return;closing = true;++launchRevision;
     store.data.window = { width: win.getNormalBounds().width, height: win.getNormalBounds().height, maximized: win.isMaximized() };
-    try { store.save(); } catch {} updater?.stop();game?.close();if(store.data.settings.autoUpdates)updater?.installAfterExit(false);win.destroy(); app.quit();
+    try { store.save(); } catch {} updater?.stop();game?.close();win.hide();await singleplayer.stop();if(store.data.settings.autoUpdates)updater?.installAfterExit(false);win.destroy(); app.quit();
   });
   win.on('closed', () => { win = null; }); publish();
   if (smoke) global.__blitzTest = { state, externalLinks, nativeCommand: (_id, command) => game?.send(command), runtime: () => game,
-    shutdown: () => { closing = true; game?.close(); win.destroy(); app.quit(); } };
+    shutdown: async () => { closing = true; game?.close();await singleplayer.stop();win.destroy(); app.quit(); } };
 }
 if (!smoke && !app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); focusGame(); } });
   app.whenReady().then(start).catch(e => { console.error('Launcher startup failed:', e.message); app.quit(); });
 }
-app.on('before-quit', () => game?.close()); app.on('window-all-closed', () => app.quit());
+let quitDrain;
+app.on('before-quit', event => {
+  game?.close();
+  if(singleplayer?.child){event.preventDefault();if(!quitDrain){closing=true;++launchRevision;updater?.stop();win?.hide();quitDrain=singleplayer.stop().then(()=>app.quit());}}
+});
+app.on('window-all-closed', () => app.quit());

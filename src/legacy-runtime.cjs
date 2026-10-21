@@ -23,6 +23,7 @@ class LegacyRuntime extends EventEmitter {
     env.BLITZ_HOST_CHANNEL = `\\\\.\\pipe\\blitz-game-${randomBytes(24).toString('hex')}`;
     env.BLITZ_HOST_TOKEN = randomBytes(32).toString('hex');
     env.BLITZ_GAME_URL = gameURL;
+    if(require('./legacy/singleplayer-network.cjs').ports(options.singleplayerPorts))env.BLITZ_SINGLEPLAYER_PORTS=JSON.stringify(options.singleplayerPorts);
     env.BLITZ_GAME_ACCELERATION=hardwareAcceleration===false?'0':'1';
     if(options.modern&&typeof options.config==='string')env.BLITZ_GPU_CONFIG=options.config;
     if (test) env.BLITZ_CURSOR_DRY_RUN = '1'; else delete env.BLITZ_CURSOR_DRY_RUN;

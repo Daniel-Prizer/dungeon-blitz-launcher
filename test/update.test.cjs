@@ -68,3 +68,18 @@ test('native extraction rejects Zip Slip and installer waits for game exit befor
   }finally{if(standIn.exitCode===null)standIn.kill();}
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+test('native update I/O supports deep paths while retaining device and junction rejection',()=>{
+ if(process.platform!=='win32')return;
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'blitz-deep-update-')),helper=path.resolve(__dirname,'../runtime/UpdateInstaller.exe');
+ try{
+  const source=path.join(dir,'source'),relative='original-data-'.repeat(5)+'/original.txt';fs.mkdirSync(path.dirname(path.join(source,relative)),{recursive:true});fs.writeFileSync(path.join(source,relative),'preserved native bytes');
+  const zip=path.join(dir,'fixture.zip');execFileSync('powershell.exe',['-NoProfile','-File',path.resolve(__dirname,'../scripts/zip-release.ps1'),source,zip],{windowsHide:true});
+  const parent=path.join(dir,'owned-component-'.repeat(6),'owned-component-'.repeat(6));fs.mkdirSync(parent,{recursive:true});const destination=path.join(parent,'extract');assert(path.join(destination,relative).length>300);
+  execFileSync(helper,['extract',zip,destination],{windowsHide:true,stdio:'pipe'});assert.equal(fs.readFileSync(path.join(destination,relative),'utf8'),'preserved native bytes');execFileSync(helper,['preflight',destination],{windowsHide:true,stdio:'pipe'});
+  assert.throws(()=>execFileSync(helper,['preflight','\\\\?\\'+destination],{windowsHide:true,stdio:'pipe'}));const linked=path.join(dir,'linked');fs.symlinkSync(destination,linked,'junction');assert.throws(()=>execFileSync(helper,['preflight',linked],{windowsHide:true,stdio:'pipe'}));fs.unlinkSync(linked);
+  // A real update assembles under a longer temporary directory than its
+  // final version. Exercise that copy/move path, not only an existing build.
+  const value=manifest(),updateSource=path.join(dir,'update-source'),installed=path.join(dir,'owned-install-'+('x'.repeat(70))),deep=value.files[1].path.replace('Dungeon Blitz Launcher.exe','resources/runtime/singleplayer/server/node_modules/deep-dependency/original-file.txt');value.files.push({path:deep,size:3,sha256:crypto.createHash('sha256').update('new').digest('hex')});
+  for(const item of value.files){const name=path.join(updateSource,item.path);fs.mkdirSync(path.dirname(name),{recursive:true});fs.writeFileSync(name,'new');}fs.mkdirSync(installed);fs.writeFileSync(path.join(installed,'Dungeon Blitz Launcher.exe'),'old');const config=path.join(dir,'install.json');fs.writeFileSync(config,JSON.stringify({version:value.version,source:updateSource,destination:installed,pid:2147483647,files:value.files}));assert(path.join(installed,deep).length>260);execFileSync(helper,['install',config,'close'],{windowsHide:true,stdio:'pipe'});assert.equal(fs.readFileSync(path.join(installed,deep),'utf8'),'new');assert.equal(fs.readFileSync(path.join(installed,'Dungeon Blitz Launcher.previous.exe'),'utf8'),'old');
+ }finally{assert.equal(path.dirname(dir),os.tmpdir());assert(path.basename(dir).startsWith('blitz-deep-update-'));fs.rmSync(dir,{recursive:true,force:true});}
+});

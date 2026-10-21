@@ -13,6 +13,7 @@ const root = path.resolve(__dirname, '..');
     require('./runtime-import.cjs').verifyImported(path.join(root,'runtime/game'),JSON.parse(fs.readFileSync(path.join(root,'runtime/provenance.json'))).importedFiles);
   }else execFileSync(process.execPath, [path.join(__dirname, 'prepare-legacy.cjs')], { stdio: 'inherit' });
   await require('./prepare-webview-sdk.cjs')();require('./prepare-modern.cjs')();
+  if(!fs.existsSync(path.join(root,'runtime/singleplayer/provenance.json')))throw Error('Prepare the owned singleplayer bundle before packaging.');
   const paths = await packager({
     dir: root, name: 'Dungeon Blitz Launcher', executableName: 'Dungeon Blitz Launcher', platform: 'win32', arch: 'x64',
     electronVersion: require('../package.json').devDependencies.electron,

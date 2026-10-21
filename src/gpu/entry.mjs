@@ -29,7 +29,7 @@ async function configure(){
 host?.addEventListener('message',async({data})=>{
  if(!data||typeof data!=='object')return;
  localCursor.receive(data);
- if(data.type==='settings'){settings=data.value||{};if(session)void session.setCap(settings.gpuFrameCap||1000);applied='';}
+ if(data.type==='settings'){settings=data.value||{};if(session)void session.setCap(settings.gpuFrameCap||1000).catch(()=>{});applied='';}
  else if(data.type==='foreground'){foreground=data.value===true;if(!foreground){autorun.blur();mount.reset();void stopSession();}}
  else if(data.type==='assets'){verified=data.verified===true;integrated=data.integrated===true;if(!integrated){autorun.reset();mount.reset();}if(!verified){void stopSession();call('BlitzGpuNativeView',false);}}
  else if(data.type==='visibility'){visible=data.value===true;if(!visible){autorun.reset();mount.reset();call('BlitzStopAutorun');await stopSession();}}

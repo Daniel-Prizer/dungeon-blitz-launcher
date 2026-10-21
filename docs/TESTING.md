@@ -1,4 +1,26 @@
-# Current validation: 0.27.0 (minor)
+# Current validation: 0.29.0 (minor)
+
+93 Node test groups pass. The existing camera/map suite passes 121 samples and the transition/terrain/menu suite passes 134, using the actual shared native host packaged as an independently named fixture. Representative centered-HUD, loading and fullscreen captures were visually inspected. No production game executable was started.
+
+The owned singleplayer checks run two real bundled HTTP/TCP servers with separate disposable worlds, OS-assigned ports, idempotent startup, exclusive ownership, verified client/UI/level bytes, inline socket policy, synthetic local account/character-list packets, graceful save/stop and restart persistence. The actual Electron shell/utility process verifies draft/discard/Save/Reconnect, no connection changes from Save alone, world reuse, normal shutdown and preserved multiplayer GPU preference. These checks use no existing account or saved authentication.
+
+The packaged-world fixture loads the actual release ASAR's Singleplayer and child modules through Electron's utility process, starts the actual packaged server, verifies the exact local SWF hash, stops normally, checks lock release and restarts the same fresh world. This separately verifies ASAR/utility-process behavior beyond plain Node tests.
+
+Fresh anonymous multiplayer checks verify both public origins against `c0abc2eac96a102b3be0246e8d3b83342bfe29e45e2c0a62e1942a051b485294`. Independent naturally named native Flash and shared WebView2 fixtures initialize the actual client contract, sound categories, camera/layout settings and GPU bridge. Fresh hashes for all 73 art resources plus loader/VM are unchanged. Current title pixels were inspected; this establishes startup/bridge compatibility, not authenticated combat or physical scanout.
+
+The native loading negative control reproduces a missing 106.67-logical-pixel widescreen offset. The correction passes startup, Login/None/Transfer, pending Game, 1600×900, 1920×1080, 2560×1440 and original-width restoration. Root scale remains one; only the original full-height passive matte widens. Before/after owned captures were visually inspected. The tests use the real ScreenTransfer controller and loading artwork with synthetic state; shared world labels intentionally remain independent.
+
+GPU reliability regressions exercise byte-exact recompression acceptance, code/header tamper rejection, unsupported-source fallback to the selected Original origin, worker constructor failure, a silent worker watchdog, cancellation and complete owned-resource cleanup. The synthetic real WebView2 GPU probe passes 18 pixel/resource checks, changing-canvas submissions, cap accounting, two decode workers and stale-scene native restoration. No game simulation rate or networking changes are made. Ordinary waiting-for-play polling is separate from bounded fault backoff.
+
+The complete signed rollback first exposed the native helper's 260-character limit on nested server dependencies. Explicit helper-local long-path I/O fixes the actual failing rollback. A regression extracts exact bytes beyond 300 characters, verifies preflight there, and still rejects device-prefixed roots and junctions. Root comparisons and recorded-file cleanup keep ordinary canonical paths; Windows policy is unchanged.
+
+GPU wrappers expose their owned game and attachment process IDs through the same interface as Original, so the updater waits for them before installation. Startup-failure fallback and established-game fault tests verify that only a failed new host closes; a running game is not automatically restarted.
+
+While the farmer remains active, tests use independent fixtures on guarded inactive desktops or hidden synthetic shells. The branded setup-update executable test is omitted because its process identity can interrupt that unrelated session; the same unchanged updater code is exercised through the separate packaged pipeline fixture. No installation or installed preference change is made.
+
+The final package matches reviewed source/runtime and security fuses; all 2,041 physical payload files are signed by the pinned manifest. The actual packaged Electron updater passes signature/hash/ASAR verification, tamper rejection, failed-stage cleanup and rollback staging. The independent installer passes fresh/repeat installs, exact payload hashes, Windows registration/shortcuts, busy-process refusal, traversal/junction rejection, newer-build retention, complete signed rollback and managed uninstall with unrelated-file/profile preservation. No production launcher or installed game is executed for these checks.
+
+# Previous validation: 0.27.0 (minor)
 
 62 unit groups pass with no skips. The new autorun binding retains typed Ö by default, validates replacement physical codes, resets held/pending work on rebind, and preserves chord/blur/disable guards. The focused native test exercises rendered Controls key capture, explicit Save and physical persistence, Escape cancellation, Default/discard, actual renderer R input, old Ö rejection and typing protection. The prior movement-release/facing retention checks also pass. Owned Controls captures were visually inspected.
 

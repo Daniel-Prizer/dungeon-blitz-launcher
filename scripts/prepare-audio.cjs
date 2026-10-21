@@ -14,7 +14,12 @@ stamp.update(fs.readFileSync(path.join(root,'src/legacy/BlitzInput.as')));
 stamp.update(fs.readFileSync(path.join(root,'assets/companion-frame.png')));
 stamp.update(fs.readFileSync(path.join(__dirname,'EmbedCompanionArt.java')));
 const buildStamp=stamp.digest('hex'),stampFile=path.join(dir,'build-stamp'),deltaFile=path.join(root,'runtime/game/resources','audio-delta'+suffix+'.json');
-if(fs.existsSync(stampFile)&&fs.readFileSync(stampFile,'utf8')===buildStamp&&fs.existsSync(deltaFile)&&fs.existsSync(path.join(dir,'fixture.swf'))&&fs.existsSync(path.join(dir,'fps-fixture.swf'))){console.log('Reviewed client adapters already current.');process.exit(0);}
+if(fs.existsSync(stampFile)&&fs.readFileSync(stampFile,'utf8')===buildStamp&&fs.existsSync(deltaFile)&&fs.existsSync(path.join(dir,'audio.swf'))&&fs.existsSync(path.join(dir,'fixture.swf'))&&fs.existsSync(path.join(dir,'fps-fixture.swf'))){
+ // A fresh staging workspace can share the compilation cache but start with
+ // an older runtime delta. Validate the actual output, not its mere presence.
+ const cached=JSON.parse(fs.readFileSync(deltaFile)),compiled=zlib.inflateSync(fs.readFileSync(path.join(dir,'audio.swf')).subarray(8));
+ if(cached.outputHash===crypto.createHash('sha256').update(compiled).digest('hex')){console.log('Reviewed client adapters already current.');process.exit(0);}
+}
 const u=value=>{const out=[];do{const b=value&127;value>>>=7;out.push(b|(value?128:0));}while(value);return Buffer.from(out);};
 const b=(...parts)=>Buffer.concat(parts.map(p=>Buffer.isBuffer(p)?p:Buffer.from(p)));
 const str=s=>b(u(Buffer.byteLength(s)),Buffer.from(s));
