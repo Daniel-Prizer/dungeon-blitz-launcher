@@ -49,6 +49,7 @@ const target = path.join(root, 'runtime/game');
   fs.copyFileSync(path.join(root,'src/crosshair.js'),path.join(root,'src/legacy/crosshair.js'));
   fs.copyFileSync(path.join(root,'src/autorun-binding.js'),path.join(root,'src/legacy/autorun-binding.js'));
   await asar.createPackage(path.join(root, 'src/legacy'), path.join(target, 'resources/app.asar'));
+  fs.cpSync(path.join(root,'src/gpu'),path.join(target,'resources/gpu'),{recursive:true});
   execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe', ['/nologo', '/target:exe', '/platform:x64', '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.Web.Extensions.dll', `/out:${path.join(root, 'runtime/NativeHost.exe')}`, ...['NativeHost.cs','CursorLock.cs','GameAudio.cs','AccessibilityShortcuts.cs'].map(name=>path.join(root,'src',name))], { stdio: 'inherit' });
   const hashes = {};
   for (const relative of ['BlitzGame.exe', 'resources/pepflashplayer64.dll', 'resources/game-window.node']) hashes[relative] = crypto.createHash('sha256').update(fs.readFileSync(path.join(target, relative))).digest('hex');

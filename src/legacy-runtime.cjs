@@ -26,6 +26,7 @@ class LegacyRuntime extends EventEmitter {
     if(require('./legacy/singleplayer-network.cjs').ports(options.singleplayerPorts))env.BLITZ_SINGLEPLAYER_PORTS=JSON.stringify(options.singleplayerPorts);
     env.BLITZ_GAME_ACCELERATION=hardwareAcceleration===false?'0':'1';
     if(options.modern&&typeof options.config==='string')env.BLITZ_GPU_CONFIG=options.config;
+    if(options.nativeGpu===true){env.BLITZ_NATIVE_GPU='1';this.nativeGpu=true;}
     if (test) env.BLITZ_CURSOR_DRY_RUN = '1'; else delete env.BLITZ_CURSOR_DRY_RUN;
     this.server = net.createServer(socket => {
       let authenticated = false;
@@ -97,6 +98,7 @@ class LegacyRuntime extends EventEmitter {
   configure(settings) {
     const previous=this.settings;this.settings=validSettings(settings);
     if(this.modern)this.send({type:'settings',value:this.settings});
+    if(this.nativeGpu)this.send({type:'gpu-config',cap:this.settings.gpuFrameCap,enabled:this.settings.hardwareAcceleration!==false});
     if(!previous || previous.gameZoom!==this.settings.gameZoom)this.send({type:'zoom',value:this.settings.gameZoom});
     if(!previous || previous.renderResolution!==this.settings.renderResolution)this.send({type:'render-resolution',value:this.settings.renderResolution});
     if(!previous || previous.showFPS!==this.settings.showFPS)this.send({type:'show-fps',value:this.settings.showFPS});

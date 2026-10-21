@@ -19,8 +19,8 @@ export function validateSnapshot(value){
 }
 export class SceneTimeline{
  constructor({delayMs=0,maxAgeMs=1000}={}){if(!finite(delayMs,0,250)||!finite(maxAgeMs,1,5000))throw Error('Invalid timeline settings');this.delayMs=delayMs;this.maxAgeMs=maxAgeMs;this.snapshots=[];}
- push(input){const snapshot=validateSnapshot(input),last=this.snapshots.at(-1);if(last&&(snapshot.sequence<=last.sequence||snapshot.time<=last.time))throw Error('Out-of-order scene');if(last&&(last.epoch!==snapshot.epoch||last.artworkRevision!==snapshot.artworkRevision))this.snapshots=[];this.snapshots.push(snapshot);if(this.snapshots.length>LIMITS.snapshots)this.snapshots.shift();return snapshot;}
- sample(now){if(!finite(now,0,Number.MAX_SAFE_INTEGER))throw Error('Invalid presentation time');const last=this.snapshots.at(-1);if(!last||now<last.time||now-last.time>this.maxAgeMs)return null;
+ push(input){const snapshot=validateSnapshot(input),last=this.snapshots[this.snapshots.length-1];if(last&&(snapshot.sequence<=last.sequence||snapshot.time<=last.time))throw Error('Out-of-order scene');if(last&&(last.epoch!==snapshot.epoch||last.artworkRevision!==snapshot.artworkRevision))this.snapshots=[];this.snapshots.push(snapshot);if(this.snapshots.length>LIMITS.snapshots)this.snapshots.shift();return snapshot;}
+ sample(now){if(!finite(now,0,Number.MAX_SAFE_INTEGER))throw Error('Invalid presentation time');const last=this.snapshots[this.snapshots.length-1];if(!last||now<last.time||now-last.time>this.maxAgeMs)return null;
   const target=now-this.delayMs;let b=this.snapshots.find(s=>s.time>=target)||last,a=this.snapshots[Math.max(0,this.snapshots.indexOf(b)-1)];
   if(target<=this.snapshots[0].time)return this.snapshots[0];
   if(a===b||target>=b.time)return b;

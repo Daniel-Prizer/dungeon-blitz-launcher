@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const {execFileSync,spawn}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),tools=path.join(root,'.test-tools'),log=path.join(tools,'installer-test.log');
+const root=path.resolve(__dirname,'..'),tools=fs.realpathSync(path.join(root,'.test-tools')),log=path.join(tools,'installer-test.log');
 fs.writeFileSync(log,'');const note=value=>fs.appendFileSync(log,value+'\n');
 const run=(exe,args,extra={})=>execFileSync(exe,args,{windowsHide:true,stdio:'pipe',timeout:60000,...extra});
 run(path.join(tools,'PrivateDesktop.exe'),['--check']);

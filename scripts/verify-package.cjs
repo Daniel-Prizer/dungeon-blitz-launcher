@@ -41,6 +41,8 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   for(const name of ['bootstrap.js','entry.mjs','session.mjs','render-worker.mjs'])assert(!/GPU_PRIVATE_QA|__ownGpuSession|device-loss|OwnRunProbe/.test(fs.readFileSync(path.join(modern,'resources',name),'utf8')),'Private QA must not ship: '+name);
   assert.equal(JSON.parse(asar.extractFile(archive,'package.json')).version, version);
   const legacy = path.join(output,'resources/runtime/game/resources/app.asar');
+  for(const name of ['native-gpu.cjs','gpu-bundle.cjs','gpu-client-adapter.cjs'])assert.deepEqual(asar.extractFile(legacy,name),fs.readFileSync(path.join(root,'src/legacy',name)),name);
+  for(const name of fs.readdirSync(path.join(root,'src/gpu')))assert.equal(hash(path.join(output,'resources/runtime/game/resources/gpu',name)),hash(path.join(root,'src/gpu',name)),'Native GPU resource '+name);
   assert.deepEqual(asar.extractFile(legacy,'main.cjs'),fs.readFileSync(path.join(root,'src/legacy/main.cjs')));
   assert.deepEqual(asar.extractFile(legacy,'editing.cjs'),fs.readFileSync(path.join(root,'src/legacy/editing.cjs')));
   for(const file of ['client-patch.cjs','client-layout.json','client-layout-current.json','client-layout-latest.json','client-layout-oct11.json','client-deployment.json','adaptive-patch.cjs','swf-contract.cjs','links.cjs','audio-patch.cjs','rendering.cjs','transport.cjs','mount-shortcut.cjs','BlitzInput.as','BlitzAudio.as','BlitzDisplay.as','BlitzFrameCounter.as'])assert.deepEqual(asar.extractFile(legacy,file),fs.readFileSync(path.join(root,'src/legacy',file)));

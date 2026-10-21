@@ -53,9 +53,11 @@ function validGameAddress(value) {
 }
 if(!validGameAddress(LIVE))app.exit(2);
 const ORIGIN = new URL(LIVE).origin;
+const nativeGpu=process.env.BLITZ_NATIVE_GPU==='1'?new (require('./native-gpu.cjs').NativeGpu)({resources:process.resourcesPath,origin:ORIGIN,address:LIVE,onStatus:status=>emit({type:'gpu-status',status})}):null;
 let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false, testClientHash='',testAdapterMode='';
 const testRequests=[];
 const testIconRepairs=[];
+const testGpuConsole=[];
 let testOriginalClient=false;
 let audioMix={player:100,music:100,environment:100,creatures:100};
 let appliedAudioMix='';
@@ -133,7 +135,7 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // hide/background settings still control activity. No clocks or input are changed.
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
-if (process.env.BLITZ_GAME_ACCELERATION==='0'||(process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP)) {
+if (process.env.BLITZ_GAME_ACCELERATION==='0'||(process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP&&process.env.BLITZ_NATIVE_GPU!=='1')) {
   app.disableHardwareAcceleration();
 }
 function emit(data) { const message = JSON.stringify(data) + '\n'; if (connected) pipe.write(message); else queued.push(message); }
@@ -208,6 +210,13 @@ app.whenReady().then(async () => {
   // Alt+F4 on the game surface closes its launcher without a confirmation.
   win.on('close', event => {event.preventDefault();emit({type:'close-window'});});
   const wc = win.webContents;
+  if(nativeGpu&&process.env.BLITZ_HOST_TEST==='1')wc.on('console-message',(_e,_l,message)=>{if(testGpuConsole.length<12&&/__launcher_gpu|module script|MIME type|Content Security Policy/.test(message))testGpuConsole.push(message.slice(0,500));});
+  if(nativeGpu){
+    win.on('focus',()=>{nativeGpu.foreground=true;void nativeGpu.update(wc);});
+    win.on('blur',()=>{nativeGpu.foreground=false;void nativeGpu.update(wc);});
+    wc.on('did-finish-load',()=>{void nativeGpu.load(wc);});
+    const gpuTimer=setInterval(()=>{void nativeGpu.status(wc);},500);win.on('closed',()=>clearInterval(gpuTimer));
+  }
   let lastLink = 0, linkContext = null;
   async function watchHTMLLinks() {
     try {
@@ -256,9 +265,17 @@ app.whenReady().then(async () => {
     let fulfilled=false;
     try {
       const url=new URL(params.request.url);
+      if(nativeGpu&&url.origin===ORIGIN){
+        if(params.resourceType==='Document'&&url.pathname===new URL(LIVE).pathname&&params.responseStatusCode===200){
+          const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId}),bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),html=nativeGpu.html(bytes);
+          if(html){const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));headers.push({name:'Content-Length',value:String(html.length)});await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:html.toString('base64')});fulfilled=true;return;}
+        }
+        if(/\.swf$/i.test(url.pathname)&&!/\/DungeonBlitz\.swf$/i.test(url.pathname)&&params.responseStatusCode===200){const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId}),bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8');nativeGpu.inspectAsset(url,bytes);if(!nativeGpu.artwork)await nativeGpu.update(wc);const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));headers.push({name:'Content-Length',value:String(bytes.length)});await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:bytes.toString('base64')});fulfilled=true;setImmediate(()=>{void nativeGpu.update(wc);});return;}
+      }
       if(url.origin===ORIGIN && /\/DungeonBlitz\.swf$/i.test(url.pathname) && params.responseStatusCode===200) {
         const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
         const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),adapter=testOriginalClient?{patched:null,audio:false,mode:'original'}:adaptClient(bytes,LIVE,{multiplayer:adaptiveContract,singleplayer:singleplayerContract,audioDeltas});let patched=adapter.patched;
+        if(nativeGpu&&!testOriginalClient){const gpu=nativeGpu.adapt(bytes);if(gpu)patched=gpu;}
         if(process.env.BLITZ_SINGLEPLAYER_PORTS){
           const ports=JSON.parse(process.env.BLITZ_SINGLEPLAYER_PORTS);
           // First validate the exact original local contract, then relocate
@@ -273,6 +290,7 @@ app.whenReady().then(async () => {
           const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));
           headers.push({name:'Content-Length',value:String(patched.length)});
           await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:patched.toString('base64')});fulfilled=true;
+          if(nativeGpu)setImmediate(()=>{void nativeGpu.update(wc);});
           clientIntegration=true;emit({type:'client-integration',value:true});await applyZoom();
         } else {clientIntegration=false;emit({type:'client-integration',value:false});}
       }
@@ -286,12 +304,12 @@ app.whenReady().then(async () => {
           if(process.env.BLITZ_HOST_TEST==='1'&&testIconRepairs.length<8)testIconRepairs.push({path:url.pathname,sourceHash:require('crypto').createHash('sha256').update(bytes).digest('hex')});
         }
       }
-    }catch(_){if(/\/DungeonBlitz\.swf(?:\?|$)/i.test(params.request.url)){clientIntegration=false;emit({type:'client-integration',value:false});if(process.env.BLITZ_SINGLEPLAYER_PORTS){await wc.debugger.sendCommand('Fetch.failRequest',{requestId:params.requestId,errorReason:'BlockedByClient'});fulfilled=true;emit({type:'error',message:'The private singleplayer client could not be validated. Reconnect to retry.'});}}}
+    }catch(_){if(nativeGpu){nativeGpu.reject('GPU inspection failed; Original rendering is retained.');await nativeGpu.update(wc);}if(/\/DungeonBlitz\.swf(?:\?|$)/i.test(params.request.url)){clientIntegration=false;emit({type:'client-integration',value:false});if(process.env.BLITZ_SINGLEPLAYER_PORTS){await wc.debugger.sendCommand('Fetch.failRequest',{requestId:params.requestId,errorReason:'BlockedByClient'});fulfilled=true;emit({type:'error',message:'The private singleplayer client could not be validated. Reconnect to retry.'});}}}
     finally {if(!fulfilled&&!wc.isDestroyed())await wc.debugger.sendCommand('Fetch.continueRequest',{requestId:params.requestId}).catch(()=>{});}
   });
   try {
     wc.debugger.attach('1.3');
-    const patterns=[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}];
+    const patterns=nativeGpu?[{urlPattern:ORIGIN+'/*',resourceType:'Document',requestStage:'Response'},{urlPattern:ORIGIN+'/*.swf*',requestStage:'Response'}]:[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}];
     if(localAddress(LIVE))patterns.push({urlPattern:ORIGIN+'/*UI_1.swf*',requestStage:'Response'});
     await wc.debugger.sendCommand('Fetch.enable',{patterns});
   }
@@ -301,7 +319,7 @@ app.whenReady().then(async () => {
   wc.on('will-redirect', (event,url) => { if (!gameURL(url)) event.preventDefault(); });
   wc.on('new-window', (event,url) => { event.preventDefault(); void routeLink(url); });
   if (wc.setWindowOpenHandler) wc.setWindowOpenHandler(({url}) => { void routeLink(url); return { action: 'deny' }; });
-  wc.on('did-start-loading', () => {mountShortcut.reset();autorunShortcut.reset();clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;appliedWidescreen=null;appliedCenteredHotbar=null;appliedCenteredCamera=null;appliedMountShortcut=null;emit({ type: 'loading', value: true });});
+  wc.on('did-start-loading', () => {nativeGpu?.reset();mountShortcut.reset();autorunShortcut.reset();clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;appliedWidescreen=null;appliedCenteredHotbar=null;appliedCenteredCamera=null;appliedMountShortcut=null;emit({ type: 'loading', value: true });});
   wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
   wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
   wc.on('dom-ready', applyZoom);
@@ -340,6 +358,7 @@ readMessages(pipe, async cmd => {
   try {
     if (!win || win.isDestroyed()) return;
     if (cmd.type === 'zoom') { zoom = Math.max(.5, Math.min(3, Number(cmd.value) || 1)); await applyZoom(); }
+    if(cmd.type==='gpu-config'&&nativeGpu&&Number.isInteger(cmd.cap)&&cmd.cap>=15&&cmd.cap<=1000&&typeof cmd.enabled==='boolean'){nativeGpu.cap=cmd.cap;nativeGpu.enabled=cmd.enabled;await nativeGpu.update(win.webContents);}
     if(cmd.type==='render-resolution'&&[.5,.75,1].includes(cmd.value)){renderResolution=cmd.value;await applyZoom();}
     if(cmd.type==='show-fps'&&typeof cmd.value==='boolean'){showFPS=cmd.value;await applyFPSCounter();}
     if(cmd.type==='widescreen'&&typeof cmd.value==='boolean'){widescreen=cmd.value;await applyWidescreen();}
@@ -379,12 +398,13 @@ readMessages(pipe, async cmd => {
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();
     if (cmd.type === 'focus' && win.isVisible()) { win.focus(); win.webContents.focus(); }
-    if (cmd.type === 'visibility') { if (cmd.value) win.showInactive(); else {mountShortcut.reset();autorunShortcut.reset();win.hide();} }
+    if (cmd.type === 'visibility') { if (cmd.value) win.showInactive(); else {mountShortcut.reset();autorunShortcut.reset();win.hide();}if(nativeGpu){nativeGpu.visible=cmd.value===true;await nativeGpu.update(win.webContents);} }
     if (cmd.type === 'clear-cache') await win.webContents.session.clearCache();
     if (cmd.type === 'clear-data') await win.webContents.session.clearStorageData();
     if (['capture','test-geometry'].includes(cmd.type) && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.path === 'string') {
       const probeStarted=process.hrtime.bigint();
-      const geometry=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`);
+      const geometry=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,nativeGpuFrontend:typeof window.__blitzNativeGpu?.configure==='function',inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`);
+      if(nativeGpu)geometry.nativeGpu={client:nativeGpu.client,page:nativeGpu.page,artwork:nativeGpu.artwork,reason:nativeGpu.reason,frontendError:nativeGpu.frontendError||'',console:testGpuConsole};
       const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`).catch(error=>({probeError:error.message}));
       const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`).catch(error=>({probeError:error.message}));
       const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;

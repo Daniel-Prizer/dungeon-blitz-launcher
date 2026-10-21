@@ -4,12 +4,14 @@ const root=path.resolve(__dirname,'..');
 if(process.argv.includes('--private')){
  execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
  const config=process.env.BLITZ_UPDATER_TEST_CONFIG;
- if(!config||path.dirname(path.dirname(config))!==path.join(root,'.test-tools'))throw Error('Invalid updater test directory');
+ if(!config||path.dirname(path.dirname(config))!==fs.realpathSync(path.join(root,'.test-tools')))throw Error('Invalid updater test directory');
  const fixture=JSON.parse(fs.readFileSync(config,'utf8')).fixture;
  try{execFileSync(fixture||require('electron'),fixture?[]:[path.join(__dirname,'updater-electron-fixture.cjs')],{windowsHide:true,stdio:'pipe',timeout:30000});}
  finally{const log=path.join(path.dirname(config),'result.json');if(fs.existsSync(log))process.stdout.write(fs.readFileSync(log,'utf8')+'\n');}
 }else (async()=>{
- const directory=fs.mkdtempSync(path.join(root,'.test-tools/electron-updater-')),source=path.join(directory,'source'),version='9.9.9';
+ // Release staging shares tooling through a junction. Test installations must
+ // use its physical path so the native reparse-point protection stays active.
+ const directory=fs.mkdtempSync(path.join(fs.realpathSync(path.join(root,'.test-tools')),'electron-updater-')),source=path.join(directory,'source'),version='9.9.9';
  const build=`release/${version}/Dungeon Blitz Launcher-win32-x64`,content=path.join(directory,'asar-content');fs.mkdirSync(content);fs.writeFileSync(path.join(content,'example.txt'),'archive contents must never be walked or executed');
  for(const file of ['Dungeon Blitz Launcher.exe',`${build}/Dungeon Blitz Launcher.exe`]){const full=path.join(source,file);fs.mkdirSync(path.dirname(full),{recursive:true});fs.writeFileSync(full,'non-executable fixture');}
  const archivePath=`${build}/resources/app.asar`;fs.mkdirSync(path.dirname(path.join(source,archivePath)),{recursive:true});await require('@electron/asar').createPackage(content,path.join(source,archivePath));
@@ -18,9 +20,13 @@ if(process.argv.includes('--private')){
  const files=['Dungeon Blitz Launcher.exe',`${build}/Dungeon Blitz Launcher.exe`,archivePath].map(relative=>{const data=fs.readFileSync(path.join(source,relative));return {path:relative,size:data.length,sha256:digest(data)};});
  const manifest={schema:1,platform:'win32-x64',version,zip:{name:`Dungeon-Blitz-Launcher-${version}-win64.zip`,size:bytes.length,sha256:digest(bytes)},files},pair=crypto.generateKeyPairSync('ed25519'),payload=Buffer.from(JSON.stringify(manifest));
  const config={directory,source,zip,manifest,publicKey:pair.publicKey.export({type:'spki',format:'pem'}),envelope:{payload:payload.toString('base64'),signature:crypto.sign(null,payload,pair.privateKey).toString('base64')},helper:path.join(root,'runtime/UpdateInstaller.exe'),module:process.argv.includes('--packaged')?path.join(root,`release/${require('../package.json').version}/Dungeon Blitz Launcher-win32-x64/resources/app.asar/src/updater.cjs`):path.join(root,'src/updater.cjs')};
- config.root=root;config.version=require('../package.json').version;
+ config.root=root;config.version=require('../package.json').version;config.desktopGuard=fs.realpathSync(path.join(root,'.test-tools/PrivateDesktop.exe'));
  if(process.argv.includes('--isolated-fixture')){
-  const appRoot=path.join(directory,'fixture-source');fs.mkdirSync(appRoot);fs.writeFileSync(path.join(appRoot,'package.json'),JSON.stringify({name:'update-pipeline-fixture',productName:'Update Pipeline Fixture',version:config.version,main:'main.cjs'}));fs.copyFileSync(path.join(__dirname,'updater-electron-fixture.cjs'),path.join(appRoot,'main.cjs'));
+  const appRoot=path.join(directory,'fixture-source');fs.mkdirSync(appRoot);fs.writeFileSync(path.join(appRoot,'package.json'),JSON.stringify({name:'update-pipeline-fixture',productName:'Update Pipeline Fixture',version:config.version,main:'main.cjs'}));
+  // A main-process error otherwise opens Electron's invisible error dialog
+  // under Inno. Report it inside this disposable fixture and exit normally.
+  const failureLog=JSON.stringify(path.join(directory,'startup-error.log'));
+  fs.writeFileSync(path.join(appRoot,'main.cjs'),`process.on('uncaughtException',error=>{require('node:fs').appendFileSync(${failureLog},String(error.stack||error)+'\\n');require('electron').app.exit(1);});\n`+fs.readFileSync(path.join(__dirname,'updater-electron-fixture.cjs'),'utf8'));
   const [output]=await require('@electron/packager').packager({dir:appRoot,name:'UpdatePipelineFixture',executableName:'UpdatePipelineFixture',platform:'win32',arch:'x64',electronVersion:require('../package.json').devDependencies.electron,out:path.join(directory,'fixture'),asar:true,prune:false,overwrite:false});config.fixture=path.join(output,'UpdatePipelineFixture.exe');
  }
  const configFile=path.join(directory,'config.json');fs.writeFileSync(configFile,JSON.stringify(config));process.env.BLITZ_UPDATER_TEST_CONFIG=configFile;

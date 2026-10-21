@@ -10,6 +10,7 @@ const {valid:validAutorunKey}=require('./autorun-binding.js');
 const { loadStore } = require('./store.cjs');
 const { LegacyRuntime } = require('./legacy-runtime.cjs');
 const { ModernRuntime,modernAddress } = require('./modern-runtime.cjs');
+const {NativeGpuRuntime}=require('./native-gpu-runtime.cjs');
 const { Updater } = require('./updater.cjs');
 const {Singleplayer}=require('./singleplayer.cjs');
 const { classifyLink } = require('./legacy/links.cjs');
@@ -85,7 +86,7 @@ async function startGame() {
     gameAddress=local?.url||settings.gameURL;
     // Preserve the saved GPU choice when switching to the separately reviewed
     // local Flash client. Local GPU artwork has not been reviewed for parity.
-    const Runtime=settings.gameRenderer==='gpu'&&!local?ModernRuntime:LegacyRuntime;
+    const Runtime=settings.gameRenderer==='gpu'&&!local?NativeGpuRuntime:LegacyRuntime;
     const instance = new Runtime(root, win.getNativeWindowHandle(), smoke, privateDesktop, gameAddress,settings.hardwareAcceleration,{singleplayerPorts:local?.ports}); game = instance;
     const current = () => game === instance && !closing;
     instance.on('ready', () => { if (!current()) return; instance.configure(store.data.settings); layout(); if (win.isFocused()) focusGame(); });
