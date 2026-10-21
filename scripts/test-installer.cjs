@@ -2,7 +2,9 @@
 const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 (async()=>{
- const result=await require('./installer.cjs')({test:true});
+ let probe;
+ if(process.argv.includes('--isolated-fixture')){const fixture=JSON.parse(fs.readFileSync(path.join(root,'.test-tools/pipeline-fixture.json')));process.env.BLITZ_UPDATER_TEST_CONFIG=fixture.config;probe=fixture.executable;}
+ const result=await require('./installer.cjs')({test:true,probe});
  fs.writeFileSync(path.join(root,'.test-tools/installer-test-config.json'),JSON.stringify(result));
  const helper=path.join(root,'.test-tools/PrivateDesktop.exe');
  execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:exe','/platform:x64',`/out:${helper}`,path.join(__dirname,'PrivateDesktop.cs')],{windowsHide:true});

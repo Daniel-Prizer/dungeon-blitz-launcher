@@ -5,14 +5,21 @@ const fs = require('node:fs');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 (async () => {
-  execFileSync(process.execPath, [path.join(__dirname, 'prepare-legacy.cjs')], { stdio: 'inherit' });
+  if(process.argv.includes('--prepared-game')){
+    // Explicit build continuation after the complete game preparation passed.
+    // Reject changed legacy source instead of packaging a stale ASAR.
+    const archive=require('@electron/asar'),prepared=path.join(root,'runtime/game/resources/app.asar');
+    const check=directory=>{for(const entry of fs.readdirSync(path.join(root,'src/legacy',directory),{withFileTypes:true})){const name=path.join(directory,entry.name);if(entry.isDirectory())check(name);else if(!archive.extractFile(prepared,name).equals(fs.readFileSync(path.join(root,'src/legacy',name))))throw Error('Prepared game source changed: '+name);}};check('');
+    require('./runtime-import.cjs').verifyImported(path.join(root,'runtime/game'),JSON.parse(fs.readFileSync(path.join(root,'runtime/provenance.json'))).importedFiles);
+  }else execFileSync(process.execPath, [path.join(__dirname, 'prepare-legacy.cjs')], { stdio: 'inherit' });
+  await require('./prepare-webview-sdk.cjs')();require('./prepare-modern.cjs')();
   const paths = await packager({
     dir: root, name: 'Dungeon Blitz Launcher', executableName: 'Dungeon Blitz Launcher', platform: 'win32', arch: 'x64',
     electronVersion: require('../package.json').devDependencies.electron,
     out: path.join(root, 'release', require('../package.json').version), overwrite: true, asar: true, prune: true,
     icon: fs.existsSync(path.join(root, 'assets/icon.ico')) ? path.join(root, 'assets/icon.ico') : undefined,
     extraResource: [path.join(root, 'runtime')],
-    ignore: [/^\/artifacts($|\/)/, /^\/runtime($|\/)/, /^\/release($|\/)/, /^\/\.test-profile($|\/)/, /^\/\.probe-profile($|\/)/, /^\/\.test-tools($|\/)/, /^\/(?:Blitz Browser|Dungeon Blitz Launcher(?: Setup)?)\.exe$/, /^\/scripts($|\/)/, /^\/test($|\/)/, /^\/docs($|\/)/, /^\/\.git($|\/)/],
+    ignore: [/^\/artifacts($|\/)/, /^\/runtime($|\/)/, /^\/release($|\/)/, /^\/\.test-profile($|\/)/, /^\/\.probe-profile($|\/)/, /^\/\.test-tools($|\/)/, /^\/(?:Blitz Browser|Dungeon Blitz Launcher(?: Setup)?)\.exe$/, /^\/research($|\/)/, /^\/scripts($|\/)/, /^\/test($|\/)/, /^\/docs($|\/)/, /^\/\.git($|\/)/],
     win32metadata: { CompanyName: 'Dungeon Blitz Launcher', FileDescription: 'Dungeon Blitz Launcher for Dungeon Blitz', ProductName: 'Dungeon Blitz Launcher' },
   });
   const output = paths[0], executable = path.join(output, 'Dungeon Blitz Launcher.exe');
@@ -45,7 +52,7 @@ const root = path.resolve(__dirname, '..');
   const generated=path.join(root,'.test-tools/Launcher.generated.cs');fs.writeFileSync(generated,launcherSource);
   const launcher=path.join(root,'Dungeon Blitz Launcher.exe');
   execFileSync('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe',['/nologo','/target:winexe','/platform:x64','/r:System.Windows.Forms.dll',`/win32icon:${path.join(root,'assets/icon.ico')}`,`/out:${launcher}`,generated],{stdio:'inherit'});
-  execFileSync(launcher,['--verify'],{stdio:'inherit',windowsHide:true});
+  require('./verify-shim.cjs')();
   execFileSync(process.execPath,[path.join(__dirname,'verify-package.cjs')],{stdio:'inherit',windowsHide:true});
   // Keep historical root shims, portable builds and agent-owned copies intact.
   console.log(`Root executable (always latest): ${launcher}`);

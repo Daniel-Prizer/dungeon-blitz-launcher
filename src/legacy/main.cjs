@@ -321,7 +321,7 @@ app.whenReady().then(async () => {
     if ((input.control || input.meta) && input.key === ',') { event.preventDefault(); emit({type:'settings'}); }
   });
   win.on('blur',()=>mountShortcut.reset());
-  win.on('blur',()=>autorunShortcut.reset());
+  win.on('blur',()=>autorunShortcut.blur());
   const hwnd = win.getNativeWindowHandle();
   emit({ type: 'ready', hwnd: hwnd.length === 8 ? hwnd.readBigUInt64LE().toString() : String(hwnd.readUInt32LE()), electron: process.versions.electron, chromium: process.versions.chrome });
   wc.loadURL(LIVE).catch(() => {});

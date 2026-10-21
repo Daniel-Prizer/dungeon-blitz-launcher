@@ -1,11 +1,21 @@
 'use strict';
 const {app}=require('electron'),disk=require('original-fs'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..');execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
-const config=JSON.parse(disk.readFileSync(process.env.BLITZ_UPDATER_TEST_CONFIG,'utf8')),record={version:require('../package.json').version,electron:process.versions.electron,passed:false,checks:[]};
+const config=JSON.parse(disk.readFileSync(process.env.BLITZ_UPDATER_TEST_CONFIG,'utf8')),root=config.root||path.resolve(__dirname,'..');execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
+const record={version:config.version||require('../package.json').version,electron:process.versions.electron,packaged:app.isPackaged,passed:false,checks:[]};
 app.setPath('userData',path.join(config.directory,'profile'));app.enableSandbox();
 function finish(error){if(error)record.error=String(error.stack||error);else record.passed=true;disk.writeFileSync(path.join(config.directory,'result.json'),JSON.stringify(record,null,2));app.exit(error?1:0);}
 const deadline=setTimeout(()=>finish(Error('Electron updater did not complete within 15 seconds')),15000);
 app.whenReady().then(async()=>{
+ const setupIndex=process.argv.indexOf('--fixture-setup-update');
+ if(setupIndex>=0){
+  const installRoot=path.resolve(process.argv[setupIndex+1]),current=process.argv[setupIndex+2];
+  // This genuine test application calls the packaged Setup update module's
+  // current-version path. Installed game executables are never started.
+  assert(/^\d+\.\d+\.\d+$/.test(current),'Own installed version required');
+  const module=path.join(path.dirname(config.module),'setup-update.cjs');
+  global.fetch=async()=>new Response(JSON.stringify({tag_name:'v'+current,assets:[]}));
+  const result=await require(module).update({current,installRoot,cache:path.join(config.directory,'setup-cache'),helper:config.helper});assert.equal(result.phase,'current');clearTimeout(deadline);app.exit(0);return;
+ }
  const {Updater,verifyFiles}=require(config.module),destination=path.join(config.directory,'installation');disk.mkdirSync(destination);
  assert(fs.statSync(path.join(config.source,config.manifest.files[2].path)).isDirectory(),'Fixture must exercise Electron ASAR virtualization');
  const progress=[];await verifyFiles(config.source,config.manifest,undefined,(count,total)=>progress.push([count,total]));assert.deepEqual(progress,[[1,3],[2,3],[3,3]]);record.checks.push('Actual Electron verifies the physical ASAR bytes without walking its virtual contents and reports progress');

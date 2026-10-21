@@ -21,6 +21,11 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   }
   compare('src');
   compare('assets');
+  const modern=path.join(output,'resources/runtime/modern');
+  for(const name of fs.readdirSync(path.join(root,'runtime/modern'),{withFileTypes:true}))if(name.isFile())assert.equal(hash(path.join(modern,name.name)),hash(path.join(root,'runtime/modern',name.name)),name.name);
+  for(const name of fs.readdirSync(path.join(root,'runtime/modern/resources')))assert.equal(hash(path.join(modern,'resources',name)),hash(path.join(root,'runtime/modern/resources',name)),name);
+  for(const name of ['runtime.json','assets.json','entry.mjs','render-worker.mjs','input.mjs','crosshair.js'])assert(fs.existsSync(path.join(modern,'resources',name)),name+' must be packaged');
+  for(const name of ['bootstrap.js','entry.mjs','session.mjs','render-worker.mjs'])assert(!/GPU_PRIVATE_QA|__ownGpuSession|device-loss|OwnRunProbe/.test(fs.readFileSync(path.join(modern,'resources',name),'utf8')),'Private QA must not ship: '+name);
   assert.equal(JSON.parse(asar.extractFile(archive,'package.json')).version, version);
   const legacy = path.join(output,'resources/runtime/game/resources/app.asar');
   assert.deepEqual(asar.extractFile(legacy,'main.cjs'),fs.readFileSync(path.join(root,'src/legacy/main.cjs')));
@@ -59,7 +64,7 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   const fuses = await getCurrentFuseWire(path.join(output,'Dungeon Blitz Launcher.exe'));
   for(const name of ['RunAsNode','EnableNodeOptionsEnvironmentVariable','EnableNodeCliInspectArguments','GrantFileProtocolExtraPrivileges'])assert.equal(fuses[FuseV1Options[name]],FuseState.DISABLE,name);
   for(const name of ['EnableCookieEncryption','EnableEmbeddedAsarIntegrityValidation','OnlyLoadAppFromAsar'])assert.equal(fuses[FuseV1Options[name]],FuseState.ENABLE,name);
-  execFileSync(path.join(root,'Dungeon Blitz Launcher.exe'),['--verify'],{windowsHide:true,stdio:'inherit'});
-  fs.writeFileSync(path.join(root,'docs/package-test-results.json'),JSON.stringify({time:new Date().toISOString(),version,checked,appHash:hash(archive),legacyHash:hash(legacy),launcherHash:hash(path.join(root,'Dungeon Blitz Launcher.exe')),passed:['Packaged source matches tested source','Packaged Flash host matches tested source and binary runtime','Retired enhancement controls, source, native module and model excluded','Test profiles excluded','Security fuses match intended values','Root executable resolves matching version without opening UI']},null,2));
-  console.log('PASS Packaged source, runtime, retired enhancer absence, fuses and root executable verification');
+  require('./verify-shim.cjs')();
+  fs.writeFileSync(path.join(root,'docs/package-test-results.json'),JSON.stringify({time:new Date().toISOString(),version,checked,appHash:hash(archive),legacyHash:hash(legacy),launcherHash:hash(path.join(root,'Dungeon Blitz Launcher.exe')),passed:['Packaged source matches tested source','Packaged Flash host matches tested source and binary runtime','Retired enhancement controls, source, native module and model excluded','Test profiles excluded','Security fuses match intended values','Byte-identical root IL verifies matching core and rejects a missing core through a naturally named probe']},null,2));
+  console.log('PASS Packaged source, original/GPU runtimes, private QA absence, fuses and byte-identical root-shim logic');
 })().catch(error=>{console.error(error);process.exitCode=1});

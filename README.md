@@ -1,6 +1,12 @@
 # Dungeon Blitz Launcher
 
-Version **0.27.0** (minor: changeable autorun key and fullscreen dungeon backdrops).
+Version **0.28.0** (minor: optional GPU world rendering and background autorun).
+
+Settings → Display → **Game renderer: GPU world (Beta)** enables a separate WebView2 game surface after Save and Reconnect. Its render worker redraws native world artwork on the GPU and interpolates presentation transforms between unchanged game updates. Two artwork workers decode assets in parallel. The adjustable cap is 15–1000; the measured GPU rate counts completed changing canvas renders, not the configured target. The original game counter still measures native game updates.
+
+The private 1080p tutorial test reached 426 completed changing GPU renders/second. Results depend on hardware and scene; 1000 is an upper cap, not a performance promise. Physical display scanout, all dungeon effects and combat performance have not been established. Simulation, animations, networking and server rules retain their original cadence. The original renderer remains the default and is available by Save and Reconnect. GPU mode requires the Microsoft Edge WebView2 Runtime and supports the official multiplayer origin; local servers retain Original mode. Its separate sign-in profile does not import Flash credentials.
+
+An activated autorun now continues when the game loses focus. Press the saved key again or a movement key after returning to stop. Opening Settings, hiding the game, disabling autorun or changing game context still stops it; no movement keys are sent to other applications.
 
 Large dungeon backgrounds now keep their complete artwork in fullscreen by fitting each cached image within the original memory limit. Foreground geometry and game rules stay unchanged.
 

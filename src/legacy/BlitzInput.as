@@ -25,7 +25,6 @@ package {
    main.addEventListener(Event.ENTER_FRAME,CheckAutorun,false,-103,true);
    main.stage.addEventListener(KeyboardEvent.KEY_DOWN,ManualInput,true,100,true);
    main.stage.addEventListener(KeyboardEvent.KEY_DOWN,ManualInput,false,100,true);
-   main.stage.addEventListener(Event.DEACTIVATE,StopAutorunEvent,false,100,true);
   }
   private static function CurrentGame():Game {
    if(!main||!main.stage||!main.var_523||main.var_523.length!=1)return null;
@@ -54,13 +53,15 @@ package {
    if(key&&main&&main.stage){dispatching=true;try{main.stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,key));}finally{dispatching=false;}}
    return true;
   }
-  private static function StopAutorunEvent(event:Event):void {StopAutorun();}
   private static function CheckAutorun(event:Event):void {
    if(!runningKey)return;
    if(CurrentGame()!=runningGame||MovementKey(runningGame,runningCommand)!=runningKey){StopAutorun();return;}
    // Native key-up removes a movement command even when a synthetic key-down
    // is holding it. Reassert only when absent, through the original handler.
    // Facing can change while aiming; keep the direction chosen at activation.
+   // Focus loss may release native held keys. An explicit active autorun
+   // remains local to this stage and restores only its selected movement key;
+   // it never routes OS input into whichever application is now foreground.
    if(runningGame.var_406&&runningGame.var_406.indexOf(runningCommand)<0){
     dispatching=true;
     try{main.stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_DOWN,true,false,0,runningKey));}finally{dispatching=false;}

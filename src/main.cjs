@@ -9,6 +9,7 @@ const {valid:validCrosshair}=require('./crosshair.js');
 const {valid:validAutorunKey}=require('./autorun-binding.js');
 const { loadStore } = require('./store.cjs');
 const { LegacyRuntime } = require('./legacy-runtime.cjs');
+const { ModernRuntime,modernAddress } = require('./modern-runtime.cjs');
 const { Updater } = require('./updater.cjs');
 const { classifyLink } = require('./legacy/links.cjs');
 const smoke = !app.isPackaged && process.argv.includes('--smoke-test');
@@ -37,7 +38,7 @@ async function openGameLink(event) {
 function state() {
   return { settings: store.data.settings, gameURL: gameAddress, loading, error, modal, fullscreen: win?.isFullScreen() || false,
     cursor: game?.cursorState || { enabled: store.data.settings.cursorLock, active: false },
-    audio: game?.audioState || null, originalPointer:game?.originalPointer||null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: gameAddress !== store.data.settings.gameURL };
+    audio: game?.audioState || null, gpu:game?.gpuStatus||null, originalPointer:game?.originalPointer||null, audioIntegration:game?.audioIntegration ?? null, clientIntegration: game?.clientIntegration ?? null, capturingShortcut, version: app.getVersion(), update:updater?.status||{phase:'development'}, pendingURL: gameAddress !== store.data.settings.gameURL };
 }
 function publish() { if (win && !win.isDestroyed()) win.webContents.send('blitz:state', state()); }
 function layout() {
@@ -76,7 +77,8 @@ function startGame() {
   game?.close(); game = null; error = ''; loading = true; gameAddress = store.data.settings.gameURL;
   try {
     const root = app.isPackaged ? path.join(process.resourcesPath, 'runtime') : path.join(__dirname, '../runtime');
-    const instance = new LegacyRuntime(root, win.getNativeWindowHandle(), smoke, privateDesktop, gameAddress,store.data.settings.hardwareAcceleration); game = instance;
+    const Runtime=store.data.settings.gameRenderer==='gpu'?ModernRuntime:LegacyRuntime;
+    const instance = new Runtime(root, win.getNativeWindowHandle(), smoke, privateDesktop, gameAddress,store.data.settings.hardwareAcceleration); game = instance;
     const current = () => game === instance && !closing;
     instance.on('ready', () => { if (!current()) return; instance.configure(store.data.settings); layout(); if (win.isFocused()) focusGame(); });
     instance.on('failure', message => { if (!current()) return; error = String(message).slice(0, 300); loading = false; modal = 'error'; layout(); win.webContents.focus(); });
@@ -131,6 +133,9 @@ async function action(name, value) {
       if ('gameURL' in value && !gameURL(value.gameURL)) throw new Error('Use an HTTPS game URL, or HTTP for localhost. Passwords in URLs are not allowed.');
       if ('volume' in value && (!Number.isInteger(value.volume) || value.volume < 0 || value.volume > 100)) throw new Error('Volume must be a whole number from 0 to 100.');
       if('renderResolution' in value&&![.5,.75,1].includes(value.renderResolution))throw new Error('Choose 100%, 75% or 50% rendering resolution.');
+      if('gameRenderer' in value&&!['original','gpu'].includes(value.gameRenderer))throw new Error('Choose Original or GPU rendering.');
+      if('gpuFrameCap' in value&&(!Number.isInteger(value.gpuFrameCap)||value.gpuFrameCap<15||value.gpuFrameCap>1000))throw new Error('GPU frame cap must be a whole number from 15 to 1000.');
+      if((value.gameRenderer??store.data.settings.gameRenderer)==='gpu'&&!modernAddress(value.gameURL??store.data.settings.gameURL))throw new Error('Choose Original rendering for a local or custom server.');
       if('showFPS' in value&&typeof value.showFPS!=='boolean')throw new Error('Show FPS counter must be on or off.');
       if('experimentalWidescreen' in value&&typeof value.experimentalWidescreen!=='boolean')throw new Error('Experimental 16:9 must be on or off.');
       if('centeredHotbar' in value&&typeof value.centeredHotbar!=='boolean')throw new Error('Original centered hotbar must be on or off.');
@@ -147,7 +152,7 @@ async function action(name, value) {
       try { store.save(); } catch { store.data.settings = previous; throw new Error('Settings could not be saved. Check free disk space.'); }
       game?.configure(next); layout();
       if(updater&&previous.autoUpdates!==next.autoUpdates){updater.stop();updater.enabled=next.autoUpdates;updater.start();if(game?.clientIntegration===false||game?.audioIntegration===false)updater.checkForClientUpdate?.();}
-      return { ok: true, message: previous.hardwareAcceleration !== next.hardwareAcceleration ? 'Saved. Restart the launcher to change graphics acceleration.' : 'Saved' };
+      return { ok: true, message: previous.gameRenderer!==next.gameRenderer?'Saved. Reconnect game to change the renderer.':previous.hardwareAcceleration !== next.hardwareAcceleration ? 'Saved. Restart the launcher to change graphics acceleration.' : 'Saved' };
     }
     default: throw new Error('Unsupported launcher action.');
   }
