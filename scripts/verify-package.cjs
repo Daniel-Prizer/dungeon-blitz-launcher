@@ -33,6 +33,7 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   for(const [name,expected]of Object.entries(localProvenance.files))assert.equal(localHash(name),expected,name);
   assert.equal(localHash('client.swf'),require('../src/legacy/client-singleplayer.json').inputHash);
   function checkLocal(dir=''){for(const item of fs.readdirSync(path.join(localSource,dir),{withFileTypes:true})){const name=dir?dir+'/'+item.name:item.name;assert(!item.isSymbolicLink());assert(!/(^|\/)(Accounts\.json|saves|instance\.lock|\.env)$/i.test(name));if(item.isDirectory())checkLocal(name);else assert.equal(localHash(name),hash(path.join(localSource,name)),name);}}checkLocal();
+  require('./asar-integrity.cjs').verify(path.join(output,'Dungeon Blitz Launcher.exe'),[archive,local]);
   const modern=path.join(output,'resources/runtime/modern');
   for(const name of fs.readdirSync(path.join(root,'runtime/modern'),{withFileTypes:true}))if(name.isFile())assert.equal(hash(path.join(modern,name.name)),hash(path.join(root,'runtime/modern',name.name)),name.name);
   for(const name of fs.readdirSync(path.join(root,'runtime/modern/resources')))assert.equal(hash(path.join(modern,'resources',name)),hash(path.join(root,'runtime/modern/resources',name)),name);
