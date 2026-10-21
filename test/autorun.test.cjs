@@ -1,11 +1,19 @@
 const test=require('node:test'),assert=require('node:assert/strict'),{AutorunShortcut}=require('../src/legacy/autorun-shortcut.cjs');
 const flush=()=>new Promise(r=>setImmediate(r));
-test('Ö autorun is local, single-toggle, layout-aware and cancels pending work on blur/disable',async()=>{
+test('Ö autorun is local, single-toggle, layout-aware and cancels pending work on reset/disable',async()=>{
  let toggles=0,stops=0;const key=new AutorunShortcut(()=>toggles++,()=>stops++),down=(keyName='ö',extra={})=>key.input({key:keyName,type:'keyDown',...extra});
  down();down();await flush();assert.equal(toggles,1);key.input({key:'ö',type:'keyUp'});down('Ö');await flush();assert.equal(toggles,2);
  for(const extra of [{control:true},{alt:true},{meta:true},{isAutoRepeat:true}]){key.input({key:'ö',type:'keyUp'});down('ö',extra);}await flush();assert.equal(toggles,2);
  key.input({key:'ö',type:'keyUp'});down('o');down('ö');key.reset();await flush();assert.equal(toggles,2);assert.equal(stops,1);
  key.configure(false);down();await flush();assert.equal(toggles,2);assert.equal(stops,2);
+});
+test('tabbing out preserves an activated autorun but cancels a pending toggle and stale held key',async()=>{
+ let toggles=0,stops=0;const key=new AutorunShortcut(()=>toggles++,()=>stops++);
+ key.input({key:'ö',type:'keyDown'});await flush();assert.equal(toggles,1);
+ key.blur();assert.equal(stops,0);assert.equal(key.held,false);
+ key.input({key:'ö',type:'keyDown'});key.blur();await flush();assert.equal(toggles,1);assert.equal(stops,0);
+ key.input({key:'ö',type:'keyDown'});await flush();assert.equal(toggles,2,'A fresh foreground press can stop the active run');
+ key.configure(false);assert.equal(stops,1,'Explicit disable still releases native movement');
 });
 
 test('autorun binding validates keys, migrates Ö default and resets held/pending work on rebind',async()=>{

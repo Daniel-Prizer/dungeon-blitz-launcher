@@ -69,6 +69,7 @@ function render(next) {
     for(const slider of document.querySelectorAll('input[type=range]'))paintVolume(slider);
     $('game-zoom').value = s.gameZoom; $('hardware-acceleration').checked = s.hardwareAcceleration; $('keep-awake').checked = s.keepGameAwake;
     $('render-resolution').value=s.renderResolution;
+    $('game-renderer').value=s.gameRenderer;if(document.activeElement!==$('gpu-frame-cap'))$('gpu-frame-cap').value=s.gpuFrameCap;
     $('show-fps').checked=s.showFPS;
     $('experimental-widescreen').checked=s.experimentalWidescreen;
     $('centered-hotbar').checked=s.centeredHotbar;
@@ -102,6 +103,9 @@ function render(next) {
   $('audio-mix-status').textContent=state.audioIntegration===false?'Separate sound controls need a launcher update. Master volume still works.':'Player includes abilities and menu sounds. Environment includes ambient and world sounds. Master volume scales every category.';
   for(const bus of audioBuses)$('audio-'+bus).disabled=state.audioIntegration===false;
   $('render-resolution').disabled=state.clientIntegration===false||state.audioIntegration===false;
+  $('gpu-frame-cap').disabled=s.gameRenderer!=='gpu'||!s.hardwareAcceleration;
+  $('gpu-status').textContent=state.gpu?.completedFrames>0?`${state.gpu.phase==='gpu'?'Average':'Last average'}: ${Math.round(state.gpu.completedCanvasFPS||0)} completed GPU frames/s · monitor scanout is separate.`:state.gpu?.reason||'15–1000 changing world frames/s. Game simulation keeps its native rate.';
+  $('fps-hint').textContent=s.gameRenderer==='gpu'?'The in-game counter measures native game ticks. GPU rendering is measured above.':'Current FPS and 30-second low / high averages, in the gray margin.';
   $('show-fps').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('experimental-widescreen').disabled=state.clientIntegration===false||state.audioIntegration===false;
   $('centered-hotbar').disabled=!s.experimentalWidescreen||state.clientIntegration===false||state.audioIntegration===false;
@@ -152,6 +156,8 @@ $('multiplayer-url').onclick=()=>{$('game-url').value='https://dungeonblitzr.the
 $('cursor-lock').onchange = () => edit({ cursorLock: $('cursor-lock').checked });
 $('shift-mount').onchange=()=>edit({shiftMount:$('shift-mount').checked});
 $('autorun').onchange=()=>edit({autorun:$('autorun').checked});
+$('game-renderer').onchange=()=>edit({gameRenderer:$('game-renderer').value});
+$('gpu-frame-cap').onchange=()=>{const value=Number($('gpu-frame-cap').value);if(!Number.isInteger(value)||value<15||value>1000){feedback('Choose a whole GPU frame cap from 15 to 1000.',true);return;}edit({gpuFrameCap:value});};
 function keyHint(id){return id==='autorun-key'?'autorun-key-hint':'shortcut-hint';}
 async function finishCapture(){recording=false;await call('capture-shortcut',false);render(state);}
 for(const id of ['unlock-key','autorun-key'])$(id).onclick=async()=>{

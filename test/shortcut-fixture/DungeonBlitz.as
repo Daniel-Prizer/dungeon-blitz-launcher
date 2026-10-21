@@ -53,6 +53,11 @@ package {
   private function control(mode:String):Boolean {
    try {
    if(mode=="run-release"){game.method_885(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,39));return true;}
+   if(mode=="run-deactivate"){game.method_885(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,37));game.method_885(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,39));stage.dispatchEvent(new Event(Event.DEACTIVATE));return true;}
+   if(mode=="run-open-map"){game.screenMap.mbVisible=true;return true;}
+   if(mode=="run-type"){stage.focus=field;return true;}
+   if(mode=="run-leave"){game.gameState="Login";return true;}
+   if(mode=="run-manual-stop"){stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_DOWN,true,false,0,39));stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,39));return true;}
    if(mode=="run-face-left"){game.clientEnt.bLeftFacing=true;return true;}
    BlitzInput.StopAutorun();
    events=[];stage.focus=null;game.gameState=Game.STATE_PLAY;game.mKeybindManager.mbStatePickKey=false;

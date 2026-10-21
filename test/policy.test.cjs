@@ -14,7 +14,11 @@ test('launcher defaults and validation discard obsolete browser settings', () =>
   for (let i=0;i<=100;i++)assert.equal(validSettings({volume:i}).volume,i);
   assert.equal(validSettings({unlockKey:'F11'}).unlockKey,'AltLeft');assert.equal(validSettings({unlockKey:'F8'}).unlockKey,'F8');
   assert.equal(validSettings({unlockKey:'KeyG'}).unlockKey,'KeyG');assert.equal(validSettings({unlockKey:'ControlLeft'}).unlockKey,'ControlLeft');assert.equal(validSettings({unlockKey:'Escape'}).unlockKey,'AltLeft');
-  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','volume','audioMix','cursorLock','shiftMount','autorun','autorunKey','unlockKey','gameZoom','renderResolution','showFPS','experimentalWidescreen','centeredHotbar','centeredCamera','crosshair','autoUpdates','keepGameAwake','hardwareAcceleration']);
+  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','volume','audioMix','cursorLock','shiftMount','autorun','autorunKey','unlockKey','gameZoom','renderResolution','gameRenderer','gpuFrameCap','showFPS','experimentalWidescreen','centeredHotbar','centeredCamera','crosshair','autoUpdates','keepGameAwake','hardwareAcceleration']);
+  assert.equal(defaults.gameRenderer,'original');assert.equal(defaults.gpuFrameCap,1000);
+  assert.equal(validSettings({gameRenderer:'gpu',gpuFrameCap:240}).gpuFrameCap,240);
+  for(const cap of [0,14,1001,240.5,'240',NaN,Infinity,null])assert.equal(validSettings({gpuFrameCap:cap}).gpuFrameCap,1000);
+  for(const mode of ['web','ruffle','file:///x',{},null])assert.equal(validSettings({gameRenderer:mode}).gameRenderer,'original');
   assert.equal(defaults.shiftMount,false);assert.equal(validSettings({shiftMount:true}).shiftMount,true);
   assert.equal(defaults.autorun,true);assert.equal(validSettings({autorun:false}).autorun,false);assert.equal(validSettings({autorun:true}).autorun,true);
   assert.equal(validSettings({shiftMount:true,unlockKey:'ShiftLeft'}).shiftMount,false);
@@ -47,7 +51,7 @@ test('migration and atomic persistence retain game preferences without browser d
     for(const field of ['upscaler','neuralCompare','presentationFPS'])assert(!(field in old.data.settings),'Retired graphics preference must not survive migration: '+field);
     old.data.settings.volume=37;old.data.settings.cursorLock=true;old.data.settings.unlockKey='F8';old.data.settings.gameURL='http://localhost:8080/';old.save();
     old.data.settings.audioMix={player:23,music:0,environment:44,creatures:100};old.save();
-    old.data.settings.renderResolution=.75;old.save();
+    old.data.settings.renderResolution=.75;old.data.settings.gameRenderer='gpu';old.data.settings.gpuFrameCap=360;old.save();
     old.data.settings.showFPS=true;old.data.settings.experimentalWidescreen=true;old.save();assert.equal(loadStore(dir).data.settings.showFPS,true);assert.equal(loadStore(dir).data.settings.experimentalWidescreen,true);
     old.data.settings.showFPS=false;old.save();assert.equal(loadStore(dir).data.settings.showFPS,false);
     assert.deepEqual(loadStore(dir).data.settings,old.data.settings);

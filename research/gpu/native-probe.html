@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><title>Offline native world to WebGPU parity</title>
+<style>html,body{margin:0;background:#484955}ruffle-player{display:block;width:1200px;height:800px}canvas{display:block;max-width:1200px}</style>
+<script>window.RufflePlayer={config:{publicPath:'/engine/',polyfills:false,autoplay:'on',unmuteOverlay:'hidden',splashScreen:false,letterbox:'off',logLevel:'error',allowScriptAccess:true}};</script>
+<script src="/engine/ruffle.js"></script><canvas id="proof"></canvas>
+<script type="module">
+import {GpuSceneRenderer,measureThroughput} from './renderer.mjs';import {ArtworkPool} from './art-pool.mjs';
+const player=window.RufflePlayer.newest().createPlayer();document.body.prepend(player);window.nativePlayer=player;player.ruffle().load({url:'/fixture.swf',allowScriptAccess:true});
+const call=(name,...args)=>player.ruffle().callExternalInterface(name,...args);
+const bytes=base64=>Uint8Array.from(atob(base64),c=>c.charCodeAt(0)).buffer;
+window.verifyNativeGpu=async()=>{
+ let ready=false;for(let i=0;i<100;i++){await new Promise(r=>setTimeout(r,200));const state=call('BlitzRenderState');if(state?.fixture?.loadError)throw Error(state.fixture.loadError);if(state?.fixture?.hotbar!==undefined){ready=true;break;}}if(!ready)throw Error('Original native fixture failed to initialize');
+ call('BlitzTransitionFixtureControl',true,false);call('BlitzWorldFixtureControl',250,true,false,false,250,false,'a_Room_Main');await new Promise(r=>setTimeout(r,300));
+ player.ruffle().suspend();const native=call('BlitzGpuExport');if(!native?.scene?.nodes?.length||native.worldOnly!==true)throw Error('Original native layer export unavailable');
+ const renderer=await GpuSceneRenderer.create({width:native.width,height:native.height}),pool=new ArtworkPool(2);let images=[];
+ try{images=await Promise.all(native.art.map(png=>pool.decode(bytes(png))));const atlas=await renderer.setArtwork(images);images.forEach(b=>pool.release(b));images=[];await renderer.render(native.scene,{clear:native.clear});const pixels=await renderer.readPixels();
+  const reference=await pool.decode(bytes(native.reference)),canvas=new OffscreenCanvas(native.width,native.height),ctx=canvas.getContext('2d');ctx.drawImage(reference,0,0);pool.release(reference);const original=ctx.getImageData(0,0,native.width,native.height).data;
+  let sum=0,max=0,large=0;for(let i=0;i<pixels.length;i++){const difference=Math.abs(original[i]-pixels[i]);sum+=difference;max=Math.max(max,difference);if(difference>3)large++;}
+  const comparison={meanChannelDifference:sum/pixels.length,maxChannelDifference:max,channelsAbove3:large,totalChannels:pixels.length};
+  const proof=document.querySelector('#proof');proof.width=native.width;proof.height=native.height;proof.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pixels),native.width,native.height),0,0);
+  if(comparison.meanChannelDifference>1||large/pixels.length>.01)throw Error('Native/GPU world parity failed: '+JSON.stringify(comparison));
+  const frame=t=>({...native.scene,time:t,nodes:native.scene.nodes.map(n=>({...n,matrix:[...n.matrix.slice(0,4),n.matrix[4]+Math.sin(t/100)*2,n.matrix[5]]}))});
+  const throughput=await measureThroughput(renderer,frame,{frames:16});
+  const pipeline=await measureThroughput(renderer,frame,{frames:32,pipelineDepth:2});
+  return {status:'pass',scope:'Original native Home world batches to WebGPU; no game account or live session',worldOnly:true,nativeLayers:native.scene.nodes.length,width:native.width,height:native.height,atlas,comparison,throughput,pipeline,adapter:renderer.adapterInfo,limits:['one offline scene, not all game states','export rerasterizes batches; no live dirty tracking','no combat, latency or displayed-FPS claim']};
+ }finally{images.forEach(b=>pool.release(b));pool.close();renderer.close();}
+};
+</script>

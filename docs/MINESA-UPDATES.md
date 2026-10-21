@@ -1,5 +1,17 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 21 GPU compatibility (0.28.0)
+
+The optional GPU host pins main SWF `7f82ac2475ccdd8819c8616eabcbb13ad22ff94d0448dffc8a4d510862772ccc` (978,272 bytes), loader `5822ddb03354ef0bf3ecaac38d52516ec2a616124be1f10f38ca5d2a9d64508f` and `ruffle_web_bg.MYS6QBKT.wasm` SHA-256 `24d9b609b9d355beadf160adc9d5cc6d78fb239e477c9cd6be47250e5e97da16` (12,659,596 bytes). Public downloads use no authentication. `src/gpu/runtime.json` and `assets.json` admit the reviewed runtime and 73 exact artwork resources. A changed engine/main source disables the bridge before serving the original main; changed artwork restores native rendering. Review code, VM and art semantics before deriving another recipe.
+
+`base-contract.json` pins the independently reviewed 0.27 presentation recipe used to reconstruct the GPU bridge. `prepare-gpu-contract.cjs` verifies retained native envelopes and tags. The original legacy contract is rebuilt with the owned background-autorun helper; native gameplay/focus/input methods remain unchanged. Local contracts and Original mode remain separate; GPU mode rejects custom/local URLs instead of switching them to multiplayer. This is a launcher feature release, not a Minesa server repair. No simulation, packet, dungeon rejoin or loot-award change is introduced.
+
+## Background autorun (0.28.0)
+
+Daniel requested that an activated autorun survive tabbing out. The prepared host cancels pending shortcut work on blur without releasing an already active run; the input helper preserves that run through stage deactivation and restores its selected native command after ordinary key-release cleanup. Toggle, manual movement, typing/context changes, Settings, hiding and disabling still stop it. No OS input, global hook, native focus-event suppression, saved keymap, physics or packet change is introduced.
+
+`node --test test/autorun.test.cjs` passes the pending/active blur distinction. `node scripts/research-autorun-background.cjs` compiles the owned helper/fixture and verifies 4478 other original method envelopes remain unchanged. The original key manager/release handler preserves both directions through synthetic stage deactivation, then releases on stop, map, text entry, leaving play and manual movement. A separate authorized tutorial account also retains its held command through real WebView2 focus loss on an inactive desktop. Actual input-desktop Alt+Tab/taskbar behavior is not claimed. Minimizing/hiding remains an explicit stop, distinct from ordinary focus loss.
+
 ## Changeable autorun and dungeon backdrops (0.27.0)
 
 Controls captures a validated single physical key for autorun and saves it only through explicit Save. Existing preferences retain typed Ö by default. Default edits the draft; Discard and Escape preserve the saved key. Renderer-local handling resets pending/held work and releases movement when a saved key changes. Modifier-only keys, F11, Escape and cursor-lock conflicts are rejected; choose a key unused by native game actions. No global hook or saved in-game keymap changes.

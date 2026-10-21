@@ -1,0 +1,78 @@
+<!doctype html><meta charset="utf-8"><title>Offline GPU renderer verification</title>
+<style>html,body{margin:0;background:#15181d}canvas{display:block}</style><canvas id="proof"></canvas>
+<script type="module">
+import {GpuSceneRenderer,measure,measureThroughput} from './renderer.mjs';
+import {ArtworkPool} from './art-pool.mjs';
+import {HostDeadlineClock} from './host-clock.mjs';
+import {ScenePlayer} from './player.mjs';
+const node=(id,texture,matrix,size,tint=[1,1,1,1],clip=[0,0,256,128],blend='normal')=>({id,texture,matrix,size,tint,clip,blend,interpolate:false});
+let artworkRevision=1;const scene=nodes=>({version:1,artworkRevision,epoch:'offline-fixture',sequence:1,time:0,nodes});
+window.verifyGpu=async()=>{
+ const renderer=await GpuSceneRenderer.create({width:256,height:128}),pool=new ArtworkPool(2);let result;
+ try{
+  // Owned tiny controls validate channels, premultiplied blending, clipping,
+  // transformed placement and ordering independently from original game art.
+  const bitmaps=[];for(const color of ['#ff0000','#00ff00','#0000ff']){const c=new OffscreenCanvas(2,2),x=c.getContext('2d');x.fillStyle=color;x.fillRect(0,0,2,2);bitmaps.push(await createImageBitmap(c));}
+  bitmaps.push(await createImageBitmap(new ImageData(new Uint8ClampedArray([255,0,0,255,0,0,255,255]),2,1)));
+  await renderer.setArtwork(bitmaps);bitmaps.forEach(b=>b.close());
+  await renderer.render(scene([node('red',0,[1,0,0,1,0,0],[64,64]),node('green',1,[1,0,0,1,32,0],[64,64],[1,1,1,.5],[40,0,80,64]),node('blue',2,[0,1,-1,0,128,64],[32,32]),{...node('nearest',3,[1,0,0,1,160,0],[64,32]),sampling:'nearest'},node('linear',3,[1,0,0,1,160,32],[64,32])]));
+  const p=await renderer.readPixels(),pixel=(x,y)=>Array.from(p.slice((y*256+x)*4,(y*256+x)*4+4));
+  const close=(actual,expected)=>actual.every((v,i)=>Math.abs(v-expected[i])<=2);
+  const checks={red:close(pixel(10,10),[255,0,0,255]),clipLeft:close(pixel(35,10),[255,0,0,255]),premultipliedBlend:close(pixel(45,10),[128,128,0,255]),clipRight:close(pixel(85,10),[0,0,0,0]),rotation:close(pixel(110,80),[0,0,255,255]),empty:close(pixel(200,100),[0,0,0,0])};
+  checks.nearestSampling=close(pixel(191,10),[255,0,0,255])&&close(pixel(192,10),[0,0,255,255]);checks.linearSampling=pixel(191,40)[0]>100&&pixel(191,40)[2]>100;
+  if(Object.values(checks).some(v=>!v))throw Error('GPU pixel mismatch: '+JSON.stringify({checks,blend:pixel(45,10),rotation:pixel(110,80)}));
+  // Native ColorTransform operates on straight channels, before the result
+  // is premultiplied for compositing. Include signed multipliers and alpha
+  // offsets so the new instance stride cannot silently corrupt later nodes.
+  await renderer.render(scene([
+   {...node('offset',0,[1,0,0,1,0,0],[20,20],[1,1,1,1]),offset:[0,.25,.5,0]},
+   {...node('signed',0,[1,0,0,1,32,0],[20,20],[-1,1,1,1]),offset:[1,.5,0,0]},
+   {...node('alpha-offset',2,[1,0,0,1,64,0],[20,20],[1,1,1,.25]),offset:[.5,0,0,.25]},
+   node('after-offset',1,[1,0,0,1,96,0],[20,20])
+  ]));
+  const colors=await renderer.readPixels(),colorPixel=x=>Array.from(colors.slice(x*4,x*4+4));
+  checks.colorOffsets=close(colorPixel(5),[255,64,128,255]);
+  checks.signedColorMultiplier=close(colorPixel(37),[0,128,0,255]);
+  checks.alphaOffset=close(colorPixel(69),[64,0,128,128]);
+  checks.instanceStride=close(colorPixel(101),[0,255,0,255]);
+  if(Object.values(checks).some(v=>!v))throw Error('GPU color transform mismatch: '+JSON.stringify({checks,pixels:[5,37,69,101].map(colorPixel)}));
+  let rejected=false;try{await renderer.render(scene([node('missing',99,[1,0,0,1,0,0],[1,1])]));}catch{rejected=true;}if(!rejected)throw Error('Missing artwork did not reject');
+  const old=scene([node('old',0,[1,0,0,1,0,0],[20,20])]),replacementCanvas=new OffscreenCanvas(2,2);replacementCanvas.getContext('2d').fillRect(0,0,2,2);const replacement=await createImageBitmap(replacementCanvas);
+  artworkRevision=await renderer.updateArtwork([{index:0,bitmap:replacement}],artworkRevision);replacement.close();let staleRejected=false;try{await renderer.render(old);}catch{staleRejected=true;}if(!staleRejected)throw Error('Stale atlas snapshot accepted');
+  const presentation=document.createElement('canvas');document.body.appendChild(presentation);renderer.attachCanvas(presentation);await renderer.render(scene([node('updated',0,[1,0,0,1,0,0],[20,20])]));const updated=await renderer.readPixels();if(updated[0]!==0||updated[1]!==0||updated[2]!==0||updated[3]!==255)throw Error('Dirty texture update not applied');renderer.detachCanvas();presentation.remove();checks.dirtyTexture=true;checks.staleRevisionRejected=true;checks.canvasSubmission=renderer.stats.submittedPresents===1;
+  const extraCanvas=new OffscreenCanvas(2,2);extraCanvas.getContext('2d').fillStyle='#0000ff';extraCanvas.getContext('2d').fillRect(0,0,2,2);const extra=await createImageBitmap(extraCanvas),append=await renderer.appendArtwork([extra],artworkRevision);extra.close();artworkRevision=append.artworkRevision;
+  await renderer.render(scene([node('retained',1,[1,0,0,1,0,0],[20,20]),node('appended',4,[1,0,0,1,32,0],[20,20])]));const appended=await renderer.readPixels();checks.appendPreservesArtwork=append.kind==='append'&&appended[1]===255&&appended[32*4+2]===255;if(!checks.appendPreservesArtwork)throw Error('Appending artwork corrupted a retained texture');
+  const smaller=new OffscreenCanvas(1,1);smaller.getContext('2d').fillStyle='#ffff00';smaller.getContext('2d').fillRect(0,0,1,1);const small=await createImageBitmap(smaller),reuse=await renderer.reuseArtwork([{index:4,bitmap:small}],artworkRevision);small.close();artworkRevision=reuse.artworkRevision;const still=scene([node('reused',4,[1,0,0,1,0,0],[20,20])]);await renderer.render(still);const beforeSkip=renderer.stats.completedFrames,skip=await renderer.submit(still,{skipUnchanged:true});checks.staticFramesNotCounted=skip.skipped===true&&renderer.stats.completedFrames===beforeSkip;const reused=await renderer.readPixels();checks.recycledSlotPixels=reused[0]===255&&reused[1]===255&&reused[2]===0;if(!checks.staticFramesNotCounted||!checks.recycledSlotPixels)throw Error('GPU texture reuse or unchanged-frame accounting failed');
+  // Original Tyrant cavern artwork is decoded in two isolated CPU workers and
+  // uploaded once. Positions change per render; no source scene screenshots.
+  const sources=await Promise.all(['/art/cave-a.png','/art/cave-b.png'].map(async path=>{const r=await fetch(path);if(!r.ok)throw Error('Offline artwork unavailable');return r.arrayBuffer();}));
+  const cave=await Promise.all(sources.map(b=>pool.decode(b))),sizes=cave.map(b=>[b.width,b.height]);const atlas=await renderer.setArtwork(cave);artworkRevision=atlas.artworkRevision;cave.forEach(b=>pool.release(b));
+  const frame=t=>scene([node('original-cave-a',0,[.15,0,0,.15,-40-(t/12)%20,0],sizes[0]),node('original-cave-b',1,[.15,0,0,.15,60-(t/18)%20,20],sizes[1])]);
+  await renderer.render(frame(0));const before=await renderer.readPixels();await renderer.render(frame(50));const after=await renderer.readPixels();let changed=0;for(let i=0;i<after.length;i++)if(before[i]!==after[i])changed++;if(changed<20)throw Error('Moving original-art renders did not change pixels');
+  // Tiny, bounded run while another game may be active. This checks accounting,
+  // not heavy-scene throughput, input latency, game integration or monitor rate.
+  const throughput=await measureThroughput(renderer,frame,{frames:16});
+  const pipeline=await measureThroughput(renderer,frame,{frames:32,pipelineDepth:2});
+  const measurement=await measure(renderer,frame,{cap:240,frames:12});
+  const nativePacing=typeof window.privateRenderWait==='function'?await measure(renderer,frame,{cap:240,frames:32,clock:new HostDeadlineClock(window.privateRenderWait)}):null;
+  const {PulseClock}=await import('./pulse-clock.mjs'),socket=new WebSocket(location.origin.replace('http:','ws:')+'/private-clock');await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});const pulseClock=new PulseClock(socket);
+  const {CooperativeClock}=await import("./cooperative-clock.mjs"),cooperativePacing=await measure(renderer,frame,{cap:1000,frames:120,clock:new CooperativeClock()});
+  const pushedPacing=await measure(renderer,frame,{cap:1000,frames:120,clock:pulseClock});pulseClock.close();
+  let playerCheck=null;
+  if(typeof window.privateRenderWait==='function'){
+   const canvas=document.createElement('canvas');document.body.appendChild(canvas);let sequence=0,publisher,active=true,ready=0,restored=0,fault='';
+   const publish=()=>{const now=performance.now(),snapshot=frame(now);snapshot.time=now;snapshot.sequence=++sequence;snapshot.nodes=snapshot.nodes.map(n=>({...n,interpolate:true}));live.publish(snapshot);if(active)publisher=requestAnimationFrame(publish);};
+   const live=new ScenePlayer(renderer,{cap:240,mode:'unlocked',clock:new HostDeadlineClock(window.privateRenderWait),onReady:()=>ready++,onNative:()=>restored++,onFault:e=>fault=e.message});
+   try{publish();const start=performance.now();live.start(canvas);await new Promise(r=>setTimeout(r,350));const high={frames:live.stats.completedFrames,ms:performance.now()-start};
+    live.setCap(60);const before=live.stats.completedFrames,lowStart=performance.now();await new Promise(r=>setTimeout(r,350));const low={frames:live.stats.completedFrames-before,ms:performance.now()-lowStart};
+    active=false;cancelAnimationFrame(publisher);await new Promise(r=>setTimeout(r,400));
+    if(ready!==1||!fault.includes('stale')||!restored||live.running||live.stats.staleScenes!==1)throw Error('GPU player did not fall back for a stale scene');
+    if(high.frames<1||low.frames<1||high.frames>high.ms*240/1000+3||low.frames>low.ms*60/1000+3)throw Error('GPU player frame cap/accounting failed');
+    playerCheck={status:'pass',highCap:240,high,lowCap:60,low,readyCallbacks:ready,staleFallback:true,scope:'Owned moving-art scene; canvas submissions/completions, not scanout'};
+   }finally{active=false;cancelAnimationFrame(publisher);await live.close();canvas.remove();}
+  }
+  const canvas=document.querySelector('#proof');canvas.width=256;canvas.height=128;canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(after),256,128),0,0);
+  result={status:'pass',checks,changedChannels:changed,atlas,workerCount:pool.workers.length,throughput,pipeline,measurement,nativePacing,pushedPacing,cooperativePacing,playerCheck,limits:['offline original-art fixture only','no complete game adapter','no physical presentation or combat benchmark'],statistics:{...renderer.stats}};
+ }finally{pool.close();renderer.close();}return result;
+};
+</script>

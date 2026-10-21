@@ -34,10 +34,18 @@ DisableWelcomePage=no
 CloseApplications=no
 RestartApplications=no
 AlwaysRestart=no
+#ifdef TestBuild
+SetupMutex=InstallerPipelineFixtureSetup
+#else
 SetupMutex=DungeonBlitzLauncherSetup
+#endif
 VersionInfoVersion={#AppVersion}.0
 VersionInfoDescription=Dungeon Blitz Launcher Setup
+#ifdef TestBuild
+VersionInfoProductName=Installer Pipeline Fixture
+#else
 VersionInfoProductName={#AppName}
+#endif
 
 [Tasks]
 Name: desktopicon; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"
@@ -94,7 +102,15 @@ function CheckLatest: Boolean;
 var ExitCode: Integer; Core: String;
 begin
   Core := ExpandConstant('{app}\release\') + InstalledVersion + '\Dungeon Blitz Launcher-win32-x64\{#AppExe}';
+#ifdef TestBuild
+ #ifdef TestProbe
+  Result := Exec('{#TestProbe}', '--fixture-setup-update "' + ExpandConstant('{app}') + '" "' + InstalledVersion + '"', '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+ #else
   Result := Exec(Core, '--setup-update', '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+ #endif
+#else
+  Result := Exec(Core, '--setup-update', '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+#endif
   if Result then Result := ExitCode = 0;
   CurrentVersion := InstalledVersion;
   if Result then Log('Latest signed release checked; installed version ' + CurrentVersion)

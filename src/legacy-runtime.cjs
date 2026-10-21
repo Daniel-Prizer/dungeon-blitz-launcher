@@ -9,12 +9,12 @@ const { UNLOCK_KEYS, validSettings } = require('./policy.cjs');
 const { gameEnvironment } = require('./game-environment.cjs');
 const { readMessages } = require('./legacy/transport.cjs');
 class LegacyRuntime extends EventEmitter {
-  constructor(root, parentHandle, test = false, privateDesktop = false, gameURL, hardwareAcceleration=true) {
+  constructor(root, parentHandle, test = false, privateDesktop = false, gameURL, hardwareAcceleration=true, options={}) {
     super();
-    this.closed = false; this.bounds = null; this.host = null; this.pending = []; this.zoom = 1; this.test = test; this.privateDesktop = privateDesktop;
+    this.closed = false; this.bounds = null; this.host = null; this.pending = []; this.zoom = 1; this.test = test; this.privateDesktop = privateDesktop;this.modern=options.modern===true;
     this.audioIntegration=false;
     this.layoutRevision=0;this.appliedLayoutRevision=0;this.focusPending=false;this.activationRechecks=0;
-    const executable = path.join(root, 'game/BlitzGame.exe');
+    const executable = path.join(root, options.modern ? 'modern/BlitzGpuHost.exe' : 'game/BlitzGame.exe');
     const log = message => { try { const file=path.join(root,'host-diagnostics.log'); if(fs.existsSync(file)&&fs.statSync(file).size>65536)fs.writeFileSync(file,'');fs.appendFileSync(file,`${new Date().toISOString()} ${message}\n`); } catch {} };
     log('Starting native game host');
     if (!fs.existsSync(executable)) throw new Error('Game runtime missing. Run npm run prepare:game from the source folder.');
@@ -24,6 +24,7 @@ class LegacyRuntime extends EventEmitter {
     env.BLITZ_HOST_TOKEN = randomBytes(32).toString('hex');
     env.BLITZ_GAME_URL = gameURL;
     env.BLITZ_GAME_ACCELERATION=hardwareAcceleration===false?'0':'1';
+    if(options.modern&&typeof options.config==='string')env.BLITZ_GPU_CONFIG=options.config;
     if (test) env.BLITZ_CURSOR_DRY_RUN = '1'; else delete env.BLITZ_CURSOR_DRY_RUN;
     this.server = net.createServer(socket => {
       let authenticated = false;
@@ -68,7 +69,7 @@ class LegacyRuntime extends EventEmitter {
             this.shellFullscreen={requested:value==='1',result:Number(result),hwnd,initResult:Number(initResult),shellAvailable:shellAvailable==='1',nonRude:nonRude==='1'};
             log(`Game Shell fullscreen ${value}, result ${result}`);
           }
-          if (message === 'READY') { log('Native window attached'); if (this.bounds) { this.viewportWidth=undefined;this.viewportHeight=undefined;this.resize(...this.bounds); this.send({type:'visibility',value:this.bounds[1]}); } if(this.settings)this.configure(this.settings);this.emit('ready', event); }
+          if (message === 'READY') { this.hostAttached=true;log('Native window attached'); if (this.bounds) { this.viewportWidth=undefined;this.viewportHeight=undefined;this.resize(...this.bounds); this.send({type:'visibility',value:this.bounds[1]}); } if(this.settings)this.configure(this.settings);this.emit('ready', event); }
           if (message.startsWith('KEY ')) this.emit('key', message.slice(4));
           if (message.startsWith('ERROR ')) { log(message); this.emit('failure', message.slice(6)); }
         });
@@ -89,11 +90,12 @@ class LegacyRuntime extends EventEmitter {
       this.child = spawn(executable, [], { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true, env });
       this.child.stderr.on('data', data => { if (test) { log(data.toString().slice(0,1500)); console.error('[game-host]',data.toString().slice(0,1500)); } });
       this.child.on('error', error => this.emit('failure', error.message));
-      this.child.on('exit', code => { log(`Game process exited: ${code}`); if (test) console.error('[game-host] exited', code); if (!this.closed) this.emit('failure', 'The game runtime exited. Reconnect to try again.'); this.host?.stdin.end(); this.pipe?.destroy(); this.server.close(); });
+      this.child.on('exit', code => { log(`Game process exited: ${code}`); if (test) console.error('[game-host] exited', code); if (!this.closed) this.emit('failure', 'The game runtime exited. Reconnect to try again.'); this.host?.stdin.end(); this.pipe?.destroy(); this.server.close(); options.onExit?.(); });
     });
   }
   configure(settings) {
     const previous=this.settings;this.settings=validSettings(settings);
+    if(this.modern)this.send({type:'settings',value:this.settings});
     if(!previous || previous.gameZoom!==this.settings.gameZoom)this.send({type:'zoom',value:this.settings.gameZoom});
     if(!previous || previous.renderResolution!==this.settings.renderResolution)this.send({type:'render-resolution',value:this.settings.renderResolution});
     if(!previous || previous.showFPS!==this.settings.showFPS)this.send({type:'show-fps',value:this.settings.showFPS});
@@ -115,6 +117,7 @@ class LegacyRuntime extends EventEmitter {
   testHost(command) { if(this.test && this.privateDesktop && this.host?.stdin.writable)this.host.stdin.write(command+'\n'); }
   send(command) {
     if (this.closed) return;
+    if(this.modern&&command.type==='visibility'&&command.value===true&&!this.hostAttached)return;
     if (this.test && !this.privateDesktop && ['visibility', 'focus', 'capture-window'].includes(command.type)) return;
     if (command.type === 'zoom') this.zoom = Math.max(.5, Math.min(3, Number(command.value) || 1));
     const message = JSON.stringify(command) + '\n'; if (this.pipe?.writable) this.pipe.write(message); else if (this.pending.length < 50) this.pending.push(message);
