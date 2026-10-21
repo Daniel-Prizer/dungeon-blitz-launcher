@@ -1,6 +1,6 @@
 # Dungeon Blitz Launcher
 
-Version **0.29.0** (minor: launcher-managed singleplayer, current multiplayer compatibility and loading-screen alignment).
+Version **0.29.1** (patch: compact singleplayer packaging for safe upgrades from older launchers; includes the 0.29.0 multiplayer, GPU and loading-screen repairs).
 
 Singleplayer now includes its own local server. Settings → Connection → **Use singleplayer**, **Save**, then **Reconnect** starts a private instance on unused loopback ports. It stops and saves when this launcher closes or reconnects to multiplayer. Each launcher profile owns a separate local world; it does not import another server's accounts or saves. Local accounts are created inside that world through the game's own form. Internet or Minesa's server is not required for the bundled singleplayer content.
 
@@ -8,7 +8,7 @@ Singleplayer uses Original rendering with its separately guarded display, camera
 
 GPU startup falls back to Original if the client is unreviewed or the GPU host cannot start, while keeping your GPU preference. Equivalent SWF compression is accepted only when every decompressed source byte and header still match. Stalled or cancelled workers restore native rendering and release their resources; repeated GPU faults use bounded retry delays. Actual game-code, engine and artwork changes still require compatibility review.
 
-The native updater and uninstall helper handle deep singleplayer dependency paths, including temporary rollback locations, without changing Windows path policies. Signature, traversal, device-path, junction and running-game checks remain in place.
+The singleplayer code and dependencies are archived, while level artwork and audio remain ordinary files for reliable HTTP streaming. This keeps update paths short enough for the previous launcher’s updater. The new native updater and uninstall helper also handle deep custom installation and temporary rollback paths without changing Windows path policies. Signature, traversal, device-path, junction and running-game checks remain in place.
 
 Settings → Display → **Game renderer: GPU world (Beta)** enables a separate WebView2 game surface after Save and Reconnect. Its render worker redraws native world artwork on the GPU and interpolates presentation transforms between unchanged game updates. Two artwork workers decode assets in parallel. The adjustable cap is 15–1000; the measured GPU rate counts completed changing canvas renders, not the configured target. The original game counter still measures native game updates.
 
@@ -120,6 +120,6 @@ See docs/CLIENT-FEATURES.md for historical neural and frame-interpolation experi
 
 The repository contains launcher source, generated brand assets and development tests. Local profiles, test captures, executable builds and the imported Flash/runtime binaries are excluded. The initial import needs the official Dungeon Blitz R application; subsequent builds can reuse the verified local runtime copy. This is a community launcher; game definitions and private server behavior belong to their respective owners.
 
-Autorun: Ö toggles walking in the direction the character faces, through the current in-game movement binding. A second Ö, manual movement, typing, map/menu input or loss of focus releases it. Controls has an explicit Save checkbox to disable it. The binding follows the typed Ö character on your keyboard layout; it does not install a global hotkey.
+Autorun: Ö toggles walking in the direction the character faces, through the current in-game movement binding. A second Ö, manual movement, typing or map/menu input releases it; an activated run survives ordinary focus loss. Controls has an explicit Save checkbox to disable it. The binding follows the typed Ö character on your keyboard layout; it does not install a global hotkey.
 
 The world canvas refreshes behind the map instead of retaining the native still image. No simulation clocks, game ticks, dungeon travel or session/rejoin behavior changes.

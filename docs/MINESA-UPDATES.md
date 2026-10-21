@@ -1,5 +1,11 @@
 # Diagnosing and adapting to Minesa updates
 
+## October 21 upgrade compatibility (0.29.1)
+
+This patch packages the owned server code and pinned dependencies in one signed ASAR, retaining ordinary static content files for Express HTTP streaming. Node's asynchronous archive-file streaming rejected artwork despite synchronous reads working, so startup/client-hash checks alone were insufficient. The packaged utility-process check now fetches real UI and level assets, then verifies normal shutdown and restart. The upstream core/server filename is normalized to its existing lowercase import so archive lookup matches; gameplay code remains unchanged.
+
+The resulting physical paths fit the preceding 0.28 native updater at default installation/cache lengths. Verification exercises that retained, signature-verified helper against the complete signed ZIP and installation, rather than assuming the new long-path helper is already installed. The 0.29.0 build and all earlier builds remain preserved. No running installation or profile is replaced during release preparation.
+
 ## October 21 compatibility and owned singleplayer (0.29.0)
 
 Both public hostnames now reference `swf-e20d49253050`, SHA-256 `c0abc2eac96a102b3be0246e8d3b83342bfe29e45e2c0a62e1942a051b485294`, 978,778 bytes. Relative to the prior GPU source, `Entity.method_1219` gains a 14-byte early call to a new `DoorTriggerBand.Refuse`; its previous 2,375 code bytes remain exact. The new helper rejects `Door_101` in NewbieRoad/NewbieRoadHard when the entity is more than 360 units above the trigger's surface bottom. Its raw instructions and empty exception tables were reviewed. This is an upstream client correction, retained intact; it establishes no server-side change or loot/session behavior.

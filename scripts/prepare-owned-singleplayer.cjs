@@ -25,7 +25,9 @@ function prepare(source){
     const end=objects.indexOf(10,offset),header=objects.subarray(offset,end).toString().split(' '),size=Number(header[2]);
     if(header[0]!==entry.oid||header[1]!=='blob'||!Number.isSafeInteger(size))throw Error('Invalid Git object');
     let bytes=objects.subarray(end+1,end+1+size);offset=end+size+2;
-    const name=entry.name.replace(/^src\/server\//,'server/').replace(/^src\/client\/content\/localhost\//,'content/').replace(/\.ts$/,'.js');
+    // The main module imports core/server in lowercase. Normalize its output
+    // filename too: archive lookup is case-sensitive even on Windows.
+    const name=entry.name.replace(/^src\/server\//,'server/').replace(/^src\/client\/content\/localhost\//,'content/').replace(/\.ts$/,'.js').replace('server/core/Server.js','server/core/server.js');
     if(entry.name.endsWith('.ts'))bytes=Buffer.from(ts.transpileModule(bytes.toString(),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true,resolveJsonModule:true}}).outputText);
     const file=path.join(output,name);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,bytes);
     files[name]=crypto.createHash('sha256').update(bytes).digest('hex');
