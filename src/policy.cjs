@@ -19,6 +19,7 @@ function validAudioMix(input={}) {return Object.fromEntries(AUDIO_BUSES.map(key=
 function validSettings(input = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) input = {};
   return { gameURL: gameURL(input.gameURL) || LIVE,
+    ownedSingleplayer: input.ownedSingleplayer === true,
     volume: Number.isInteger(input.volume) && input.volume >= 0 && input.volume <= 100 ? input.volume : 100,
     audioMix:validAudioMix(input.audioMix),
     cursorLock: input.cursorLock === true,

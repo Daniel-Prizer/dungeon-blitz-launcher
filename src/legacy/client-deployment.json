@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-19T21:26:37.596Z",
-  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-9b46e54870f2",
-  "inputHash": "bb6410470881b5a13c3899e09ae38f49aff41b3c5d9fe396c57cc5c72afe3d89",
-  "note": "Fresh October 19 evening client accepted by complete reviewed map-recovery contract. Preserve upstream TowerUpgradePanel, boss-voice, level, tooltip and combat changes; no new game hooks."
+  "checkedAt": "2026-10-21T08:52:50.000Z",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-e20d49253050",
+  "inputHash": "c0abc2eac96a102b3be0246e8d3b83342bfe29e45e2c0a62e1942a051b485294",
+  "note": "Both public origins serve this reviewed source. Original retains its complete guarded contract; GPU has a separately reconstructed exact-source delta. Preserve Entity.method_1219 and the entire DoorTriggerBand helper. Launcher-owned loading artwork positioning only; no new game hooks."
 }

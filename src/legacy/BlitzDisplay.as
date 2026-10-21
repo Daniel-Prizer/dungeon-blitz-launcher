@@ -138,7 +138,7 @@ package {
    if(screen&&screen.mWindow&&screen.mWindow.mMovieClip&&
     (screen.mWindow.mMovieClip.parent==wideGame.var_89||screen.mWindow.mMovieClip.parent==wideGame.var_245))offset(screen.mWindow.mMovieClip,amount);
   }
-  private static function stretchBackdrop(root:DisplayObjectContainer,half:Number,container:DisplayObjectContainer=null,depth:int=0):void {
+  private static function stretchBackdrop(root:DisplayObjectContainer,half:Number,container:DisplayObjectContainer=null,depth:int=0,fullHeight:Number=0):void {
    // Only a screen's own full-view matte, never its panel, text or gameplay
    // artwork. Retain the original shape/alpha/handlers and cover both sides.
    if(!container){
@@ -151,11 +151,11 @@ package {
     var child:DisplayObject=container.getChildAt(i);
     // Composite backgrounds can also contain the trove pedestal or other
     // art. Recurse to a passive drawing leaf; never scale that whole group.
-    if(child is DisplayObjectContainer){if(depth<3)stretchBackdrop(root,half,child as DisplayObjectContainer,depth+1);continue;}
+    if(child is DisplayObjectContainer){if(depth<3)stretchBackdrop(root,half,child as DisplayObjectContainer,depth+1,fullHeight);continue;}
     if(!(child is Shape)&&!(child is Bitmap))continue;
     var saved:Object=backdrops[child];
     if(!saved){var bounds:Rectangle=child.getBounds(root);
-     if(Math.abs(bounds.width-ORIGINAL_WIDTH)>8||Math.abs(bounds.height-Camera.PLAY_SCREEN_HEIGHT)>8||Math.abs(bounds.y)>8||Math.abs(bounds.x)>8)continue;
+     if(Math.abs(bounds.width-ORIGINAL_WIDTH)>8||Math.abs(bounds.height-(fullHeight||Camera.PLAY_SCREEN_HEIGHT))>8||Math.abs(bounds.y)>8||Math.abs(bounds.x)>8)continue;
      var origin:Point=root.globalToLocal(child.parent.localToGlobal(new Point()));var unit:Point=root.globalToLocal(child.parent.localToGlobal(new Point(1,0)));
      var parentScale:Number=unit.x-origin.x;if(!isFinite(parentScale)||parentScale<=0||Math.abs(unit.y-origin.y)>0.001)continue;
      saved={scale:child.scaleX,width:bounds.width,left:child.getBounds(child).x,inset:bounds.x,parentScale:parentScale};backdrops[child]=saved;
@@ -350,6 +350,15 @@ package {
     if(history){game.screenChat.var_230.x=game.screenChat.var_2.x+history.x;game.screenChat.var_230.width=history.width;}
    }
   }
+  private static function layoutTransfer(game:Game,half:Number):void {
+   // ScreenTransfer is a separate native controller, outside the UI manager.
+   // Its original 1152px artwork also belongs to a pending login Game during
+   // travel. Center that artwork without translating the shared edge layer.
+   if(!game||!game.var_933||!game.var_933.var_161)return;
+   var loading:MovieClip=game.var_933.var_161;
+   if(loading.parent!=game.edgeLayer)return;
+   offset(loading,half);stretchBackdrop(loading,half,null,0,Camera.SCREEN_HEIGHT);
+  }
   private static function restore():void {
    for(var commandIcon:Object in companionIcons)commandIcon.transform.matrix=companionIcons[commandIcon];companionIcons=new Dictionary(true);
    for(var object:Object in offsets){if(Math.abs(object.x-offsets[object].last)<0.001)object.x=offsets[object].base;}
@@ -403,6 +412,7 @@ package {
    // Anchor independent screens; otherwise world labels, skull/party HUD and
    // menu hit testing all inherit an unrelated half-width translation.
    layoutScreens(game,half);
+   for each(var loadingGame:Game in main.var_523)layoutTransfer(loadingGame,half);
    if(game.edgeLayer){hideEdge(game.edgeLayer.getChildByName("am_EdgeFull"));hideEdge(game.edgeLayer.getChildByName("am_EdgeNarrow"));}
    DrawFrame(game);DrawHudFrame(game);PositionCounter();
   }

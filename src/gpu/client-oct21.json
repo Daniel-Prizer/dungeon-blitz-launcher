@@ -1,0 +1,37 @@
+{
+  "reviewedAt": "2026-10-21T08:52:18.354Z",
+  "inputHash": "c0abc2eac96a102b3be0246e8d3b83342bfe29e45e2c0a62e1942a051b485294",
+  "previousHash": "7f82ac2475ccdd8819c8616eabcbb13ad22ff94d0448dffc8a4d510862772ccc",
+  "nativeChanges": [
+    {
+      "name": "Entity.method_1219",
+      "id": 776,
+      "oldCodeHash": "e77a96a65e62b21b1c166408a22c75febc3251c909154688e097883a92030964",
+      "newCodeHash": "44784fcacec0c8bf4982a289a8b2b7d84df663b2dff35c713113356326857086",
+      "oldLength": 2375,
+      "newLength": 2389,
+      "oldBodyHash": "dbe45cca4822675777a36dd81af9cdddade587c301e7bfcac58e1e3578aa4550",
+      "newBodyHash": "b4352cb75bba063b25ffc77de51c531022185eab3875fc221219b2288ca74c5c"
+    }
+  ],
+  "addedHelper": {
+    "name": "DoorTriggerBand",
+    "sha256": "e538211fb294b1665d6bd4f03ac2a81d10ddac4473f17925c5813efcf9b325b6",
+    "bytes": 837,
+    "bitmapWriters": 0,
+    "exceptionTables": "empty",
+    "bands": [
+      [
+        "NewbieRoad",
+        "Door_101",
+        360
+      ],
+      [
+        "NewbieRoadHard",
+        "Door_101",
+        360
+      ]
+    ]
+  },
+  "review": "Entity.method_1219 receives only a fourteen-byte early DoorTriggerBand.Refuse guard; all previous 2375 code bytes remain identical. Refuse rejects the matching door trigger when the entity is more than 360 units above its surface bottom. Main interfaces remain identical; two strings and two multinames append. The new helper, original gameplay and packets are preserved by the independently rebuilt GPU delta. Existing 395 mutation sites/99 methods, raw branches and exception envelopes are reverified."
+}

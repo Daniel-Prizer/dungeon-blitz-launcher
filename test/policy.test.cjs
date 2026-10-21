@@ -14,7 +14,8 @@ test('launcher defaults and validation discard obsolete browser settings', () =>
   for (let i=0;i<=100;i++)assert.equal(validSettings({volume:i}).volume,i);
   assert.equal(validSettings({unlockKey:'F11'}).unlockKey,'AltLeft');assert.equal(validSettings({unlockKey:'F8'}).unlockKey,'F8');
   assert.equal(validSettings({unlockKey:'KeyG'}).unlockKey,'KeyG');assert.equal(validSettings({unlockKey:'ControlLeft'}).unlockKey,'ControlLeft');assert.equal(validSettings({unlockKey:'Escape'}).unlockKey,'AltLeft');
-  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','volume','audioMix','cursorLock','shiftMount','autorun','autorunKey','unlockKey','gameZoom','renderResolution','gameRenderer','gpuFrameCap','showFPS','experimentalWidescreen','centeredHotbar','centeredCamera','crosshair','autoUpdates','keepGameAwake','hardwareAcceleration']);
+  assert.deepEqual(Object.keys(validSettings({homepage:'https://example.com',runtime:'ruffle',confirmGameClose:true,upscaler:'neural',neuralCompare:true})),['gameURL','ownedSingleplayer','volume','audioMix','cursorLock','shiftMount','autorun','autorunKey','unlockKey','gameZoom','renderResolution','gameRenderer','gpuFrameCap','showFPS','experimentalWidescreen','centeredHotbar','centeredCamera','crosshair','autoUpdates','keepGameAwake','hardwareAcceleration']);
+  assert.equal(defaults.ownedSingleplayer,false);assert.equal(validSettings({ownedSingleplayer:true,gameRenderer:'gpu'}).ownedSingleplayer,true);
   assert.equal(defaults.gameRenderer,'original');assert.equal(defaults.gpuFrameCap,1000);
   assert.equal(validSettings({gameRenderer:'gpu',gpuFrameCap:240}).gpuFrameCap,240);
   for(const cap of [0,14,1001,240.5,'240',NaN,Infinity,null])assert.equal(validSettings({gpuFrameCap:cap}).gpuFrameCap,1000);

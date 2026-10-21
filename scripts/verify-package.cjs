@@ -21,6 +21,12 @@ const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).d
   }
   compare('src');
   compare('assets');
+  const local=path.join(output,'resources/runtime/singleplayer'),localSource=path.join(root,'runtime/singleplayer');
+  const localProvenance=JSON.parse(fs.readFileSync(path.join(local,'provenance.json')));
+  assert.equal(localProvenance.commit,require('./prepare-owned-singleplayer.cjs').commit);
+  for(const [name,expected]of Object.entries(localProvenance.files))assert.equal(hash(path.join(local,name)),expected,name);
+  assert.equal(hash(path.join(local,'client.swf')),require('../src/legacy/client-singleplayer.json').inputHash);
+  function checkLocal(dir=''){for(const item of fs.readdirSync(path.join(localSource,dir),{withFileTypes:true})){const name=dir?dir+'/'+item.name:item.name;assert(!item.isSymbolicLink());assert(!/(^|\/)(Accounts\.json|saves|instance\.lock|\.env)$/i.test(name));if(item.isDirectory())checkLocal(name);else assert.equal(hash(path.join(local,name)),hash(path.join(localSource,name)),name);}}checkLocal();
   const modern=path.join(output,'resources/runtime/modern');
   for(const name of fs.readdirSync(path.join(root,'runtime/modern'),{withFileTypes:true}))if(name.isFile())assert.equal(hash(path.join(modern,name.name)),hash(path.join(root,'runtime/modern',name.name)),name.name);
   for(const name of fs.readdirSync(path.join(root,'runtime/modern/resources')))assert.equal(hash(path.join(modern,'resources',name)),hash(path.join(root,'runtime/modern/resources',name)),name);

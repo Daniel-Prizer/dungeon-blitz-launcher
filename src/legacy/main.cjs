@@ -258,7 +258,14 @@ app.whenReady().then(async () => {
       const url=new URL(params.request.url);
       if(url.origin===ORIGIN && /\/DungeonBlitz\.swf$/i.test(url.pathname) && params.responseStatusCode===200) {
         const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
-        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),adapter=testOriginalClient?{patched:null,audio:false,mode:'original'}:adaptClient(bytes,LIVE,{multiplayer:adaptiveContract,singleplayer:singleplayerContract,audioDeltas}),patched=adapter.patched;
+        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),adapter=testOriginalClient?{patched:null,audio:false,mode:'original'}:adaptClient(bytes,LIVE,{multiplayer:adaptiveContract,singleplayer:singleplayerContract,audioDeltas});let patched=adapter.patched;
+        if(process.env.BLITZ_SINGLEPLAYER_PORTS){
+          const ports=JSON.parse(process.env.BLITZ_SINGLEPLAYER_PORTS);
+          // First validate the exact original local contract, then relocate
+          // only this private server's endpoints. Never relax pool guards.
+          patched=patched&&require('./singleplayer-network.cjs').localizeClient(patched,LIVE,ports);
+          if(!patched)throw Error('Owned singleplayer client contract rejected');
+        }
         if(process.env.BLITZ_HOST_TEST==='1')testAdapterMode=adapter.mode;
         if(process.env.BLITZ_HOST_TEST==='1')testClientHash=require('crypto').createHash('sha256').update(bytes).digest('hex');
         audioIntegration=adapter.audio;emit({type:'audio-integration',value:audioIntegration});
@@ -279,7 +286,7 @@ app.whenReady().then(async () => {
           if(process.env.BLITZ_HOST_TEST==='1'&&testIconRepairs.length<8)testIconRepairs.push({path:url.pathname,sourceHash:require('crypto').createHash('sha256').update(bytes).digest('hex')});
         }
       }
-    }catch(_){if(/\/DungeonBlitz\.swf(?:\?|$)/i.test(params.request.url)){clientIntegration=false;emit({type:'client-integration',value:false});}}
+    }catch(_){if(/\/DungeonBlitz\.swf(?:\?|$)/i.test(params.request.url)){clientIntegration=false;emit({type:'client-integration',value:false});if(process.env.BLITZ_SINGLEPLAYER_PORTS){await wc.debugger.sendCommand('Fetch.failRequest',{requestId:params.requestId,errorReason:'BlockedByClient'});fulfilled=true;emit({type:'error',message:'The private singleplayer client could not be validated. Reconnect to retry.'});}}}
     finally {if(!fulfilled&&!wc.isDestroyed())await wc.debugger.sendCommand('Fetch.continueRequest',{requestId:params.requestId}).catch(()=>{});}
   });
   try {

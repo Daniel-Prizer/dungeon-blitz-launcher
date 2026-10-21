@@ -7,6 +7,39 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32;
+using File = LongPathFile;
+using Directory = LongPathDirectory;
+
+[assembly:System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.6.2")]
+
+// Canonical/security comparisons stay in ordinary absolute paths. Only the
+// final filesystem operation uses Win32's explicit long-path syntax. This is
+// local to these helpers; no Windows registry or global policy is changed.
+public static class LongPathIO {
+ public static void RejectDevice(string value){if(value!=null&&(value.StartsWith(@"\\?\",StringComparison.Ordinal)||value.StartsWith(@"\\.\",StringComparison.Ordinal)))throw new Exception("Device paths are not installation roots");}
+ public static string IO(string value){if(value==null)return null;RejectDevice(value);string full=Path.GetFullPath(value);return full.StartsWith(@"\\",StringComparison.Ordinal)?@"\\?\UNC\"+full.Substring(2):@"\\?\"+full;}
+ public static string Plain(string value){return value.StartsWith(@"\\?\UNC\",StringComparison.OrdinalIgnoreCase)?@"\\"+value.Substring(8):value.StartsWith(@"\\?\",StringComparison.Ordinal)?value.Substring(4):value;}
+}
+public static class LongPathFile {
+ public static bool Exists(string p){return System.IO.File.Exists(LongPathIO.IO(p));}
+ public static FileAttributes GetAttributes(string p){return System.IO.File.GetAttributes(LongPathIO.IO(p));}
+ public static FileStream OpenRead(string p){return System.IO.File.OpenRead(LongPathIO.IO(p));}
+ public static string ReadAllText(string p){return System.IO.File.ReadAllText(LongPathIO.IO(p));}
+ public static string[] ReadAllLines(string p){return System.IO.File.ReadAllLines(LongPathIO.IO(p));}
+ public static void WriteAllText(string p,string text){System.IO.File.WriteAllText(LongPathIO.IO(p),text);}
+ public static void Copy(string a,string b,bool overwrite=false){System.IO.File.Copy(LongPathIO.IO(a),LongPathIO.IO(b),overwrite);}
+ public static void Move(string a,string b){System.IO.File.Move(LongPathIO.IO(a),LongPathIO.IO(b));}
+ public static void Replace(string a,string b,string backup,bool ignore=false){System.IO.File.Replace(LongPathIO.IO(a),LongPathIO.IO(b),LongPathIO.IO(backup),ignore);}
+ public static void Delete(string p){System.IO.File.Delete(LongPathIO.IO(p));}
+}
+public static class LongPathDirectory {
+ public static bool Exists(string p){return System.IO.Directory.Exists(LongPathIO.IO(p));}
+ public static DirectoryInfo CreateDirectory(string p){return System.IO.Directory.CreateDirectory(LongPathIO.IO(p));}
+ public static void Delete(string p){System.IO.Directory.Delete(LongPathIO.IO(p));}
+ public static void Move(string a,string b){System.IO.Directory.Move(LongPathIO.IO(a),LongPathIO.IO(b));}
+ public static string[] GetFiles(string p,string pattern){return Array.ConvertAll(System.IO.Directory.GetFiles(LongPathIO.IO(p),pattern),LongPathIO.Plain);}
+ public static string[] GetFileSystemEntries(string p){return Array.ConvertAll(System.IO.Directory.GetFileSystemEntries(LongPathIO.IO(p)),LongPathIO.Plain);}
+}
 
 // Shared by the signed updater and the setup/uninstall helper. No recursive
 // deletion: only recorded application files, then empty directories, are removed.
@@ -15,9 +48,9 @@ public static class ManagedInstallation {
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr process,uint flags,StringBuilder name,ref int size);
  [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
  public static string Root(string value){
-  string root=Path.GetFullPath(value).TrimEnd(Path.DirectorySeparatorChar);
+  LongPathIO.RejectDevice(value);string root=Path.GetFullPath(value).TrimEnd(Path.DirectorySeparatorChar);
   if(Path.GetPathRoot(root).TrimEnd(Path.DirectorySeparatorChar)==root)throw new Exception("A drive root cannot be an installation folder");
-  for(var d=new DirectoryInfo(root);d!=null;d=d.Parent)if(d.Exists&&(d.Attributes&FileAttributes.ReparsePoint)!=0)throw new Exception("Installation path contains a junction or symbolic link");
+  for(var d=new DirectoryInfo(LongPathIO.IO(root));d!=null;d=d.Parent)if(d.Exists&&(d.Attributes&FileAttributes.ReparsePoint)!=0)throw new Exception("Installation path contains a junction or symbolic link");
   return root;
  }
  static bool Version(string value){return Regex.IsMatch(value,@"^\d{1,5}\.\d{1,5}\.\d{1,5}$");}
@@ -48,7 +81,7 @@ public static class ManagedInstallation {
   var paths=new List<string>();foreach(var item in files){var file=(Dictionary<string,object>)item;string relative=(string)file["path"];FilePath(root,relative);paths.Add(relative);}
   string ledger=Path.Combine(state,"files-"+version+".txt");
   NoLink(ledger);string temporary=Path.Combine(state,".files-"+Guid.NewGuid().ToString("N")+".new");
-  try{using(var stream=new FileStream(temporary,FileMode.CreateNew,FileAccess.Write,FileShare.None))using(var writer=new StreamWriter(stream))foreach(string relative in paths)writer.WriteLine(relative);
+  try{using(var stream=new FileStream(LongPathIO.IO(temporary),FileMode.CreateNew,FileAccess.Write,FileShare.None))using(var writer=new StreamWriter(stream))foreach(string relative in paths)writer.WriteLine(relative);
    if(File.Exists(ledger))File.Replace(temporary,ledger,null);else File.Move(temporary,ledger);
   }finally{if(File.Exists(temporary))File.Delete(temporary);}
  }
@@ -81,7 +114,7 @@ public static class ManagedInstallation {
   string[] ledgers=Directory.GetFiles(state,"files-*.txt");if(ledgers.Length>1000)throw new Exception("Too many installation records");
   var files=new HashSet<string>(StringComparer.OrdinalIgnoreCase);var directories=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   foreach(string ledger in ledgers){
-   if(!Version(Path.GetFileNameWithoutExtension(ledger).Substring(6))||new FileInfo(ledger).Length>4000000||(File.GetAttributes(ledger)&FileAttributes.ReparsePoint)!=0)throw new Exception("Invalid installation record");
+   if(!Version(Path.GetFileNameWithoutExtension(ledger).Substring(6))||new FileInfo(LongPathIO.IO(ledger)).Length>4000000||(File.GetAttributes(ledger)&FileAttributes.ReparsePoint)!=0)throw new Exception("Invalid installation record");
    foreach(string relative in File.ReadAllLines(ledger)){string file=FilePath(root,relative);files.Add(file);if(files.Count>100000)throw new Exception("Too many managed files");}
   }
   // Validate all paths before changing anything. Leave unknown files and all

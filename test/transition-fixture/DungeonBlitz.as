@@ -84,6 +84,7 @@ package {
    game.var_89=new Sprite();game.var_245=new Sprite();game.edgeLayer=new Sprite();
    game.mUIManager=new class_4(game);
    main.addChild(game.edgeLayer);main.addChild(game.var_89);main.addChild(game.var_245);
+   game.var_933=new ScreenTransfer(game);game.var_933.Display();game.var_933.var_161.alpha=1;
    var edge:Sprite=new Sprite();edge.name="am_EdgeFull";edge.graphics.lineStyle(6,0x656773);edge.graphics.drawRect(-4,-4,1160,776);game.edgeLayer.addChild(edge);
    game.screenHudTop=new class_79(game);game.screenLinkBar=new class_48(game);game.screenHudTopRight=new class_70(game);
    attach(game.screenHudTop,"a_HudTop");attach(game.screenLinkBar,"a_LinkBar");attach(game.screenHudTopRight,"a_HudTopRight");
@@ -175,10 +176,11 @@ package {
    var label:TextField=new TextField();label.text=text;label.textColor=0xe5dec7;label.width=w;label.height=h;label.mouseEnabled=false;clip.addChild(label);game.var_89.addChild(clip);return clip;
   }
   private function control(play:Boolean,transition:Boolean,menu:String="none",transfer:Boolean=false,phase:String=""):Boolean {
-   if(pending){main.var_523.splice(main.var_523.indexOf(pending),1);pending=null;}
+   if(pending){main.var_523.splice(main.var_523.indexOf(pending),1);if(pending.edgeLayer.parent)pending.edgeLayer.parent.removeChild(pending.edgeLayer);pending=null;}
    game.gameState=transfer?Game.STATE_TRANSFER:(play?Game.STATE_PLAY:"Login");
    if(phase=="Login"||phase=="None"||phase=="Transfer")game.gameState=phase;
-   if(transfer){pending=new Game(main);pending.gameState="Login";main.var_523.push(pending);}
+   if(transfer){pending=new Game(main);pending.gameState="Login";pending.edgeLayer=new Sprite();main.addChild(pending.edgeLayer);pending.var_933=new ScreenTransfer(pending);pending.var_933.Display();pending.var_933.var_161.alpha=1;main.var_523.push(pending);}
+   game.var_933.var_161.visible=transition;
    if(!transition)worldEnabled=false;
    game.screenBuyIdols.mWindow.mMovieClip.visible=menu=="idols";game.screenLockBox.mWindow.mMovieClip.visible=menu=="trove";
    for(var n:int=0;n<extraMenus.length;n++)extraMenus[n].mWindow.mMovieClip.visible=menu==["barn","store","forge","tome"][n];
@@ -439,6 +441,7 @@ package {
    var trovePedestal:DisplayObject=troveBackground&&troveBackground.numChildren>1?troveBackground.getChildAt(1):null;
    var value:Object=BlitzDisplay.Snapshot();value.fixture={downs:downs,target:target,mouseX:click?click.x:null,mouseY:click?click.y:null,
     pan:pan,vertical:vertical,tiedTime:tiedTime,idolsVisible:game.screenBuyIdols.mWindow.mMovieClip.visible,troveVisible:game.screenLockBox.mWindow.mMovieClip.visible,
+    loading:tree(game.var_933.var_161,1),pendingLoading:pending?tree(pending.var_933.var_161,1):null,
     left:game.screenHudTop.mWindow.mMovieClip.x,right:game.screenHudTopRight.mWindow.mMovieClip.x,edgeVisible:game.edgeLayer.getChildByName("am_EdgeFull").visible,
     hotbar:game.screenHud.mWindow.mMovieClip.x,chat:game.screenChat.mWindow.mMovieClip.x,quest:game.screenQuestTracker.mWindow.mMovieClip.x,party:game.var_89.getChildByName("fixture-party").x,nameX:game.var_89.getChildByName("NPC name").x,
     idols:game.screenBuyIdols.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),trove:game.screenLockBox.mWindow.mMovieClip.getChildAt(0).getBounds(game.var_89),

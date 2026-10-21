@@ -25,8 +25,8 @@ async function until(fn){for(let i=0;i<150;i++){const value=await fn();if(value)
   }
   await call('settings');await page.getByRole('tab',{name:'Connection',exact:true}).click();
   const before=(await call('state')).gameURL;
-  await page.getByRole('button',{name:'Use singleplayer URL',exact:true}).click();assert.equal(await page.locator('#game-url').inputValue(),'http://localhost:8000/');assert.equal((await call('state')).gameURL,before);
-  await page.getByRole('button',{name:'Use multiplayer URL',exact:true}).click();assert.equal(await page.locator('#game-url').inputValue(),'https://dungeonblitzr.theminesa.studio/');assert.equal((await call('state')).gameURL,before);
+  await page.getByRole('button',{name:'Use singleplayer',exact:true}).click();assert.equal(await page.locator('#game-url').inputValue(),'http://localhost:8000/');assert.equal((await call('state')).gameURL,before);
+  await page.getByRole('button',{name:'Use multiplayer',exact:true}).click();assert.equal(await page.locator('#game-url').inputValue(),'https://dungeonblitzr.theminesa.studio/');assert.equal((await call('state')).gameURL,before);
   await call('dismiss');
   // Original game controllers and current local artwork, with network/login
   // initialization replaced only inside the unshipped fixture.

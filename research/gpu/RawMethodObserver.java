@@ -37,7 +37,11 @@ public class RawMethodObserver {
   if(count==0)return 0;rewrite(body,raw,pieces,boundaries,base+extra,2);return count;
  }
  static void afterDraw(ABC abc,MethodBody body,boolean enhanced,boolean world)throws Exception{
-  byte[] raw=body.getCodeBytes().clone();if(!GpuBridgeBuilder.hash(raw).equals(enhanced?"afb8c09010bf2389a5c5131a0c179845c0a9df15a6606cd5a6917e145380cd15":"33b9d40e99af5371046d967a551f12a6c314673fac84db9dc7fbff523f978d6b"))throw new Exception("Reviewed final-draw method changed");
+  byte[] raw=body.getCodeBytes().clone();String digest=GpuBridgeBuilder.hash(raw);
+  // October 21 appends two native multinames. Only the two existing helper
+  // operands at code offsets 7/11 relocate by two; all drawing bytes/targets
+  // and exception envelopes remain identical. Keep both exact reviewed pins.
+  if(enhanced?!Set.of("afb8c09010bf2389a5c5131a0c179845c0a9df15a6606cd5a6917e145380cd15","a22c1e913633a3e8f6abe61303f6c7327499d94d78aec8a72ccc90656990cd7c").contains(digest):!digest.equals("33b9d40e99af5371046d967a551f12a6c314673fac84db9dc7fbff523f978d6b"))throw new Exception("Reviewed final-draw method changed");
   var code=body.getCode().code;var pieces=new ArrayList<Piece>();var boundaries=new HashSet<Integer>();int count=0;
   for(int i=0;i<code.size();i++){var ins=code.get(i);int start=(int)ins.getAddress(),end=i+1<code.size()?(int)code.get(i+1).getAddress():raw.length;byte[] prefix=new byte[0];boundaries.add(start);
    if(ins.definition.instructionName.equals("returnvoid")){var bytes=new ByteArrayOutputStream();instruction(bytes,0x60,abc.constants.getPublicQnameId("BlitzGpuBridge",true));instruction(bytes,0xd0);instruction(bytes,0x4f,abc.constants.getPublicQnameId("AfterDraw",true),1);prefix=bytes.toByteArray();count++;}
