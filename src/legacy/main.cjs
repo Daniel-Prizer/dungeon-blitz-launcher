@@ -2,230 +2,585 @@
 const { app, BrowserWindow, session, screen } = require('electron');
 const path = require('path');
 const net = require('net');
-const {readMessages}=require('./transport.cjs');
-const {editingCommand,pasteIntoFlash}=require('./editing.cjs');
-const {adaptClient,localAddress}=require('./client-adapter.cjs');
-const {patchLocalIcons,localIconAsset}=require('./local-icon-patch.cjs');
-const {canonicalGameAddress}=require('./game-address.cjs');
-const {classifyLink}=require('./links.cjs');
-const adaptiveContract=[];for(const name of ['adaptive-contract-backdrop-oct19.json','adaptive-contract.json','adaptive-contract-oct15.json','adaptive-contract-oct16.json','adaptive-contract-oct17.json','adaptive-contract-recovery-oct17.json','adaptive-contract-map-oct19.json'])try{adaptiveContract.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
-let singleplayerContract;try{singleplayerContract=JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,'adaptive-contract-singleplayer.json'),'utf8'));}catch(_){}
-const {rasterPlan}=require('./rendering.cjs');
-const {MountShortcut}=require('./mount-shortcut.cjs');
-const {AutorunShortcut}=require('./autorun-shortcut.cjs');
-const crosshairArtwork=require('./crosshair.js');
-let gameWindow,crosshair=crosshairArtwork.valid(),appliedCrosshair='',cursorType='default',originalPointer=null;
-function readOriginalPointer(type,image,hotspot){
-  if(!gameWindow)return;
-  if(type==='custom'&&(!image||image.isEmpty())){originalPointer=null;emit({type:'original-pointer',value:null});return;}
-  if(type==='custom'&&image&&!image.isEmpty()){
-    const {width,height}=image.getSize(),size=Math.max(width,height)|1;
-    if(size>145||width<1||height<1){originalPointer=null;emit({type:'original-pointer',value:null});return;}
-    const bitmap=image.toBitmap(),rgba=Buffer.alloc(size*size*4);
-    for(let y=0;y<height;y++)for(let x=0;x<width;x++){const a=(y*width+x)*4,b=(y*size+x)*4;rgba[b]=bitmap[a+2];rgba[b+1]=bitmap[a+1];rgba[b+2]=bitmap[a];rgba[b+3]=bitmap[a+3];}
-    originalPointer={width:size,hotspotX:Math.max(0,Math.min(size-1,Math.round(hotspot?.x||0))),hotspotY:Math.max(0,Math.min(size-1,Math.round(hotspot?.y||0))),rgba};
-  }else{
-    const data=gameWindow.originalPixels(type==='hand'?1:type==='crosshair'?2:0);
-    originalPointer={width:data.readUInt32LE(0),hotspotX:data.readUInt32LE(8),hotspotY:data.readUInt32LE(12),rgba:data.subarray(16)};
+const { readMessages } = require('./transport.cjs');
+const { editingCommand, pasteIntoFlash } = require('./editing.cjs');
+const { adaptClient, localAddress } = require('./client-adapter.cjs');
+const { patchLocalIcons, localIconAsset } = require('./local-icon-patch.cjs');
+const { canonicalGameAddress } = require('./game-address.cjs');
+const { classifyLink } = require('./links.cjs');
+const adaptiveContract = [];
+for (const name of [
+  'adaptive-contract-backdrop-oct19.json',
+  'adaptive-contract.json',
+  'adaptive-contract-oct15.json',
+  'adaptive-contract-oct16.json',
+  'adaptive-contract-oct17.json',
+  'adaptive-contract-recovery-oct17.json',
+  'adaptive-contract-map-oct19.json',
+])
+  try {
+    adaptiveContract.push(
+      JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath, name), 'utf8'))
+    );
+  } catch (_) {}
+let singleplayerContract;
+try {
+  singleplayerContract = JSON.parse(
+    require('fs').readFileSync(
+      path.join(process.resourcesPath, 'adaptive-contract-singleplayer.json'),
+      'utf8'
+    )
+  );
+} catch (_) {}
+const { rasterPlan } = require('./rendering.cjs');
+const { MountShortcut } = require('./mount-shortcut.cjs');
+const { AutorunShortcut } = require('./autorun-shortcut.cjs');
+const crosshairArtwork = require('./crosshair.js');
+let gameWindow,
+  crosshair = crosshairArtwork.valid(),
+  appliedCrosshair = '',
+  cursorType = 'default',
+  originalPointer = null;
+function readOriginalPointer(type, image, hotspot) {
+  if (!gameWindow) return;
+  if (type === 'custom' && (!image || image.isEmpty())) {
+    originalPointer = null;
+    emit({ type: 'original-pointer', value: null });
+    return;
   }
-  const compressed=require('zlib').deflateSync(originalPointer.rgba);
-  if(compressed.length<20000)emit({type:'original-pointer',value:{width:originalPointer.width,hotspotX:originalPointer.hotspotX,hotspotY:originalPointer.hotspotY,compressed:compressed.toString('base64')}});
-}
-function applyCrosshair(){
-  if(!gameWindow||!win||win.isDestroyed())return;
-  const density=screen.getDisplayMatching(win.getBounds()).scaleFactor;
-  const key=JSON.stringify([crosshair,density,cursorType]);if(key===appliedCrosshair)return;
-  if(crosshair.style==='original'){
-    if(!originalPointer&&cursorType!=='custom')readOriginalPointer(cursorType);
-    if(originalPointer){const p=originalPointer;gameWindow.crosshair(Buffer.from(crosshairArtwork.recolor(p.rgba,crosshair.color)),p.width,p.hotspotX,p.hotspotY);}
-    else gameWindow.crosshair(Buffer.alloc(0),0);
-    appliedCrosshair=key;return;
+  if (type === 'custom' && image && !image.isEmpty()) {
+    const { width, height } = image.getSize(),
+      size = Math.max(width, height) | 1;
+    if (size > 145 || width < 1 || height < 1) {
+      originalPointer = null;
+      emit({ type: 'original-pointer', value: null });
+      return;
+    }
+    const bitmap = image.toBitmap(),
+      rgba = Buffer.alloc(size * size * 4);
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const a = (y * width + x) * 4,
+          b = (y * size + x) * 4;
+        rgba[b] = bitmap[a + 2];
+        rgba[b + 1] = bitmap[a + 1];
+        rgba[b + 2] = bitmap[a];
+        rgba[b + 3] = bitmap[a + 3];
+      }
+    originalPointer = {
+      width: size,
+      hotspotX: Math.max(0, Math.min(size - 1, Math.round(hotspot?.x || 0))),
+      hotspotY: Math.max(0, Math.min(size - 1, Math.round(hotspot?.y || 0))),
+      rgba,
+    };
+  } else {
+    const data = gameWindow.originalPixels(type === 'hand' ? 1 : type === 'crosshair' ? 2 : 0);
+    originalPointer = {
+      width: data.readUInt32LE(0),
+      hotspotX: data.readUInt32LE(8),
+      hotspotY: data.readUInt32LE(12),
+      rgba: data.subarray(16),
+    };
   }
-  const image=crosshairArtwork.pixels(crosshair,density);
-  gameWindow.crosshair(crosshair.style==='default'?Buffer.alloc(0):Buffer.from(image.rgba),crosshair.style==='default'?0:image.width);
-  appliedCrosshair=key;
+  const compressed = require('zlib').deflateSync(originalPointer.rgba);
+  if (compressed.length < 20000)
+    emit({
+      type: 'original-pointer',
+      value: {
+        width: originalPointer.width,
+        hotspotX: originalPointer.hotspotX,
+        hotspotY: originalPointer.hotspotY,
+        compressed: compressed.toString('base64'),
+      },
+    });
 }
-const audioDeltas=[];
-for(const name of ['audio-delta.json','audio-delta-current.json','audio-delta-latest.json','audio-delta-oct11.json'])try{audioDeltas.push(JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath,name),'utf8')));}catch(_){}
-const LIVE = validGameAddress(process.env.BLITZ_GAME_URL)?canonicalGameAddress(process.env.BLITZ_GAME_URL):null;
+function applyCrosshair() {
+  if (!gameWindow || !win || win.isDestroyed()) return;
+  const density = screen.getDisplayMatching(win.getBounds()).scaleFactor;
+  const key = JSON.stringify([crosshair, density, cursorType]);
+  if (key === appliedCrosshair) return;
+  if (crosshair.style === 'original') {
+    if (!originalPointer && cursorType !== 'custom') readOriginalPointer(cursorType);
+    if (originalPointer) {
+      const p = originalPointer;
+      gameWindow.crosshair(
+        Buffer.from(crosshairArtwork.recolor(p.rgba, crosshair.color)),
+        p.width,
+        p.hotspotX,
+        p.hotspotY
+      );
+    } else gameWindow.crosshair(Buffer.alloc(0), 0);
+    appliedCrosshair = key;
+    return;
+  }
+  const image = crosshairArtwork.pixels(crosshair, density);
+  gameWindow.crosshair(
+    crosshair.style === 'default' ? Buffer.alloc(0) : Buffer.from(image.rgba),
+    crosshair.style === 'default' ? 0 : image.width
+  );
+  appliedCrosshair = key;
+}
+const audioDeltas = [];
+for (const name of [
+  'audio-delta.json',
+  'audio-delta-current.json',
+  'audio-delta-latest.json',
+  'audio-delta-oct11.json',
+])
+  try {
+    audioDeltas.push(
+      JSON.parse(require('fs').readFileSync(path.join(process.resourcesPath, name), 'utf8'))
+    );
+  } catch (_) {}
+const LIVE = validGameAddress(process.env.BLITZ_GAME_URL)
+  ? canonicalGameAddress(process.env.BLITZ_GAME_URL)
+  : null;
 function validGameAddress(value) {
-  try { const u=new URL(value);return !u.username&&!u.password&&(u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname))); } catch(_){return false;}
+  try {
+    const u = new URL(value);
+    return (
+      !u.username &&
+      !u.password &&
+      (u.protocol === 'https:' ||
+        (u.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname)))
+    );
+  } catch (_) {
+    return false;
+  }
 }
-if(!validGameAddress(LIVE))app.exit(2);
+if (!validGameAddress(LIVE)) app.exit(2);
 const ORIGIN = new URL(LIVE).origin;
-const nativeGpu=process.env.BLITZ_NATIVE_GPU==='1'?new (require('./native-gpu.cjs').NativeGpu)({resources:process.resourcesPath,origin:ORIGIN,address:LIVE,onStatus:status=>emit({type:'gpu-status',status})}):null;
-let win, zoom = 1, connected = false, viewport = {width:1200,height:800}, clientIntegration=false, audioIntegration=false, testClientHash='',testAdapterMode='';
-const testRequests=[];
-const testIconRepairs=[];
-const testGpuConsole=[];
-let testOriginalClient=false;
-let audioMix={player:100,music:100,environment:100,creatures:100};
-let appliedAudioMix='';
-let appliedDisplayKey='',zoomRevision=0,oldRenderingTest=false,renderResolution=1;
-let showFPS=false,appliedShowFPS=null;
-const mountShortcut=new MountShortcut(async()=>{
- if(!win||win.isDestroyed()||!win.isVisible()||!win.isFocused()||!clientIntegration||!audioIntegration)return false;
- return win.webContents.executeJavaScript("(() => {const e=document.getElementById('DungeonBlitz');return document.hasFocus()&&document.activeElement===e&&typeof e?.BlitzMount==='function'&&e.BlitzMount();})()").catch(()=>false);
+const nativeGpu =
+  process.env.BLITZ_NATIVE_GPU === '1'
+    ? new (require('./native-gpu.cjs').NativeGpu)({
+        resources: process.resourcesPath,
+        origin: ORIGIN,
+        address: LIVE,
+        onStatus: (status) => emit({ type: 'gpu-status', status }),
+      })
+    : null;
+let win,
+  zoom = 1,
+  connected = false,
+  viewport = { width: 1200, height: 800 },
+  clientIntegration = false,
+  audioIntegration = false,
+  testClientHash = '',
+  testAdapterMode = '';
+const testRequests = [];
+const testIconRepairs = [];
+const testGpuConsole = [];
+let testOriginalClient = false;
+let audioMix = { player: 100, music: 100, environment: 100, creatures: 100 };
+let appliedAudioMix = '';
+let appliedDisplayKey = '',
+  zoomRevision = 0,
+  oldRenderingTest = false,
+  renderResolution = 1;
+let showFPS = false,
+  appliedShowFPS = null;
+const mountShortcut = new MountShortcut(async () => {
+  if (
+    !win ||
+    win.isDestroyed() ||
+    !win.isVisible() ||
+    !win.isFocused() ||
+    !clientIntegration ||
+    !audioIntegration
+  )
+    return false;
+  return win.webContents
+    .executeJavaScript(
+      "(() => {const e=document.getElementById('DungeonBlitz');return document.hasFocus()&&document.activeElement===e&&typeof e?.BlitzMount==='function'&&e.BlitzMount();})()"
+    )
+    .catch(() => false);
 });
-let widescreen=false,appliedWidescreen=null;
-const autorunShortcut=new AutorunShortcut(async()=>{
- if(!win||win.isDestroyed()||!win.isVisible()||!win.isFocused()||!clientIntegration||!audioIntegration)return false;
- return win.webContents.executeJavaScript("(() => {const e=document.getElementById('DungeonBlitz');return document.hasFocus()&&document.activeElement===e&&typeof e?.BlitzAutorun==='function'&&e.BlitzAutorun();})()").catch(()=>false);
-},()=>!win||win.isDestroyed()?false:win.webContents.executeJavaScript("(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzStopAutorun==='function'&&e.BlitzStopAutorun();})()").catch(()=>false));
-let centeredHotbar=false,appliedCenteredHotbar=null;
-let centeredCamera=false,appliedCenteredCamera=null;
-async function applyCenteredCamera(){
- if(!win||win.isDestroyed()||!clientIntegration||!audioIntegration||appliedCenteredCamera===centeredCamera)return;
- const wanted=centeredCamera;
- const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetCenteredCamera==='function'&&e.BlitzSetCenteredCamera(${wanted});})()`).catch(()=>false);
- if(applied===true&&centeredCamera===wanted)appliedCenteredCamera=wanted;
+let widescreen = false,
+  appliedWidescreen = null;
+const autorunShortcut = new AutorunShortcut(
+  async () => {
+    if (
+      !win ||
+      win.isDestroyed() ||
+      !win.isVisible() ||
+      !win.isFocused() ||
+      !clientIntegration ||
+      !audioIntegration
+    )
+      return false;
+    return win.webContents
+      .executeJavaScript(
+        "(() => {const e=document.getElementById('DungeonBlitz');return document.hasFocus()&&document.activeElement===e&&typeof e?.BlitzAutorun==='function'&&e.BlitzAutorun();})()"
+      )
+      .catch(() => false);
+  },
+  () =>
+    !win || win.isDestroyed()
+      ? false
+      : win.webContents
+          .executeJavaScript(
+            "(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzStopAutorun==='function'&&e.BlitzStopAutorun();})()"
+          )
+          .catch(() => false)
+);
+let centeredHotbar = false,
+  appliedCenteredHotbar = null;
+let centeredCamera = false,
+  appliedCenteredCamera = null;
+async function applyCenteredCamera() {
+  if (
+    !win ||
+    win.isDestroyed() ||
+    !clientIntegration ||
+    !audioIntegration ||
+    appliedCenteredCamera === centeredCamera
+  )
+    return;
+  const wanted = centeredCamera;
+  const applied = await win.webContents
+    .executeJavaScript(
+      `(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetCenteredCamera==='function'&&e.BlitzSetCenteredCamera(${wanted});})()`
+    )
+    .catch(() => false);
+  if (applied === true && centeredCamera === wanted) appliedCenteredCamera = wanted;
 }
-async function applyCenteredHotbar(){
- if(!win||win.isDestroyed()||!clientIntegration||!audioIntegration||appliedCenteredHotbar===centeredHotbar)return;
- const wanted=centeredHotbar;
- const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetCenteredHotbar==='function'&&e.BlitzSetCenteredHotbar(${wanted});})()`).catch(()=>false);
- if(applied===true&&centeredHotbar===wanted)appliedCenteredHotbar=wanted;
+async function applyCenteredHotbar() {
+  if (
+    !win ||
+    win.isDestroyed() ||
+    !clientIntegration ||
+    !audioIntegration ||
+    appliedCenteredHotbar === centeredHotbar
+  )
+    return;
+  const wanted = centeredHotbar;
+  const applied = await win.webContents
+    .executeJavaScript(
+      `(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetCenteredHotbar==='function'&&e.BlitzSetCenteredHotbar(${wanted});})()`
+    )
+    .catch(() => false);
+  if (applied === true && centeredHotbar === wanted) appliedCenteredHotbar = wanted;
 }
-let appliedMountShortcut=null;
-async function applyMountShortcut(){
- if(!win||win.isDestroyed()||!clientIntegration||!audioIntegration||appliedMountShortcut===mountShortcut.enabled)return;
- const wanted=mountShortcut.enabled;
- const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetMountShortcut==='function'&&e.BlitzSetMountShortcut(${wanted});})()`).catch(()=>false);
- if(applied===true&&mountShortcut.enabled===wanted)appliedMountShortcut=wanted;
+let appliedMountShortcut = null;
+async function applyMountShortcut() {
+  if (
+    !win ||
+    win.isDestroyed() ||
+    !clientIntegration ||
+    !audioIntegration ||
+    appliedMountShortcut === mountShortcut.enabled
+  )
+    return;
+  const wanted = mountShortcut.enabled;
+  const applied = await win.webContents
+    .executeJavaScript(
+      `(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetMountShortcut==='function'&&e.BlitzSetMountShortcut(${wanted});})()`
+    )
+    .catch(() => false);
+  if (applied === true && mountShortcut.enabled === wanted) appliedMountShortcut = wanted;
 }
-async function applyWidescreen(){
- if(!win||win.isDestroyed()||!clientIntegration||!audioIntegration||appliedWidescreen===widescreen)return;
- const wanted=widescreen;
- const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetWidescreen==='function'&&e.BlitzSetWidescreen(${wanted});})()`).catch(()=>false);
- if(applied===true&&widescreen===wanted)appliedWidescreen=wanted;
+async function applyWidescreen() {
+  if (
+    !win ||
+    win.isDestroyed() ||
+    !clientIntegration ||
+    !audioIntegration ||
+    appliedWidescreen === widescreen
+  )
+    return;
+  const wanted = widescreen;
+  const applied = await win.webContents
+    .executeJavaScript(
+      `(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetWidescreen==='function'&&e.BlitzSetWidescreen(${wanted});})()`
+    )
+    .catch(() => false);
+  if (applied === true && widescreen === wanted) appliedWidescreen = wanted;
 }
-async function applyFPSCounter(){
- if(!win||win.isDestroyed()||appliedShowFPS===showFPS)return;
- const wanted=showFPS;
- const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzShowFPS==='function'&&e.BlitzShowFPS(${wanted});})()`).catch(()=>false);
- if(applied===true&&showFPS===wanted)appliedShowFPS=wanted;
+async function applyFPSCounter() {
+  if (!win || win.isDestroyed() || appliedShowFPS === showFPS) return;
+  const wanted = showFPS;
+  const applied = await win.webContents
+    .executeJavaScript(
+      `(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzShowFPS==='function'&&e.BlitzShowFPS(${wanted});})()`
+    )
+    .catch(() => false);
+  if (applied === true && showFPS === wanted) appliedShowFPS = wanted;
 }
-async function applyAudioMix(){
- if(!win||win.isDestroyed()||!audioIntegration)return;
- const key=JSON.stringify(audioMix);if(key===appliedAudioMix)return;
- const values=['player','music','environment','creatures'].map(key=>audioMix[key]);
- const applied=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetAudio==='function'&&e.BlitzSetAudio(${values.join(',')});})()`).catch(()=>false);
- if(applied===true)appliedAudioMix=key;
+async function applyAudioMix() {
+  if (!win || win.isDestroyed() || !audioIntegration) return;
+  const key = JSON.stringify(audioMix);
+  if (key === appliedAudioMix) return;
+  const values = ['player', 'music', 'environment', 'creatures'].map((key) => audioMix[key]);
+  const applied = await win.webContents
+    .executeJavaScript(
+      `(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzSetAudio==='function'&&e.BlitzSetAudio(${values.join(',')});})()`
+    )
+    .catch(() => false);
+  if (applied === true) appliedAudioMix = key;
 }
 const queued = [];
-const testEdits=[];
-const testLinks=[];
-function linkTrace(event) { if(process.env.BLITZ_HOST_TEST==='1'&&testLinks.length<100)testLinks.push(event); }
-let readPasteText=()=>require('electron').clipboard.readText();
+const testEdits = [];
+const testLinks = [];
+function linkTrace(event) {
+  if (process.env.BLITZ_HOST_TEST === '1' && testLinks.length < 100) testLinks.push(event);
+}
+let readPasteText = () => require('electron').clipboard.readText();
 const channel = process.env.BLITZ_HOST_CHANNEL;
 const token = process.env.BLITZ_HOST_TOKEN;
 if (!channel || !token) app.exit(2);
 const pipe = net.connect(channel);
-pipe.on('connect', () => { connected = true; pipe.write(JSON.stringify({ type: 'auth', token }) + '\n'); queued.forEach(message => pipe.write(message)); queued.length = 0; });
+pipe.on('connect', () => {
+  connected = true;
+  pipe.write(JSON.stringify({ type: 'auth', token }) + '\n');
+  queued.forEach((message) => pipe.write(message));
+  queued.length = 0;
+});
 pipe.on('error', () => app.exit(1));
-pipe.on('close', () => { if (win && !win.isDestroyed()) win.destroy(); app.quit(); });
+pipe.on('close', () => {
+  if (win && !win.isDestroyed()) win.destroy();
+  app.quit();
+});
 app.setName('Blitz Game Host');
-app.setPath('userData', path.join(app.getPath('appData'), process.env.BLITZ_HOST_TEST === '1' ? 'BlitzBrowser-Game-Test' : 'BlitzBrowser-Game'));
+app.setPath(
+  'userData',
+  path.join(
+    app.getPath('appData'),
+    process.env.BLITZ_HOST_TEST === '1' ? 'BlitzBrowser-Game-Test' : 'BlitzBrowser-Game'
+  )
+);
 app.enableSandbox();
-app.commandLine.appendSwitch('ppapi-flash-path', path.join(process.resourcesPath, 'pepflashplayer64.dll'));
+app.commandLine.appendSwitch(
+  'ppapi-flash-path',
+  path.join(process.resourcesPath, 'pepflashplayer64.dll')
+);
 app.commandLine.appendSwitch('ppapi-flash-version', '32.0.0.363');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // This dedicated game HWND is positioned over a separate Chromium owner.
 // Disable legacy native occlusion heuristics for that embedded surface; explicit
 // hide/background settings still control activity. No clocks or input are changed.
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
-app.commandLine.appendSwitch('disable-features','CalculateNativeWinOcclusion');
-if (process.env.BLITZ_GAME_ACCELERATION==='0'||(process.env.BLITZ_HOST_TEST === '1' && process.env.BLITZ_PRIVATE_DESKTOP&&process.env.BLITZ_NATIVE_GPU!=='1')) {
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+if (
+  process.env.BLITZ_GAME_ACCELERATION === '0' ||
+  (process.env.BLITZ_HOST_TEST === '1' &&
+    process.env.BLITZ_PRIVATE_DESKTOP &&
+    process.env.BLITZ_NATIVE_GPU !== '1')
+) {
   app.disableHardwareAcceleration();
 }
-function emit(data) { const message = JSON.stringify(data) + '\n'; if (connected) pipe.write(message); else queued.push(message); }
-function gameURL(url) { try { const u = new URL(url); return u.origin === ORIGIN && !u.username && !u.password; } catch (_) { return false; } }
-function sizeGameWindow(width,height){
-  if(!win||win.isDestroyed())return;
-  const size=win.getContentSize();if(size[0]===width&&size[1]===height)return;
+function emit(data) {
+  const message = JSON.stringify(data) + '\n';
+  if (connected) pipe.write(message);
+  else queued.push(message);
+}
+function gameURL(url) {
+  try {
+    const u = new URL(url);
+    return u.origin === ORIGIN && !u.username && !u.password;
+  } catch (_) {
+    return false;
+  }
+}
+function sizeGameWindow(width, height) {
+  if (!win || win.isDestroyed()) return;
+  const size = win.getContentSize();
+  if (size[0] === width && size[1] === height) return;
   // Update Electron's fixed-size constraints on its own window thread. The
   // persistent native subclass blocks interactive movement/resizing throughout.
   win.setResizable(true);
-  try{win.setContentSize(width,height);}finally{win.setResizable(false);}
+  try {
+    win.setContentSize(width, height);
+  } finally {
+    win.setResizable(false);
+  }
 }
 async function applyZoom() {
   if (!win || win.isDestroyed()) return;
-  const revision=++zoomRevision,currentZoom=zoom,currentViewport={...viewport},currentResolution=renderResolution;
-  const before=win.webContents.getZoomFactor();
-  const probe=await win.webContents.executeJavaScript(`(() => {const e=document.getElementById('DungeonBlitz');return {native:typeof e?.BlitzSetPictureZoom==='function',density:devicePixelRatio/${before}};})()`).catch(()=>null);
-  if(revision!==zoomRevision||win.isDestroyed())return;
-  const native=clientIntegration&&audioIntegration&&probe?.native&&!oldRenderingTest;
-  const density=probe&&Number.isFinite(probe.density)&&probe.density>=.5&&probe.density<=8?probe.density:1;
+  const revision = ++zoomRevision,
+    currentZoom = zoom,
+    currentViewport = { ...viewport },
+    currentResolution = renderResolution;
+  const before = win.webContents.getZoomFactor();
+  const probe = await win.webContents
+    .executeJavaScript(
+      `(() => {const e=document.getElementById('DungeonBlitz');return {native:typeof e?.BlitzSetPictureZoom==='function',density:devicePixelRatio/${before}};})()`
+    )
+    .catch(() => null);
+  if (revision !== zoomRevision || win.isDestroyed()) return;
+  const native = clientIntegration && audioIntegration && probe?.native && !oldRenderingTest;
+  const density =
+    probe && Number.isFinite(probe.density) && probe.density >= 0.5 && probe.density <= 8
+      ? probe.density
+      : 1;
   // Let Flash allocate its own bitmap at device-pixel resolution. Browser zoom
   // compensates Windows DPI, not game magnification. Only exceptionally large
   // views use a bounded raster plus residual scaling to avoid unsafe allocations.
-  const plan=rasterPlan(currentViewport.width,currentViewport.height,currentZoom,density,currentResolution);
-  const factor=native?plan.browserZoom:Math.max(.1,Math.min(10,Math.min(currentViewport.width/1152,currentViewport.height/768)*currentZoom));
+  const plan = rasterPlan(
+    currentViewport.width,
+    currentViewport.height,
+    currentZoom,
+    density,
+    currentResolution
+  );
+  const factor = native
+    ? plan.browserZoom
+    : Math.max(
+        0.1,
+        Math.min(
+          10,
+          Math.min(currentViewport.width / 1152, currentViewport.height / 768) * currentZoom
+        )
+      );
   // Reapplying an identical page zoom in this legacy Chromium can restore its
   // cached pre-attachment window bounds. Picture zoom belongs inside Flash.
-  if(Math.abs(before-factor)>.00001)win.webContents.setZoomFactor(factor);
-  sizeGameWindow(currentViewport.width,currentViewport.height);
-  const applied = await win.webContents.executeJavaScript(`(() => { const e = document.getElementById('game-container'); if (!e) return false; e.style.cssText = ${JSON.stringify(clientIntegration?'width:100vw;height:100vh;min-width:0;min-height:0;flex:0 0 auto':'width:1152px;height:768px;min-width:1152px;min-height:768px;flex:0 0 auto')}; return true; })()`).catch(() => false);
-  if(revision!==zoomRevision)return;
-  if(native&&applied){
-   const key=JSON.stringify([currentZoom,currentViewport,density,factor]);
-   if(key!==appliedDisplayKey){
-    const changed=await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzSetPictureZoom(${currentZoom},${factor})`).catch(()=>false);
-    if(changed===true&&revision===zoomRevision)appliedDisplayKey=key;
-   }
+  if (Math.abs(before - factor) > 0.00001) win.webContents.setZoomFactor(factor);
+  sizeGameWindow(currentViewport.width, currentViewport.height);
+  const applied = await win.webContents
+    .executeJavaScript(
+      `(() => { const e = document.getElementById('game-container'); if (!e) return false; e.style.cssText = ${JSON.stringify(clientIntegration ? 'width:100vw;height:100vh;min-width:0;min-height:0;flex:0 0 auto' : 'width:1152px;height:768px;min-width:1152px;min-height:768px;flex:0 0 auto')}; return true; })()`
+    )
+    .catch(() => false);
+  if (revision !== zoomRevision) return;
+  if (native && applied) {
+    const key = JSON.stringify([currentZoom, currentViewport, density, factor]);
+    if (key !== appliedDisplayKey) {
+      const changed = await win.webContents
+        .executeJavaScript(
+          `document.getElementById('DungeonBlitz').BlitzSetPictureZoom(${currentZoom},${factor})`
+        )
+        .catch(() => false);
+      if (changed === true && revision === zoomRevision) appliedDisplayKey = key;
+    }
   }
-  if(applied)emit({type:'zoom-applied',value:currentZoom,scale:factor});
+  if (applied) emit({ type: 'zoom-applied', value: currentZoom, scale: factor });
 }
-app.whenReady().then(async () => {
-  const ses = session.defaultSession;
-  // Fresh live-client tests use only their disposable profile. Clearing its
-  // cache before creating a renderer avoids legacy DevTools startup deadlocks.
-  if(process.env.BLITZ_HOST_TEST==='1')await ses.clearCache();
-  if(process.env.BLITZ_HOST_TEST==='1'){
-    const record=details=>{if(testRequests.length<100)testRequests.push({path:new URL(details.url).pathname,status:details.statusCode,error:details.error||''});};
-    ses.webRequest.onCompleted(record);ses.webRequest.onErrorOccurred(record);
-  }
-  ses.setPermissionRequestHandler((wc, permission, callback) => callback(permission === 'fullscreen' && gameURL(wc.getURL())));
-  ses.setPermissionCheckHandler((wc, permission) => permission === 'fullscreen' && wc && gameURL(wc.getURL()));
-  ses.on('will-download', (event) => event.preventDefault());
-  ses.webRequest.onBeforeRequest((details, callback) => {
-    // Only the selected canonical game origin, including for local clients.
-    callback({ cancel: !gameURL(details.url) });
-  });
-  win = new BrowserWindow({ width: 1200, height: 800, minWidth: 1, minHeight: 1, frame: false, thickFrame: false, resizable: false, movable: false, minimizable: false, maximizable: false, show: false, backgroundColor: '#484955', skipTaskbar: true, fullscreenable: false, webPreferences: { plugins: true, sandbox: true, contextIsolation: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, allowRunningInsecureContent: false, enableRemoteModule: false, webviewTag: false, backgroundThrottling: false } });
-  // This is an input surface positioned by the launcher, not an independently
-  // draggable/resizable window. Removing Win32 styles alone leaves Chromium's
-  // frameless hit-test resize borders active.
-  // The own-process subclass blocks interactive move/resize. Do not cancel
-  // native placement events: our owner uses SetWindowPos to synchronize position.
-  gameWindow=require(path.join(process.resourcesPath,'game-window.node'));gameWindow.attach(win.getNativeWindowHandle());
-  win.on('move',applyCrosshair);
-  win.webContents.on('cursor-changed',(_event,type,image,_scale,_size,hotspot)=>{
-    cursorType=type;const allowed=['default','pointer','hand','crosshair','custom'].includes(type);
-    if(allowed){readOriginalPointer(type,image,hotspot);appliedCrosshair='';applyCrosshair();}
-    gameWindow.cursorType(allowed);
-  });
-  win.setMenuBarVisibility(false);
-  win.on('focus',()=>emit({type:'focused'}));
-  // Alt+F4 on the game surface closes its launcher without a confirmation.
-  win.on('close', event => {event.preventDefault();emit({type:'close-window'});});
-  const wc = win.webContents;
-  if(nativeGpu&&process.env.BLITZ_HOST_TEST==='1')wc.on('console-message',(_e,_l,message)=>{if(testGpuConsole.length<12&&/__launcher_gpu|module script|MIME type|Content Security Policy/.test(message))testGpuConsole.push(message.slice(0,500));});
-  if(nativeGpu){
-    win.on('focus',()=>{nativeGpu.foreground=true;void nativeGpu.update(wc);});
-    win.on('blur',()=>{nativeGpu.foreground=false;void nativeGpu.update(wc);});
-    wc.on('did-finish-load',()=>{void nativeGpu.load(wc);});
-    const gpuTimer=setInterval(()=>{void nativeGpu.status(wc);},500);win.on('closed',()=>clearInterval(gpuTimer));
-  }
-  let lastLink = 0, linkContext = null;
-  async function watchHTMLLinks() {
-    try {
-      await wc.debugger.sendCommand('Page.enable');
-      const tree = await wc.debugger.sendCommand('Page.getFrameTree');
-      const context = await wc.debugger.sendCommand('Page.createIsolatedWorld',{frameId:tree.frameTree.frame.id,worldName:'blitz-link-gestures'});
-      linkContext = context.executionContextId;
-      await wc.debugger.sendCommand('Runtime.addBinding',{name:'blitzTrustedLink',executionContextId:linkContext});
-      await wc.debugger.sendCommand('Runtime.evaluate',{contextId:linkContext,expression:`(() => {
+app
+  .whenReady()
+  .then(async () => {
+    const ses = session.defaultSession;
+    // Fresh live-client tests use only their disposable profile. Clearing its
+    // cache before creating a renderer avoids legacy DevTools startup deadlocks.
+    if (process.env.BLITZ_HOST_TEST === '1') await ses.clearCache();
+    if (process.env.BLITZ_HOST_TEST === '1') {
+      const record = (details) => {
+        if (testRequests.length < 100)
+          testRequests.push({
+            path: new URL(details.url).pathname,
+            status: details.statusCode,
+            error: details.error || '',
+          });
+      };
+      ses.webRequest.onCompleted(record);
+      ses.webRequest.onErrorOccurred(record);
+    }
+    ses.setPermissionRequestHandler((wc, permission, callback) =>
+      callback(permission === 'fullscreen' && gameURL(wc.getURL()))
+    );
+    ses.setPermissionCheckHandler(
+      (wc, permission) => permission === 'fullscreen' && wc && gameURL(wc.getURL())
+    );
+    ses.on('will-download', (event) => event.preventDefault());
+    ses.webRequest.onBeforeRequest((details, callback) => {
+      // Only the selected canonical game origin, including for local clients.
+      callback({ cancel: !gameURL(details.url) });
+    });
+    win = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      minWidth: 1,
+      minHeight: 1,
+      frame: false,
+      thickFrame: false,
+      resizable: false,
+      movable: false,
+      minimizable: false,
+      maximizable: false,
+      show: false,
+      backgroundColor: '#484955',
+      skipTaskbar: true,
+      fullscreenable: false,
+      webPreferences: {
+        plugins: true,
+        sandbox: true,
+        contextIsolation: true,
+        nodeIntegration: false,
+        nodeIntegrationInWorker: false,
+        webSecurity: true,
+        allowRunningInsecureContent: false,
+        enableRemoteModule: false,
+        webviewTag: false,
+        backgroundThrottling: false,
+      },
+    });
+    // This is an input surface positioned by the launcher, not an independently
+    // draggable/resizable window. Removing Win32 styles alone leaves Chromium's
+    // frameless hit-test resize borders active.
+    // The own-process subclass blocks interactive move/resize. Do not cancel
+    // native placement events: our owner uses SetWindowPos to synchronize position.
+    gameWindow = require(path.join(process.resourcesPath, 'game-window.node'));
+    gameWindow.attach(win.getNativeWindowHandle());
+    win.on('move', applyCrosshair);
+    win.webContents.on('cursor-changed', (_event, type, image, _scale, _size, hotspot) => {
+      cursorType = type;
+      const allowed = ['default', 'pointer', 'hand', 'crosshair', 'custom'].includes(type);
+      if (allowed) {
+        readOriginalPointer(type, image, hotspot);
+        appliedCrosshair = '';
+        applyCrosshair();
+      }
+      gameWindow.cursorType(allowed);
+    });
+    win.setMenuBarVisibility(false);
+    win.on('focus', () => emit({ type: 'focused' }));
+    // Alt+F4 on the game surface closes its launcher without a confirmation.
+    win.on('close', (event) => {
+      event.preventDefault();
+      emit({ type: 'close-window' });
+    });
+    const wc = win.webContents;
+    if (nativeGpu && process.env.BLITZ_HOST_TEST === '1')
+      wc.on('console-message', (_e, _l, message) => {
+        if (
+          testGpuConsole.length < 12 &&
+          /__launcher_gpu|module script|MIME type|Content Security Policy/.test(message)
+        )
+          testGpuConsole.push(message.slice(0, 500));
+      });
+    if (nativeGpu) {
+      win.on('focus', () => {
+        nativeGpu.foreground = true;
+        void nativeGpu.update(wc);
+      });
+      win.on('blur', () => {
+        nativeGpu.foreground = false;
+        void nativeGpu.update(wc);
+      });
+      wc.on('did-finish-load', () => {
+        void nativeGpu.load(wc);
+      });
+      const gpuTimer = setInterval(() => {
+        void nativeGpu.status(wc);
+      }, 500);
+      win.on('closed', () => clearInterval(gpuTimer));
+    }
+    let lastLink = 0,
+      linkContext = null;
+    async function watchHTMLLinks() {
+      try {
+        await wc.debugger.sendCommand('Page.enable');
+        const tree = await wc.debugger.sendCommand('Page.getFrameTree');
+        const context = await wc.debugger.sendCommand('Page.createIsolatedWorld', {
+          frameId: tree.frameTree.frame.id,
+          worldName: 'blitz-link-gestures',
+        });
+        linkContext = context.executionContextId;
+        await wc.debugger.sendCommand('Runtime.addBinding', {
+          name: 'blitzTrustedLink',
+          executionContextId: linkContext,
+        });
+        await wc.debugger.sendCommand('Runtime.evaluate', {
+          contextId: linkContext,
+          expression: `(() => {
         if(window.__blitzWatchingLinks)return;window.__blitzWatchingLinks=true;
         addEventListener('click', event => {
           if(!event.isTrusted||event.button!==0)return;
@@ -233,192 +588,666 @@ app.whenReady().then(async () => {
           if(!anchor)return;
           event.preventDefault();blitzTrustedLink(anchor.href);
         },true);
-      })()`});
-    } catch (_) { linkContext = null; }
-  }
-  async function routeLink(url, userGesture) {
-    const link = classifyLink(url, LIVE);
-    linkTrace({url,source:wc.getURL(),userGesture,phase:'route'});
-    if (!link || !gameURL(wc.getURL()) || Date.now() - lastLink < 1000) return;
-    if (link.type === 'external') {
-      // Flash navigateToURL and HTML links share Chromium's user activation.
-      const gesture = userGesture === true || await wc.executeJavaScript('navigator.userActivation && navigator.userActivation.isActive === true').catch(() => false);
-      linkTrace({url,gesture,phase:'activation'});
-      if (gesture !== true || wc.isDestroyed() || !gameURL(wc.getURL()) || Date.now() - lastLink < 1000) return;
-      lastLink = Date.now(); emit({type:'external-link',url:link.url,userGesture:true});
-    } else {
-      lastLink = Date.now(); setImmediate(() => { if (!wc.isDestroyed()) wc.loadURL(LIVE).catch(() => {}); });
+      })()`,
+        });
+      } catch (_) {
+        linkContext = null;
+      }
     }
-  }
-  // In-process DevTools response interception preserves the selected HTTPS URL,
-  // cookies and certificate checks. It opens no debugging port or proxy server.
-  // First reuse reviewed hooks whose interfaces and method envelopes still
-  // match. Otherwise use an exact reviewed revision, or continue unmodified.
-  wc.debugger.on('message',async (_event,method,params)=>{
-    if(method==='Runtime.bindingCalled'){
-      if(params.name==='blitzTrustedLink'&&params.executionContextId===linkContext)void routeLink(params.payload,true);
-      return;
+    async function routeLink(url, userGesture) {
+      const link = classifyLink(url, LIVE);
+      linkTrace({ url, source: wc.getURL(), userGesture, phase: 'route' });
+      if (!link || !gameURL(wc.getURL()) || Date.now() - lastLink < 1000) return;
+      if (link.type === 'external') {
+        // Flash navigateToURL and HTML links share Chromium's user activation.
+        const gesture =
+          userGesture === true ||
+          (await wc
+            .executeJavaScript(
+              'navigator.userActivation && navigator.userActivation.isActive === true'
+            )
+            .catch(() => false));
+        linkTrace({ url, gesture, phase: 'activation' });
+        if (
+          gesture !== true ||
+          wc.isDestroyed() ||
+          !gameURL(wc.getURL()) ||
+          Date.now() - lastLink < 1000
+        )
+          return;
+        lastLink = Date.now();
+        emit({ type: 'external-link', url: link.url, userGesture: true });
+      } else {
+        lastLink = Date.now();
+        setImmediate(() => {
+          if (!wc.isDestroyed()) wc.loadURL(LIVE).catch(() => {});
+        });
+      }
     }
-    if(method.startsWith('Page.')&&/windowOpen|Navigation/.test(method))linkTrace({method,params});
-    if(method==='Page.windowOpen'){if(params.userGesture===true)void routeLink(params.url,true);return;}
-    if(method!=='Fetch.requestPaused')return;
-    let fulfilled=false;
+    // In-process DevTools response interception preserves the selected HTTPS URL,
+    // cookies and certificate checks. It opens no debugging port or proxy server.
+    // First reuse reviewed hooks whose interfaces and method envelopes still
+    // match. Otherwise use an exact reviewed revision, or continue unmodified.
+    wc.debugger.on('message', async (_event, method, params) => {
+      if (method === 'Runtime.bindingCalled') {
+        if (params.name === 'blitzTrustedLink' && params.executionContextId === linkContext)
+          void routeLink(params.payload, true);
+        return;
+      }
+      if (method.startsWith('Page.') && /windowOpen|Navigation/.test(method))
+        linkTrace({ method, params });
+      if (method === 'Page.windowOpen') {
+        if (params.userGesture === true) void routeLink(params.url, true);
+        return;
+      }
+      if (method !== 'Fetch.requestPaused') return;
+      let fulfilled = false;
+      try {
+        const url = new URL(params.request.url);
+        if (nativeGpu && url.origin === ORIGIN) {
+          if (
+            params.resourceType === 'Document' &&
+            url.pathname === new URL(LIVE).pathname &&
+            params.responseStatusCode === 200
+          ) {
+            const response = await wc.debugger.sendCommand('Fetch.getResponseBody', {
+                requestId: params.requestId,
+              }),
+              bytes = Buffer.from(response.body, response.base64Encoded ? 'base64' : 'utf8'),
+              html = nativeGpu.html(bytes);
+            if (html) {
+              const headers = (params.responseHeaders || []).filter(
+                (h) =>
+                  !['content-length', 'content-encoding', 'transfer-encoding'].includes(
+                    h.name.toLowerCase()
+                  )
+              );
+              headers.push({ name: 'Content-Length', value: String(html.length) });
+              await wc.debugger.sendCommand('Fetch.fulfillRequest', {
+                requestId: params.requestId,
+                responseCode: 200,
+                responseHeaders: headers,
+                body: html.toString('base64'),
+              });
+              fulfilled = true;
+              return;
+            }
+          }
+          if (
+            /\.swf$/i.test(url.pathname) &&
+            !/\/DungeonBlitz\.swf$/i.test(url.pathname) &&
+            params.responseStatusCode === 200
+          ) {
+            const response = await wc.debugger.sendCommand('Fetch.getResponseBody', {
+                requestId: params.requestId,
+              }),
+              bytes = Buffer.from(response.body, response.base64Encoded ? 'base64' : 'utf8');
+            nativeGpu.inspectAsset(url, bytes);
+            if (!nativeGpu.artwork) await nativeGpu.update(wc);
+            const headers = (params.responseHeaders || []).filter(
+              (h) =>
+                !['content-length', 'content-encoding', 'transfer-encoding'].includes(
+                  h.name.toLowerCase()
+                )
+            );
+            headers.push({ name: 'Content-Length', value: String(bytes.length) });
+            await wc.debugger.sendCommand('Fetch.fulfillRequest', {
+              requestId: params.requestId,
+              responseCode: 200,
+              responseHeaders: headers,
+              body: bytes.toString('base64'),
+            });
+            fulfilled = true;
+            setImmediate(() => {
+              void nativeGpu.update(wc);
+            });
+            return;
+          }
+        }
+        if (
+          url.origin === ORIGIN &&
+          /\/DungeonBlitz\.swf$/i.test(url.pathname) &&
+          params.responseStatusCode === 200
+        ) {
+          const response = await wc.debugger.sendCommand('Fetch.getResponseBody', {
+            requestId: params.requestId,
+          });
+          const bytes = Buffer.from(response.body, response.base64Encoded ? 'base64' : 'utf8'),
+            adapter = testOriginalClient
+              ? { patched: null, audio: false, mode: 'original' }
+              : adaptClient(bytes, LIVE, {
+                  multiplayer: adaptiveContract,
+                  singleplayer: singleplayerContract,
+                  audioDeltas,
+                });
+          let patched = adapter.patched;
+          if (nativeGpu && !testOriginalClient) {
+            const gpu = nativeGpu.adapt(bytes);
+            if (gpu) patched = gpu;
+          }
+          if (process.env.BLITZ_SINGLEPLAYER_PORTS) {
+            const ports = JSON.parse(process.env.BLITZ_SINGLEPLAYER_PORTS);
+            // First validate the exact original local contract, then relocate
+            // only this private server's endpoints. Never relax pool guards.
+            patched =
+              patched && require('./singleplayer-network.cjs').localizeClient(patched, LIVE, ports);
+            if (!patched) throw Error('Owned singleplayer client contract rejected');
+          }
+          if (process.env.BLITZ_HOST_TEST === '1') testAdapterMode = adapter.mode;
+          if (process.env.BLITZ_HOST_TEST === '1')
+            testClientHash = require('crypto').createHash('sha256').update(bytes).digest('hex');
+          audioIntegration = adapter.audio;
+          emit({ type: 'audio-integration', value: audioIntegration });
+          if (patched) {
+            const headers = (params.responseHeaders || []).filter(
+              (h) =>
+                !['content-length', 'content-encoding', 'transfer-encoding'].includes(
+                  h.name.toLowerCase()
+                )
+            );
+            headers.push({ name: 'Content-Length', value: String(patched.length) });
+            await wc.debugger.sendCommand('Fetch.fulfillRequest', {
+              requestId: params.requestId,
+              responseCode: 200,
+              responseHeaders: headers,
+              body: patched.toString('base64'),
+            });
+            fulfilled = true;
+            if (nativeGpu)
+              setImmediate(() => {
+                void nativeGpu.update(wc);
+              });
+            clientIntegration = true;
+            emit({ type: 'client-integration', value: true });
+            await applyZoom();
+          } else {
+            clientIntegration = false;
+            emit({ type: 'client-integration', value: false });
+          }
+        }
+        if (localIconAsset(LIVE, params.request.url) && params.responseStatusCode === 200) {
+          const response = await wc.debugger.sendCommand('Fetch.getResponseBody', {
+            requestId: params.requestId,
+          });
+          const bytes = Buffer.from(response.body, response.base64Encoded ? 'base64' : 'utf8'),
+            patched = patchLocalIcons(bytes, LIVE);
+          if (patched) {
+            const headers = (params.responseHeaders || []).filter(
+              (h) =>
+                !['content-length', 'content-encoding', 'transfer-encoding'].includes(
+                  h.name.toLowerCase()
+                )
+            );
+            headers.push({ name: 'Content-Length', value: String(patched.length) });
+            await wc.debugger.sendCommand('Fetch.fulfillRequest', {
+              requestId: params.requestId,
+              responseCode: 200,
+              responseHeaders: headers,
+              body: patched.toString('base64'),
+            });
+            fulfilled = true;
+            if (process.env.BLITZ_HOST_TEST === '1' && testIconRepairs.length < 8)
+              testIconRepairs.push({
+                path: url.pathname,
+                sourceHash: require('crypto').createHash('sha256').update(bytes).digest('hex'),
+              });
+          }
+        }
+      } catch (_) {
+        if (nativeGpu) {
+          nativeGpu.reject('GPU inspection failed; Original rendering is retained.');
+          await nativeGpu.update(wc);
+        }
+        if (/\/DungeonBlitz\.swf(?:\?|$)/i.test(params.request.url)) {
+          clientIntegration = false;
+          emit({ type: 'client-integration', value: false });
+          if (process.env.BLITZ_SINGLEPLAYER_PORTS) {
+            await wc.debugger.sendCommand('Fetch.failRequest', {
+              requestId: params.requestId,
+              errorReason: 'BlockedByClient',
+            });
+            fulfilled = true;
+            emit({
+              type: 'error',
+              message:
+                'The private singleplayer client could not be validated. Reconnect to retry.',
+            });
+          }
+        }
+      } finally {
+        if (!fulfilled && !wc.isDestroyed())
+          await wc.debugger
+            .sendCommand('Fetch.continueRequest', { requestId: params.requestId })
+            .catch(() => {});
+      }
+    });
     try {
-      const url=new URL(params.request.url);
-      if(nativeGpu&&url.origin===ORIGIN){
-        if(params.resourceType==='Document'&&url.pathname===new URL(LIVE).pathname&&params.responseStatusCode===200){
-          const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId}),bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),html=nativeGpu.html(bytes);
-          if(html){const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));headers.push({name:'Content-Length',value:String(html.length)});await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:html.toString('base64')});fulfilled=true;return;}
-        }
-        if(/\.swf$/i.test(url.pathname)&&!/\/DungeonBlitz\.swf$/i.test(url.pathname)&&params.responseStatusCode===200){const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId}),bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8');nativeGpu.inspectAsset(url,bytes);if(!nativeGpu.artwork)await nativeGpu.update(wc);const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));headers.push({name:'Content-Length',value:String(bytes.length)});await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:bytes.toString('base64')});fulfilled=true;setImmediate(()=>{void nativeGpu.update(wc);});return;}
-      }
-      if(url.origin===ORIGIN && /\/DungeonBlitz\.swf$/i.test(url.pathname) && params.responseStatusCode===200) {
-        const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
-        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),adapter=testOriginalClient?{patched:null,audio:false,mode:'original'}:adaptClient(bytes,LIVE,{multiplayer:adaptiveContract,singleplayer:singleplayerContract,audioDeltas});let patched=adapter.patched;
-        if(nativeGpu&&!testOriginalClient){const gpu=nativeGpu.adapt(bytes);if(gpu)patched=gpu;}
-        if(process.env.BLITZ_SINGLEPLAYER_PORTS){
-          const ports=JSON.parse(process.env.BLITZ_SINGLEPLAYER_PORTS);
-          // First validate the exact original local contract, then relocate
-          // only this private server's endpoints. Never relax pool guards.
-          patched=patched&&require('./singleplayer-network.cjs').localizeClient(patched,LIVE,ports);
-          if(!patched)throw Error('Owned singleplayer client contract rejected');
-        }
-        if(process.env.BLITZ_HOST_TEST==='1')testAdapterMode=adapter.mode;
-        if(process.env.BLITZ_HOST_TEST==='1')testClientHash=require('crypto').createHash('sha256').update(bytes).digest('hex');
-        audioIntegration=adapter.audio;emit({type:'audio-integration',value:audioIntegration});
-        if(patched) {
-          const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));
-          headers.push({name:'Content-Length',value:String(patched.length)});
-          await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:patched.toString('base64')});fulfilled=true;
-          if(nativeGpu)setImmediate(()=>{void nativeGpu.update(wc);});
-          clientIntegration=true;emit({type:'client-integration',value:true});await applyZoom();
-        } else {clientIntegration=false;emit({type:'client-integration',value:false});}
-      }
-      if(localIconAsset(LIVE,params.request.url)&&params.responseStatusCode===200){
-        const response=await wc.debugger.sendCommand('Fetch.getResponseBody',{requestId:params.requestId});
-        const bytes=Buffer.from(response.body,response.base64Encoded?'base64':'utf8'),patched=patchLocalIcons(bytes,LIVE);
-        if(patched){
-          const headers=(params.responseHeaders||[]).filter(h=>!['content-length','content-encoding','transfer-encoding'].includes(h.name.toLowerCase()));
-          headers.push({name:'Content-Length',value:String(patched.length)});
-          await wc.debugger.sendCommand('Fetch.fulfillRequest',{requestId:params.requestId,responseCode:200,responseHeaders:headers,body:patched.toString('base64')});fulfilled=true;
-          if(process.env.BLITZ_HOST_TEST==='1'&&testIconRepairs.length<8)testIconRepairs.push({path:url.pathname,sourceHash:require('crypto').createHash('sha256').update(bytes).digest('hex')});
-        }
-      }
-    }catch(_){if(nativeGpu){nativeGpu.reject('GPU inspection failed; Original rendering is retained.');await nativeGpu.update(wc);}if(/\/DungeonBlitz\.swf(?:\?|$)/i.test(params.request.url)){clientIntegration=false;emit({type:'client-integration',value:false});if(process.env.BLITZ_SINGLEPLAYER_PORTS){await wc.debugger.sendCommand('Fetch.failRequest',{requestId:params.requestId,errorReason:'BlockedByClient'});fulfilled=true;emit({type:'error',message:'The private singleplayer client could not be validated. Reconnect to retry.'});}}}
-    finally {if(!fulfilled&&!wc.isDestroyed())await wc.debugger.sendCommand('Fetch.continueRequest',{requestId:params.requestId}).catch(()=>{});}
-  });
-  try {
-    wc.debugger.attach('1.3');
-    const patterns=nativeGpu?[{urlPattern:ORIGIN+'/*',resourceType:'Document',requestStage:'Response'},{urlPattern:ORIGIN+'/*.swf*',requestStage:'Response'}]:[{urlPattern:ORIGIN+'/*DungeonBlitz.swf*',requestStage:'Response'}];
-    if(localAddress(LIVE))patterns.push({urlPattern:ORIGIN+'/*UI_1.swf*',requestStage:'Response'});
-    await wc.debugger.sendCommand('Fetch.enable',{patterns});
-  }
-  catch(_){emit({type:'client-integration',value:false});}
-  wc.on('will-attach-webview', e => e.preventDefault());
-  wc.on('will-navigate', (event,url) => { event.preventDefault(); void routeLink(url); });
-  wc.on('will-redirect', (event,url) => { if (!gameURL(url)) event.preventDefault(); });
-  wc.on('new-window', (event,url) => { event.preventDefault(); void routeLink(url); });
-  if (wc.setWindowOpenHandler) wc.setWindowOpenHandler(({url}) => { void routeLink(url); return { action: 'deny' }; });
-  wc.on('did-start-loading', () => {nativeGpu?.reset();mountShortcut.reset();autorunShortcut.reset();clientIntegration=false;appliedAudioMix='';appliedDisplayKey='';appliedShowFPS=null;appliedWidescreen=null;appliedCenteredHotbar=null;appliedCenteredCamera=null;appliedMountShortcut=null;emit({ type: 'loading', value: true });});
-  wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
-  wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
-  wc.on('dom-ready', applyZoom);
-  // Enabling Page before the first navigation can stall this legacy runtime's
-  // initial blank renderer. Enable after it has a real document instead.
-  wc.on('did-navigate',()=>{linkContext=null;});
-  wc.on('did-finish-load',watchHTMLLinks);
-  const audioTimer=setInterval(()=>{void applyAudioMix();void applyFPSCounter();void applyWidescreen();void applyCenteredHotbar();void applyCenteredCamera();void applyMountShortcut();if(!appliedDisplayKey)void applyZoom();},1000);win.on('closed',()=>clearInterval(audioTimer));
-  wc.on('did-fail-load', (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) emit({ type: 'error', message: description }); });
-  wc.on('render-process-gone', () => emit({ type: 'error', message: 'The game process stopped. Reload to reconnect.' }));
-  wc.on('enter-html-full-screen', () => { win.setFullScreen(false); emit({ type: 'fullscreen' }); });
-  wc.on('before-input-event', (event, input) => {
-    mountShortcut.input(input);
-    autorunShortcut.input(input);
-    const edit=editingCommand(input);
-    if(edit){
-      event.preventDefault();
-      if(process.env.BLITZ_HOST_TEST==='1')testEdits.push(edit);
-      // Finish cancelling the shortcut before dispatching its inserted keys.
-      setImmediate(()=>{if(!wc.isDestroyed())pasteIntoFlash(wc,readPasteText)});return;
+      wc.debugger.attach('1.3');
+      const patterns = nativeGpu
+        ? [
+            { urlPattern: ORIGIN + '/*', resourceType: 'Document', requestStage: 'Response' },
+            { urlPattern: ORIGIN + '/*.swf*', requestStage: 'Response' },
+          ]
+        : [{ urlPattern: ORIGIN + '/*DungeonBlitz.swf*', requestStage: 'Response' }];
+      if (localAddress(LIVE))
+        patterns.push({ urlPattern: ORIGIN + '/*UI_1.swf*', requestStage: 'Response' });
+      await wc.debugger.sendCommand('Fetch.enable', { patterns });
+    } catch (_) {
+      emit({ type: 'client-integration', value: false });
     }
-    if (input.type !== 'keyDown') return;
-    if (input.key === 'F11') { event.preventDefault(); emit({ type: 'fullscreen' }); }
-    if ((input.control || input.meta) && input.key === ',') { event.preventDefault(); emit({type:'settings'}); }
+    wc.on('will-attach-webview', (e) => e.preventDefault());
+    wc.on('will-navigate', (event, url) => {
+      event.preventDefault();
+      void routeLink(url);
+    });
+    wc.on('will-redirect', (event, url) => {
+      if (!gameURL(url)) event.preventDefault();
+    });
+    wc.on('new-window', (event, url) => {
+      event.preventDefault();
+      void routeLink(url);
+    });
+    if (wc.setWindowOpenHandler)
+      wc.setWindowOpenHandler(({ url }) => {
+        void routeLink(url);
+        return { action: 'deny' };
+      });
+    wc.on('did-start-loading', () => {
+      nativeGpu?.reset();
+      mountShortcut.reset();
+      autorunShortcut.reset();
+      clientIntegration = false;
+      appliedAudioMix = '';
+      appliedDisplayKey = '';
+      appliedShowFPS = null;
+      appliedWidescreen = null;
+      appliedCenteredHotbar = null;
+      appliedCenteredCamera = null;
+      appliedMountShortcut = null;
+      emit({ type: 'loading', value: true });
+    });
+    wc.on('did-stop-loading', () => emit({ type: 'loading', value: false }));
+    wc.on('page-title-updated', (_e, title) => emit({ type: 'title', title }));
+    wc.on('dom-ready', applyZoom);
+    // Enabling Page before the first navigation can stall this legacy runtime's
+    // initial blank renderer. Enable after it has a real document instead.
+    wc.on('did-navigate', () => {
+      linkContext = null;
+    });
+    wc.on('did-finish-load', watchHTMLLinks);
+    const audioTimer = setInterval(() => {
+      void applyAudioMix();
+      void applyFPSCounter();
+      void applyWidescreen();
+      void applyCenteredHotbar();
+      void applyCenteredCamera();
+      void applyMountShortcut();
+      if (!appliedDisplayKey) void applyZoom();
+    }, 1000);
+    win.on('closed', () => clearInterval(audioTimer));
+    wc.on('did-fail-load', (_event, code, description, _url, mainFrame) => {
+      if (mainFrame && code !== -3) emit({ type: 'error', message: description });
+    });
+    wc.on('render-process-gone', () =>
+      emit({ type: 'error', message: 'The game process stopped. Reload to reconnect.' })
+    );
+    wc.on('enter-html-full-screen', () => {
+      win.setFullScreen(false);
+      emit({ type: 'fullscreen' });
+    });
+    wc.on('before-input-event', (event, input) => {
+      mountShortcut.input(input);
+      autorunShortcut.input(input);
+      const edit = editingCommand(input);
+      if (edit) {
+        event.preventDefault();
+        if (process.env.BLITZ_HOST_TEST === '1') testEdits.push(edit);
+        // Finish cancelling the shortcut before dispatching its inserted keys.
+        setImmediate(() => {
+          if (!wc.isDestroyed()) pasteIntoFlash(wc, readPasteText);
+        });
+        return;
+      }
+      if (input.type !== 'keyDown') return;
+      if (input.key === 'F11') {
+        event.preventDefault();
+        emit({ type: 'fullscreen' });
+      }
+      if ((input.control || input.meta) && input.key === ',') {
+        event.preventDefault();
+        emit({ type: 'settings' });
+      }
+    });
+    win.on('blur', () => mountShortcut.reset());
+    win.on('blur', () => autorunShortcut.blur());
+    const hwnd = win.getNativeWindowHandle();
+    emit({
+      type: 'ready',
+      hwnd: hwnd.length === 8 ? hwnd.readBigUInt64LE().toString() : String(hwnd.readUInt32LE()),
+      electron: process.versions.electron,
+      chromium: process.versions.chrome,
+    });
+    wc.loadURL(LIVE).catch(() => {});
+  })
+  .catch(() => {
+    emit({ type: 'error', message: 'The game window could not start. Reconnect to try again.' });
+    if (win && !win.isDestroyed()) win.destroy();
+    app.exit(1);
   });
-  win.on('blur',()=>mountShortcut.reset());
-  win.on('blur',()=>autorunShortcut.blur());
-  const hwnd = win.getNativeWindowHandle();
-  emit({ type: 'ready', hwnd: hwnd.length === 8 ? hwnd.readBigUInt64LE().toString() : String(hwnd.readUInt32LE()), electron: process.versions.electron, chromium: process.versions.chrome });
-  wc.loadURL(LIVE).catch(() => {});
-}).catch(()=>{
-  emit({type:'error',message:'The game window could not start. Reconnect to try again.'});
-  if(win&&!win.isDestroyed())win.destroy();app.exit(1);
-});
-readMessages(pipe, async cmd => {
+readMessages(pipe, async (cmd) => {
   try {
     if (!win || win.isDestroyed()) return;
-    if (cmd.type === 'zoom') { zoom = Math.max(.5, Math.min(3, Number(cmd.value) || 1)); await applyZoom(); }
-    if(cmd.type==='gpu-config'&&nativeGpu&&Number.isInteger(cmd.cap)&&cmd.cap>=15&&cmd.cap<=1000&&typeof cmd.enabled==='boolean'){nativeGpu.cap=cmd.cap;nativeGpu.enabled=cmd.enabled;await nativeGpu.update(win.webContents);}
-    if(cmd.type==='render-resolution'&&[.5,.75,1].includes(cmd.value)){renderResolution=cmd.value;await applyZoom();}
-    if(cmd.type==='show-fps'&&typeof cmd.value==='boolean'){showFPS=cmd.value;await applyFPSCounter();}
-    if(cmd.type==='widescreen'&&typeof cmd.value==='boolean'){widescreen=cmd.value;await applyWidescreen();}
-    if(cmd.type==='centered-hotbar'&&typeof cmd.value==='boolean'){centeredHotbar=cmd.value;await applyCenteredHotbar();}
-    if(cmd.type==='centered-camera'&&typeof cmd.value==='boolean'){centeredCamera=cmd.value;await applyCenteredCamera();}
-    if(cmd.type==='shift-mount'&&typeof cmd.value==='boolean'){mountShortcut.configure(cmd.value);await applyMountShortcut();}
-    if(cmd.type==='autorun'&&typeof cmd.value==='boolean')autorunShortcut.configure(cmd.value,cmd.key);
-    if(cmd.type==='test-autorun-key'&&process.env.BLITZ_HOST_TEST==='1'&&['keyDown','keyUp'].includes(cmd.value))autorunShortcut.input({type:cmd.value,key:'ö'});
-    if(cmd.type==='crosshair'&&cmd.value){crosshair=crosshairArtwork.valid(cmd.value);applyCrosshair();}
-    if(cmd.type==='test-rendering-mode'&&process.env.BLITZ_HOST_TEST==='1'){oldRenderingTest=cmd.value==='old';appliedDisplayKey='';if(oldRenderingTest)await win.webContents.executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)").catch(()=>{});await applyZoom();}
-    if (['viewport','test-viewport'].includes(cmd.type) && Number.isInteger(cmd.width) && Number.isInteger(cmd.height)) {
-      viewport={width:Math.max(1,Math.min(8000,cmd.width)),height:Math.max(1,Math.min(8000,cmd.height))};
+    if (cmd.type === 'zoom') {
+      zoom = Math.max(0.5, Math.min(3, Number(cmd.value) || 1));
+      await applyZoom();
+    }
+    if (
+      cmd.type === 'gpu-config' &&
+      nativeGpu &&
+      Number.isInteger(cmd.cap) &&
+      cmd.cap >= 15 &&
+      cmd.cap <= 1000 &&
+      typeof cmd.enabled === 'boolean'
+    ) {
+      nativeGpu.cap = cmd.cap;
+      nativeGpu.enabled = cmd.enabled;
+      await nativeGpu.update(win.webContents);
+    }
+    if (cmd.type === 'render-resolution' && [0.5, 0.75, 1].includes(cmd.value)) {
+      renderResolution = cmd.value;
+      await applyZoom();
+    }
+    if (cmd.type === 'show-fps' && typeof cmd.value === 'boolean') {
+      showFPS = cmd.value;
+      await applyFPSCounter();
+    }
+    if (cmd.type === 'widescreen' && typeof cmd.value === 'boolean') {
+      widescreen = cmd.value;
+      await applyWidescreen();
+    }
+    if (cmd.type === 'centered-hotbar' && typeof cmd.value === 'boolean') {
+      centeredHotbar = cmd.value;
+      await applyCenteredHotbar();
+    }
+    if (cmd.type === 'centered-camera' && typeof cmd.value === 'boolean') {
+      centeredCamera = cmd.value;
+      await applyCenteredCamera();
+    }
+    if (cmd.type === 'shift-mount' && typeof cmd.value === 'boolean') {
+      mountShortcut.configure(cmd.value);
+      await applyMountShortcut();
+    }
+    if (cmd.type === 'autorun' && typeof cmd.value === 'boolean')
+      autorunShortcut.configure(cmd.value, cmd.key);
+    if (
+      cmd.type === 'test-autorun-key' &&
+      process.env.BLITZ_HOST_TEST === '1' &&
+      ['keyDown', 'keyUp'].includes(cmd.value)
+    )
+      autorunShortcut.input({ type: cmd.value, key: 'ö' });
+    if (cmd.type === 'crosshair' && cmd.value) {
+      crosshair = crosshairArtwork.valid(cmd.value);
+      applyCrosshair();
+    }
+    if (cmd.type === 'test-rendering-mode' && process.env.BLITZ_HOST_TEST === '1') {
+      oldRenderingTest = cmd.value === 'old';
+      appliedDisplayKey = '';
+      if (oldRenderingTest)
+        await win.webContents
+          .executeJavaScript("document.getElementById('DungeonBlitz')?.BlitzSetPictureZoom?.(1)")
+          .catch(() => {});
+      await applyZoom();
+    }
+    if (
+      ['viewport', 'test-viewport'].includes(cmd.type) &&
+      Number.isInteger(cmd.width) &&
+      Number.isInteger(cmd.height)
+    ) {
+      viewport = {
+        width: Math.max(1, Math.min(8000, cmd.width)),
+        height: Math.max(1, Math.min(8000, cmd.height)),
+      };
       // Chromium sizes its own window; NativeHost positions it without resizing.
-      sizeGameWindow(viewport.width,viewport.height);
+      sizeGameWindow(viewport.width, viewport.height);
       await applyZoom();
     }
     if (cmd.type === 'mute') win.webContents.setAudioMuted(!!cmd.value);
-    if(cmd.type==='audio-mix'&&cmd.value&&['player','music','environment','creatures'].every(key=>Number.isInteger(cmd.value[key])&&cmd.value[key]>=0&&cmd.value[key]<=100)){audioMix=cmd.value;await applyAudioMix();}
-    if(cmd.type==='test-audio-fixture'&&process.env.BLITZ_HOST_TEST==='1'){audioIntegration=true;emit({type:'audio-integration',value:true});await applyAudioMix();}
-    if(cmd.type==='test-shortcut-fixture'&&process.env.BLITZ_HOST_TEST==='1'){
-      const exists=await win.webContents.executeJavaScript("typeof document.getElementById('DungeonBlitz')?.BlitzInputFixtureControl==='function'").catch(()=>false);
-      if(exists){clientIntegration=true;audioIntegration=true;emit({type:'client-integration',value:true});emit({type:'audio-integration',value:true});}
+    if (
+      cmd.type === 'audio-mix' &&
+      cmd.value &&
+      ['player', 'music', 'environment', 'creatures'].every(
+        (key) => Number.isInteger(cmd.value[key]) && cmd.value[key] >= 0 && cmd.value[key] <= 100
+      )
+    ) {
+      audioMix = cmd.value;
+      await applyAudioMix();
     }
-    if(cmd.type==='test-shortcut-control'&&process.env.BLITZ_HOST_TEST==='1'&&['play','login','typing','capture','rebind','unbound','menu','left','run-play','run-rebind','run-unbound','run-map'].includes(cmd.value))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzInputFixtureControl(${JSON.stringify(cmd.value)})`);
-    if(cmd.type==='test-transition-fixture'&&process.env.BLITZ_HOST_TEST==='1'){
-      let exists=false;
-      for(let attempt=0;attempt<150&&!exists&&win&&!win.isDestroyed();attempt++){
-        exists=await win.webContents.executeJavaScript("typeof document.getElementById('DungeonBlitz')?.BlitzTransitionFixtureControl==='function'").catch(()=>false);
-        if(!exists)await new Promise(resolve=>setTimeout(resolve,100));
+    if (cmd.type === 'test-audio-fixture' && process.env.BLITZ_HOST_TEST === '1') {
+      audioIntegration = true;
+      emit({ type: 'audio-integration', value: true });
+      await applyAudioMix();
+    }
+    if (cmd.type === 'test-shortcut-fixture' && process.env.BLITZ_HOST_TEST === '1') {
+      const exists = await win.webContents
+        .executeJavaScript(
+          "typeof document.getElementById('DungeonBlitz')?.BlitzInputFixtureControl==='function'"
+        )
+        .catch(() => false);
+      if (exists) {
+        clientIntegration = true;
+        audioIntegration = true;
+        emit({ type: 'client-integration', value: true });
+        emit({ type: 'audio-integration', value: true });
       }
-      if(exists){clientIntegration=true;audioIntegration=true;emit({type:'client-integration',value:true});emit({type:'audio-integration',value:true});await applyZoom();await applyWidescreen();await applyCenteredHotbar();await applyCenteredCamera();}
     }
-    if(cmd.type==='test-transition-control'&&process.env.BLITZ_HOST_TEST==='1'&&typeof cmd.play==='boolean'&&typeof cmd.transition==='boolean'&&(cmd.transfer===undefined||typeof cmd.transfer==='boolean')&&(cmd.phase===undefined||['Login','None','Transfer'].includes(cmd.phase))&&(cmd.menu===undefined||['none','idols','trove','barn','forge','tome','social','settings','store','companion-commands','map','no-direction'].includes(cmd.menu)))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzTransitionFixtureControl(${cmd.play},${cmd.transition},${JSON.stringify(cmd.menu??'none')},${cmd.transfer===true},${JSON.stringify(cmd.phase??'')})`);
-    if(cmd.type==='test-world-control'&&process.env.BLITZ_HOST_TEST==='1'&&Number.isFinite(cmd.pan)&&cmd.pan>=0&&cmd.pan<=25000&&typeof cmd.scene==='boolean'&&typeof cmd.oldCoverage==='boolean'&&(cmd.reuse===undefined||typeof cmd.reuse==='boolean')&&(cmd.tiedTime===undefined||typeof cmd.tiedTime==='boolean')&&(cmd.art===undefined||/^a_(Room|Level)_[A-Za-z0-9_]{1,64}$/.test(cmd.art))&&(cmd.vertical===undefined||(Number.isFinite(cmd.vertical)&&cmd.vertical>=0&&cmd.vertical<=2000)))await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').BlitzWorldFixtureControl(${cmd.pan},${cmd.scene},${cmd.oldCoverage},${cmd.reuse===true},${cmd.vertical??250},${cmd.tiedTime===true},${JSON.stringify(cmd.art??'a_Room_Main')})`);
+    if (
+      cmd.type === 'test-shortcut-control' &&
+      process.env.BLITZ_HOST_TEST === '1' &&
+      [
+        'play',
+        'login',
+        'typing',
+        'capture',
+        'rebind',
+        'unbound',
+        'menu',
+        'left',
+        'run-play',
+        'run-rebind',
+        'run-unbound',
+        'run-map',
+      ].includes(cmd.value)
+    )
+      await win.webContents.executeJavaScript(
+        `document.getElementById('DungeonBlitz').BlitzInputFixtureControl(${JSON.stringify(cmd.value)})`
+      );
+    if (cmd.type === 'test-transition-fixture' && process.env.BLITZ_HOST_TEST === '1') {
+      let exists = false;
+      for (let attempt = 0; attempt < 150 && !exists && win && !win.isDestroyed(); attempt++) {
+        exists = await win.webContents
+          .executeJavaScript(
+            "typeof document.getElementById('DungeonBlitz')?.BlitzTransitionFixtureControl==='function'"
+          )
+          .catch(() => false);
+        if (!exists) await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      if (exists) {
+        clientIntegration = true;
+        audioIntegration = true;
+        emit({ type: 'client-integration', value: true });
+        emit({ type: 'audio-integration', value: true });
+        await applyZoom();
+        await applyWidescreen();
+        await applyCenteredHotbar();
+        await applyCenteredCamera();
+      }
+    }
+    if (
+      cmd.type === 'test-transition-control' &&
+      process.env.BLITZ_HOST_TEST === '1' &&
+      typeof cmd.play === 'boolean' &&
+      typeof cmd.transition === 'boolean' &&
+      (cmd.transfer === undefined || typeof cmd.transfer === 'boolean') &&
+      (cmd.phase === undefined || ['Login', 'None', 'Transfer'].includes(cmd.phase)) &&
+      (cmd.menu === undefined ||
+        [
+          'none',
+          'idols',
+          'trove',
+          'barn',
+          'forge',
+          'tome',
+          'social',
+          'settings',
+          'store',
+          'companion-commands',
+          'map',
+          'no-direction',
+        ].includes(cmd.menu))
+    )
+      await win.webContents.executeJavaScript(
+        `document.getElementById('DungeonBlitz').BlitzTransitionFixtureControl(${cmd.play},${cmd.transition},${JSON.stringify(cmd.menu ?? 'none')},${cmd.transfer === true},${JSON.stringify(cmd.phase ?? '')})`
+      );
+    if (
+      cmd.type === 'test-world-control' &&
+      process.env.BLITZ_HOST_TEST === '1' &&
+      Number.isFinite(cmd.pan) &&
+      cmd.pan >= 0 &&
+      cmd.pan <= 25000 &&
+      typeof cmd.scene === 'boolean' &&
+      typeof cmd.oldCoverage === 'boolean' &&
+      (cmd.reuse === undefined || typeof cmd.reuse === 'boolean') &&
+      (cmd.tiedTime === undefined || typeof cmd.tiedTime === 'boolean') &&
+      (cmd.art === undefined || /^a_(Room|Level)_[A-Za-z0-9_]{1,64}$/.test(cmd.art)) &&
+      (cmd.vertical === undefined ||
+        (Number.isFinite(cmd.vertical) && cmd.vertical >= 0 && cmd.vertical <= 2000))
+    )
+      await win.webContents.executeJavaScript(
+        `document.getElementById('DungeonBlitz').BlitzWorldFixtureControl(${cmd.pan},${cmd.scene},${cmd.oldCoverage},${cmd.reuse === true},${cmd.vertical ?? 250},${cmd.tiedTime === true},${JSON.stringify(cmd.art ?? 'a_Room_Main')})`
+      );
     if (cmd.type === 'background') win.webContents.setBackgroundThrottling(!cmd.value);
-    if(cmd.type==='test-original-client'&&process.env.BLITZ_HOST_TEST==='1')testOriginalClient=cmd.value===true;
+    if (cmd.type === 'test-original-client' && process.env.BLITZ_HOST_TEST === '1')
+      testOriginalClient = cmd.value === true;
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();
-    if (cmd.type === 'focus' && win.isVisible()) { win.focus(); win.webContents.focus(); }
-    if (cmd.type === 'visibility') { if (cmd.value) win.showInactive(); else {mountShortcut.reset();autorunShortcut.reset();win.hide();}if(nativeGpu){nativeGpu.visible=cmd.value===true;await nativeGpu.update(win.webContents);} }
+    if (cmd.type === 'focus' && win.isVisible()) {
+      win.focus();
+      win.webContents.focus();
+    }
+    if (cmd.type === 'visibility') {
+      if (cmd.value) win.showInactive();
+      else {
+        mountShortcut.reset();
+        autorunShortcut.reset();
+        win.hide();
+      }
+      if (nativeGpu) {
+        nativeGpu.visible = cmd.value === true;
+        await nativeGpu.update(win.webContents);
+      }
+    }
     if (cmd.type === 'clear-cache') await win.webContents.session.clearCache();
     if (cmd.type === 'clear-data') await win.webContents.session.clearStorageData();
-    if (['capture','test-geometry'].includes(cmd.type) && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.path === 'string') {
-      const probeStarted=process.hrtime.bigint();
-      const geometry=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,nativeGpuFrontend:typeof window.__blitzNativeGpu?.configure==='function',inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`);
-      if(nativeGpu)geometry.nativeGpu={client:nativeGpu.client,page:nativeGpu.page,artwork:nativeGpu.artwork,reason:nativeGpu.reason,frontendError:nativeGpu.frontendError||'',console:testGpuConsole};
-      const audioProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`).catch(error=>({probeError:error.message}));
-      const renderProbe=await win.webContents.executeJavaScript(`(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`).catch(error=>({probeError:error.message}));
-      const probeDurationMs=Number(process.hrtime.bigint()-probeStarted)/1e6;
-      const cursorPixels=gameWindow.cursorPixels();geometry.cursorScope=Array.from(gameWindow.cursorScope());
-      require('fs').writeFileSync(cmd.path+'.json',JSON.stringify({visible:win.isVisible(),focused:win.isFocused(),contentFocused:win.webContents.isFocused(),windows:BrowserWindow.getAllWindows().length,size:win.getContentSize(),zoom,renderResolution,viewport,scale:win.webContents.getZoomFactor(),clientIntegration,audioIntegration,testClientHash,testAdapterMode,audioProbe,renderProbe,geometry,testEdits,testLinks,testRequests,testIconRepairs,probeDurationMs,crosshair:{...crosshair,cursorType,density:screen.getDisplayMatching(win.getBounds()).scaleFactor,pixels:cursorPixels.toString('base64'),eligible:gameWindow.cursorPolicy(),active:gameWindow.cursorActive(),dryRun:true}}));
-      if(cmd.type==='capture'){const image = await win.webContents.capturePage(); require('fs').writeFileSync(cmd.path, image.toPNG()); emit({ type: 'captured', path: cmd.path });}
+    if (
+      ['capture', 'test-geometry'].includes(cmd.type) &&
+      process.env.BLITZ_HOST_TEST === '1' &&
+      typeof cmd.path === 'string'
+    ) {
+      const probeStarted = process.hrtime.bigint();
+      const geometry = await win.webContents.executeJavaScript(
+        `(()=>{const e=document.getElementById('DungeonBlitz'),r=e?.getBoundingClientRect();return{focused:document.hasFocus(),active:document.activeElement?.id,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,fixture:window.__fixtureResult||null,nativeGpuFrontend:typeof window.__blitzNativeGpu?.configure==='function',inputProbe:typeof e?.BlitzInputProbe==='function'?e.BlitzInputProbe():null,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null}})()`
+      );
+      if (nativeGpu)
+        geometry.nativeGpu = {
+          client: nativeGpu.client,
+          page: nativeGpu.page,
+          artwork: nativeGpu.artwork,
+          reason: nativeGpu.reason,
+          frontendError: nativeGpu.frontendError || '',
+          console: testGpuConsole,
+        };
+      const audioProbe = await win.webContents
+        .executeJavaScript(
+          `(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzAudioState==='function'?e.BlitzAudioState():null})()`
+        )
+        .catch((error) => ({ probeError: error.message }));
+      const renderProbe = await win.webContents
+        .executeJavaScript(
+          `(()=>{const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzRenderState==='function'?e.BlitzRenderState():null})()`
+        )
+        .catch((error) => ({ probeError: error.message }));
+      const probeDurationMs = Number(process.hrtime.bigint() - probeStarted) / 1e6;
+      const cursorPixels = gameWindow.cursorPixels();
+      geometry.cursorScope = Array.from(gameWindow.cursorScope());
+      require('fs').writeFileSync(
+        cmd.path + '.json',
+        JSON.stringify({
+          visible: win.isVisible(),
+          focused: win.isFocused(),
+          contentFocused: win.webContents.isFocused(),
+          windows: BrowserWindow.getAllWindows().length,
+          size: win.getContentSize(),
+          zoom,
+          renderResolution,
+          viewport,
+          scale: win.webContents.getZoomFactor(),
+          clientIntegration,
+          audioIntegration,
+          testClientHash,
+          testAdapterMode,
+          audioProbe,
+          renderProbe,
+          geometry,
+          testEdits,
+          testLinks,
+          testRequests,
+          testIconRepairs,
+          probeDurationMs,
+          crosshair: {
+            ...crosshair,
+            cursorType,
+            density: screen.getDisplayMatching(win.getBounds()).scaleFactor,
+            pixels: cursorPixels.toString('base64'),
+            eligible: gameWindow.cursorPolicy(),
+            active: gameWindow.cursorActive(),
+            dryRun: true,
+          },
+        })
+      );
+      if (cmd.type === 'capture') {
+        const image = await win.webContents.capturePage();
+        require('fs').writeFileSync(cmd.path, image.toPNG());
+        emit({ type: 'captured', path: cmd.path });
+      }
     }
-    if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1') win.webContents.sendInputEvent(cmd.input);
-    if(cmd.type==='test-fps-control'&&process.env.BLITZ_HOST_TEST==='1'&&[30,60,100].includes(cmd.rate)&&Number.isInteger(cmd.busy)&&cmd.busy>=0&&cmd.busy<=100&&typeof cmd.margins==='boolean')await win.webContents.executeJavaScript(`document.getElementById('DungeonBlitz').FPSFixtureControl(${cmd.rate},${cmd.busy},${cmd.margins})`);
-    if (cmd.type === 'test-paste-source' && process.env.BLITZ_HOST_TEST === '1' && typeof cmd.text==='string') {
+    if (cmd.type === 'test-input' && process.env.BLITZ_HOST_TEST === '1')
+      win.webContents.sendInputEvent(cmd.input);
+    if (
+      cmd.type === 'test-fps-control' &&
+      process.env.BLITZ_HOST_TEST === '1' &&
+      [30, 60, 100].includes(cmd.rate) &&
+      Number.isInteger(cmd.busy) &&
+      cmd.busy >= 0 &&
+      cmd.busy <= 100 &&
+      typeof cmd.margins === 'boolean'
+    )
+      await win.webContents.executeJavaScript(
+        `document.getElementById('DungeonBlitz').FPSFixtureControl(${cmd.rate},${cmd.busy},${cmd.margins})`
+      );
+    if (
+      cmd.type === 'test-paste-source' &&
+      process.env.BLITZ_HOST_TEST === '1' &&
+      typeof cmd.text === 'string'
+    ) {
       // Exercise real insertion with dummy data without touching the clipboard.
-      readPasteText=()=>cmd.text;
+      readPasteText = () => cmd.text;
     }
-    if (cmd.type === 'quit') { win.destroy(); app.quit(); }
-  } catch (_) { emit({ type: 'error', message: 'Invalid game host command.' }); }
+    if (cmd.type === 'quit') {
+      win.destroy();
+      app.quit();
+    }
+  } catch (_) {
+    emit({ type: 'error', message: 'Invalid game host command.' });
+  }
 });
 app.on('window-all-closed', () => app.quit());

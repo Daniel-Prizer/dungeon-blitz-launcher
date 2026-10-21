@@ -1,395 +1,1492 @@
-const {_electron:electron}=require('playwright');
-const path=require('node:path'),fs=require('node:fs'),assert=require('node:assert/strict'),http=require('node:http');
-const {execFileSync}=require('node:child_process');
-const {LIVE,validSettings}=require('../src/policy.cjs');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/launcher-tests');fs.mkdirSync(out,{recursive:true});
-const privateDesktop=process.env.BLITZ_NATIVE_TEST==='1';
-const wait=ms=>new Promise(r=>setTimeout(r,ms));
-async function until(fn,message){for(let i=0;i<100;i++){const value=await fn();if(value)return value;await wait(100)}throw new Error(message)}
-(async()=>{
-  if(privateDesktop)execFileSync(path.join(root,'.test-tools/PrivateDesktop.exe'),['--check'],{windowsHide:true});
-  fs.mkdirSync(path.join(root,'.test-profile'),{recursive:true});fs.writeFileSync(path.join(root,'.test-profile/preferences.json'),JSON.stringify({settings:validSettings()}));
-  const fixtureRequests=[];let pointerPNG;
-  const server=http.createServer((req,res)=>{
+const { _electron: electron } = require('playwright');
+const path = require('node:path'),
+  fs = require('node:fs'),
+  assert = require('node:assert/strict'),
+  http = require('node:http');
+const { execFileSync } = require('node:child_process');
+const { LIVE, validSettings } = require('../src/policy.cjs');
+const root = path.resolve(__dirname, '..'),
+  out = path.join(root, 'docs/launcher-tests');
+fs.mkdirSync(out, { recursive: true });
+const privateDesktop = process.env.BLITZ_NATIVE_TEST === '1';
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function until(fn, message) {
+  for (let i = 0; i < 100; i++) {
+    const value = await fn();
+    if (value) return value;
+    await wait(100);
+  }
+  throw new Error(message);
+}
+(async () => {
+  if (privateDesktop)
+    execFileSync(path.join(root, '.test-tools/PrivateDesktop.exe'), ['--check'], {
+      windowsHide: true,
+    });
+  fs.mkdirSync(path.join(root, '.test-profile'), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, '.test-profile/preferences.json'),
+    JSON.stringify({ settings: validSettings() })
+  );
+  const fixtureRequests = [];
+  let pointerPNG;
+  const server = http.createServer((req, res) => {
     fixtureRequests.push(req.url);
-    if(req.url==='/pointer-probe.png'&&pointerPNG){res.setHeader('Content-Type','image/png');res.end(pointerPNG);return;}
-    if(req.url==='/assets/UI_0.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.resolve(root,'../db r/dungeon-blitz-r/src/client/content/localhost/p/cbp/UI_0.swf')));return;}
-    if(req.url==='/shortcut-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/input-shortcuts/fixture.swf')));return;}
-    if(req.url==='/shortcuts'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/shortcut-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
-    if(req.url==='/audio-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/audio-adaptive/fixture.swf')));return;}
-    if(req.url==='/audio-fixture'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/audio-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>');return;}
-    if(req.url==='/link-probe.swf'){res.setHeader('Content-Type','application/x-shockwave-flash');res.end(fs.readFileSync(path.join(root,'.test-tools/focus/link-probe.swf')));return;}
-    if(req.url==='/flash-links'){
-      res.setHeader('Content-Type','text/html');res.end(`<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/link-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"><param name="flashvars" value="gameURL=${encodeURIComponent('http://localhost:'+server.address().port+'/flash-links')}"></object></div></body>`);return;
+    if (req.url === '/pointer-probe.png' && pointerPNG) {
+      res.setHeader('Content-Type', 'image/png');
+      res.end(pointerPNG);
+      return;
     }
-    res.setHeader('Content-Type','text/html');res.end(`<!doctype html><html><body style="margin:0;background:#484955;display:flex;justify-content:center;align-items:center;min-height:100vh"><div id="game-container"><div id="DungeonBlitz" style="width:1152px;height:768px;background:linear-gradient(45deg,#493c20,#8a713c)">Audio isolation fixture</div></div><div style="position:fixed;left:600px;top:200px;width:120px;height:100px;cursor:url(/pointer-probe.png) 3 7,crosshair">Custom cursor probe</div><input id="cursor-field" aria-label="Offline cursor probe" style="position:fixed;left:20px;top:200px;width:240px;height:36px;cursor:text"><a style="position:fixed;left:10px;top:10px" target="_blank" href="https://www.paypal.com/donate/?a=1&amp;b=2">PayPal</a><a style="position:fixed;left:10px;top:60px" href="https://www.facebook.com/">Facebook</a><a style="position:fixed;left:10px;top:110px" target="_blank" href="/game-link">Game</a><script>const ctx=new AudioContext();const oscillator=ctx.createOscillator();const gain=ctx.createGain();gain.gain.value=0;oscillator.connect(gain).connect(ctx.destination);oscillator.start();ctx.resume();window.__fixtureResult={node:typeof require,process:typeof process,launcher:typeof window.blitz,popup:window.open('https://example.com/')===null};fetch('http://127.0.0.1:'+location.port+'/blocked').then(()=>window.__fixtureResult.blocked=false).catch(()=>window.__fixtureResult.blocked=true);</script></body></html>`);
-  });await new Promise(r=>server.listen(0,'127.0.0.1',r));
-  const fixture=`http://localhost:${server.address().port}/`;
-  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-  const app=await electron.launch({args:[root,'--smoke-test',...(privateDesktop?['--private-desktop']:[])],env});
-  const checks=[];
-  try{
-    const page=await app.firstWindow();await page.waitForFunction(()=>window.blitz);
-    pointerPNG=Buffer.from(await app.evaluate(({nativeImage})=>{const pixels=Buffer.alloc(17*17*4);for(let y=2;y<15;y++)for(let x=2;x<8;x++){const i=(y*17+x)*4,light=x>2&&x<7&&y>2&&y<14;pixels[i]=pixels[i+1]=pixels[i+2]=light?255:0;pixels[i+3]=255;}return nativeImage.createFromBitmap(pixels,{width:17,height:17}).toPNG().toString('base64');}),'base64');
-    const call=(n,v)=>page.evaluate(([n,v])=>window.blitz.action(n,v),[n,v]);
-    const shellKey=keyCode=>app.evaluate(({BrowserWindow},keyCode)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;for(const type of ['keyDown','keyUp'])wc.sendInputEvent({type,keyCode});},keyCode);
-    if(privateDesktop){await app.evaluate(({BrowserWindow})=>{const win=BrowserWindow.getAllWindows()[0];win.showInactive();win.focus()});}
-    await wait(15000);assert.equal((await call('state')).error,'');assert.equal((await call('state')).gameURL,LIVE);
-    assert.equal(app.context().pages().length,1,'There is only the local launcher renderer, no browser tabs');
-    assert.equal(await page.locator('#address,#tabs,#back,#bookmark,#status').count(),0);
-    assert.equal(await page.locator('#upscaler,#neural-compare,#upscaler-status,#presentation-fps').count(),0,'Retired enhancement controls must be absent');
-    assert(!('presentation' in await call('state')),'Retired enhancement status must be absent');
-    assert.deepEqual(await page.evaluate(()=>({require:typeof require,process:typeof process})),{require:'undefined',process:'undefined'});
-    for(const action of ['new-tab','navigate','home','bookmark','download'])assert.equal((await call(action,LIVE)).ok,false);
+    if (req.url === '/assets/UI_0.swf') {
+      res.setHeader('Content-Type', 'application/x-shockwave-flash');
+      res.end(
+        fs.readFileSync(
+          path.resolve(root, '../db r/dungeon-blitz-r/src/client/content/localhost/p/cbp/UI_0.swf')
+        )
+      );
+      return;
+    }
+    if (req.url === '/shortcut-probe.swf') {
+      res.setHeader('Content-Type', 'application/x-shockwave-flash');
+      res.end(fs.readFileSync(path.join(root, '.test-tools/input-shortcuts/fixture.swf')));
+      return;
+    }
+    if (req.url === '/shortcuts') {
+      res.setHeader('Content-Type', 'text/html');
+      res.end(
+        '<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/shortcut-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>'
+      );
+      return;
+    }
+    if (req.url === '/audio-probe.swf') {
+      res.setHeader('Content-Type', 'application/x-shockwave-flash');
+      res.end(fs.readFileSync(path.join(root, '.test-tools/audio-adaptive/fixture.swf')));
+      return;
+    }
+    if (req.url === '/audio-fixture') {
+      res.setHeader('Content-Type', 'text/html');
+      res.end(
+        '<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/audio-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"></object></div></body>'
+      );
+      return;
+    }
+    if (req.url === '/link-probe.swf') {
+      res.setHeader('Content-Type', 'application/x-shockwave-flash');
+      res.end(fs.readFileSync(path.join(root, '.test-tools/focus/link-probe.swf')));
+      return;
+    }
+    if (req.url === '/flash-links') {
+      res.setHeader('Content-Type', 'text/html');
+      res.end(
+        `<!doctype html><body style="margin:0"><div id="game-container"><object id="DungeonBlitz" data="/link-probe.swf" type="application/x-shockwave-flash" width="1152" height="768"><param name="allowScriptAccess" value="sameDomain"><param name="flashvars" value="gameURL=${encodeURIComponent('http://localhost:' + server.address().port + '/flash-links')}"></object></div></body>`
+      );
+      return;
+    }
+    res.setHeader('Content-Type', 'text/html');
+    res.end(
+      `<!doctype html><html><body style="margin:0;background:#484955;display:flex;justify-content:center;align-items:center;min-height:100vh"><div id="game-container"><div id="DungeonBlitz" style="width:1152px;height:768px;background:linear-gradient(45deg,#493c20,#8a713c)">Audio isolation fixture</div></div><div style="position:fixed;left:600px;top:200px;width:120px;height:100px;cursor:url(/pointer-probe.png) 3 7,crosshair">Custom cursor probe</div><input id="cursor-field" aria-label="Offline cursor probe" style="position:fixed;left:20px;top:200px;width:240px;height:36px;cursor:text"><a style="position:fixed;left:10px;top:10px" target="_blank" href="https://www.paypal.com/donate/?a=1&amp;b=2">PayPal</a><a style="position:fixed;left:10px;top:60px" href="https://www.facebook.com/">Facebook</a><a style="position:fixed;left:10px;top:110px" target="_blank" href="/game-link">Game</a><script>const ctx=new AudioContext();const oscillator=ctx.createOscillator();const gain=ctx.createGain();gain.gain.value=0;oscillator.connect(gain).connect(ctx.destination);oscillator.start();ctx.resume();window.__fixtureResult={node:typeof require,process:typeof process,launcher:typeof window.blitz,popup:window.open('https://example.com/')===null};fetch('http://127.0.0.1:'+location.port+'/blocked').then(()=>window.__fixtureResult.blocked=false).catch(()=>window.__fixtureResult.blocked=true);</script></body></html>`
+    );
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const fixture = `http://localhost:${server.address().port}/`;
+  const env = { ...process.env };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const app = await electron.launch({
+    args: [root, '--smoke-test', ...(privateDesktop ? ['--private-desktop'] : [])],
+    env,
+  });
+  const checks = [];
+  try {
+    const page = await app.firstWindow();
+    await page.waitForFunction(() => window.blitz);
+    pointerPNG = Buffer.from(
+      await app.evaluate(({ nativeImage }) => {
+        const pixels = Buffer.alloc(17 * 17 * 4);
+        for (let y = 2; y < 15; y++)
+          for (let x = 2; x < 8; x++) {
+            const i = (y * 17 + x) * 4,
+              light = x > 2 && x < 7 && y > 2 && y < 14;
+            pixels[i] = pixels[i + 1] = pixels[i + 2] = light ? 255 : 0;
+            pixels[i + 3] = 255;
+          }
+        return nativeImage
+          .createFromBitmap(pixels, { width: 17, height: 17 })
+          .toPNG()
+          .toString('base64');
+      }),
+      'base64'
+    );
+    const call = (n, v) => page.evaluate(([n, v]) => window.blitz.action(n, v), [n, v]);
+    const shellKey = (keyCode) =>
+      app.evaluate(({ BrowserWindow }, keyCode) => {
+        const wc = BrowserWindow.getAllWindows()[0].webContents;
+        for (const type of ['keyDown', 'keyUp']) wc.sendInputEvent({ type, keyCode });
+      }, keyCode);
+    if (privateDesktop) {
+      await app.evaluate(({ BrowserWindow }) => {
+        const win = BrowserWindow.getAllWindows()[0];
+        win.showInactive();
+        win.focus();
+      });
+    }
+    await wait(15000);
+    assert.equal((await call('state')).error, '');
+    assert.equal((await call('state')).gameURL, LIVE);
+    assert.equal(
+      app.context().pages().length,
+      1,
+      'There is only the local launcher renderer, no browser tabs'
+    );
+    assert.equal(await page.locator('#address,#tabs,#back,#bookmark,#status').count(), 0);
+    assert.equal(
+      await page.locator('#upscaler,#neural-compare,#upscaler-status,#presentation-fps').count(),
+      0,
+      'Retired enhancement controls must be absent'
+    );
+    assert(!('presentation' in (await call('state'))), 'Retired enhancement status must be absent');
+    assert.deepEqual(
+      await page.evaluate(() => ({ require: typeof require, process: typeof process })),
+      { require: 'undefined', process: 'undefined' }
+    );
+    for (const action of ['new-tab', 'navigate', 'home', 'bookmark', 'download'])
+      assert.equal((await call(action, LIVE)).ok, false);
     checks.push('Dedicated launcher autostarts live game, removes browser actions, sandboxed UI');
-    const command=cmd=>app.evaluate(({},cmd)=>global.__blitzTest.nativeCommand(null,cmd),cmd);
-    async function measure(name,capture=false){
-      const file=path.join(out,name+(capture?'.png':''));if(fs.existsSync(file+'.json'))fs.unlinkSync(file+'.json');
-      if(capture&&fs.existsSync(file))fs.unlinkSync(file);
-      await command({type:capture?'capture':'test-geometry',path:file});let record;
+    const command = (cmd) =>
+      app.evaluate(({}, cmd) => global.__blitzTest.nativeCommand(null, cmd), cmd);
+    async function measure(name, capture = false) {
+      const file = path.join(out, name + (capture ? '.png' : ''));
+      if (fs.existsSync(file + '.json')) fs.unlinkSync(file + '.json');
+      if (capture && fs.existsSync(file)) fs.unlinkSync(file);
+      await command({ type: capture ? 'capture' : 'test-geometry', path: file });
+      let record;
       // Native capture creates its file before finishing the JSON write.
-      await until(()=>{try{record=JSON.parse(fs.readFileSync(file+'.json','utf8'));return !!record.viewport;}catch{return false;}},'Game geometry missing');return {file,...record};
+      await until(() => {
+        try {
+          record = JSON.parse(fs.readFileSync(file + '.json', 'utf8'));
+          return !!record.viewport;
+        } catch {
+          return false;
+        }
+      }, 'Game geometry missing');
+      return { file, ...record };
     }
-    if(privateDesktop){await app.evaluate(()=>global.__blitzTest.runtime().focus());await wait(600)}
-    const live=await measure(privateDesktop?'native-live':'hidden-live',true);
-    await until(()=>fs.existsSync(live.file),'Live capture missing');assert(fs.statSync(live.file).size>100000,'Real Flash login screen must render');
-    assert(live.clientIntegration,'Reviewed live client integration must be active');
-    assert.equal(live.testClientHash,require('../src/legacy/client-deployment.json').inputHash,'Fresh network must exercise the latest deployed client');
-    assert.equal(live.testAdapterMode,'contract','Live deployment must reuse the previous reviewed hooks without its own exact-revision delta');
-    assert(live.audioIntegration&&live.audioProbe?.initialized,'Live Flash client must expose its reviewed audio adapter');
-    assert.deepEqual(live.audioProbe.levels,{player:1,music:1,environment:1,creatures:1});
-    assert(live.geometry.rect&&Math.abs(live.geometry.rect.width*live.scale-live.size[0])<2&&Math.abs(live.geometry.rect.height*live.scale-live.size[1])<2,'Flash stage covers the complete game window');
-    if(privateDesktop)assert(live.focused&&live.contentFocused&&live.geometry.focused,'Native game must be focused');
-    checks.push('Original Flash renders live game; full-window input stage'+(privateDesktop?' and native input focus':''));
-    await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
-    const section=name=>page.getByRole('tab',{name,exact:true}).click();
-    async function commitUI(){if(await page.locator('#save-settings').isEnabled())await page.locator('#save-settings').click();await until(()=>page.locator('#settings-body').evaluate(el=>!el.inert),'Settings save must complete');}
+    if (privateDesktop) {
+      await app.evaluate(() => global.__blitzTest.runtime().focus());
+      await wait(600);
+    }
+    const live = await measure(privateDesktop ? 'native-live' : 'hidden-live', true);
+    await until(() => fs.existsSync(live.file), 'Live capture missing');
+    assert(fs.statSync(live.file).size > 100000, 'Real Flash login screen must render');
+    assert(live.clientIntegration, 'Reviewed live client integration must be active');
+    assert.equal(
+      live.testClientHash,
+      require('../src/legacy/client-deployment.json').inputHash,
+      'Fresh network must exercise the latest deployed client'
+    );
+    assert.equal(
+      live.testAdapterMode,
+      'contract',
+      'Live deployment must reuse the previous reviewed hooks without its own exact-revision delta'
+    );
+    assert(
+      live.audioIntegration && live.audioProbe?.initialized,
+      'Live Flash client must expose its reviewed audio adapter'
+    );
+    assert.deepEqual(live.audioProbe.levels, { player: 1, music: 1, environment: 1, creatures: 1 });
+    assert(
+      live.geometry.rect &&
+        Math.abs(live.geometry.rect.width * live.scale - live.size[0]) < 2 &&
+        Math.abs(live.geometry.rect.height * live.scale - live.size[1]) < 2,
+      'Flash stage covers the complete game window'
+    );
+    if (privateDesktop)
+      assert(
+        live.focused && live.contentFocused && live.geometry.focused,
+        'Native game must be focused'
+      );
+    checks.push(
+      'Original Flash renders live game; full-window input stage' +
+        (privateDesktop ? ' and native input focus' : '')
+    );
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+    const section = (name) => page.getByRole('tab', { name, exact: true }).click();
+    async function commitUI() {
+      if (await page.locator('#save-settings').isEnabled())
+        await page.locator('#save-settings').click();
+      await until(
+        () => page.locator('#settings-body').evaluate((el) => !el.inert),
+        'Settings save must complete'
+      );
+    }
     // Changes across categories must remain a local draft, including while new
     // native status arrives. Closing by any route discards rather than saves.
-    const preferences=()=>fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8');
-    const originalPreferences=preferences();
-    await section('Audio');await page.locator('#volume-number').fill('23');
-    await section('Display');await page.locator('#centered-camera').check();
-    await section('Controls');await page.locator('#cursor-lock').check();
-    await section('Crosshair');await page.locator('#crosshair-style').selectOption('cross');
-    await wait(1200);assert.equal(preferences(),originalPreferences,'Draft edits must never write preferences');
-    assert.equal((await call('state')).settings.volume,100);assert.equal((await call('state')).settings.centeredCamera,false);
-    assert.equal((await call('state')).settings.cursorLock,false);assert.equal((await call('state')).settings.crosshair.style,'default');
-    await section('Audio');assert.equal(await page.locator('#volume-number').inputValue(),'23','Drafts survive pane changes and native status');
-    await page.locator('#dismiss').click();await call('settings');assert.equal(await page.locator('#volume-number').inputValue(),'100');
-    await page.locator('#volume-number').fill('17');await page.locator('#discard').click();assert.equal(await page.locator('#volume-number').inputValue(),'100');
-    await page.locator('#volume-number').fill('29');await page.locator('#done').click();await call('settings');assert.equal(await page.locator('#volume-number').inputValue(),'100');
-    await page.locator('#volume-number').fill('43');await shellKey('Escape');await call('settings');assert.equal(await page.locator('#volume-number').inputValue(),'100');
-    assert.equal(preferences(),originalPreferences,'Close, Back, Escape and Discard leave saved values intact');
-    await section('Controls');await page.locator('#shift-mount').check();await page.locator('#unlock-key').click();await page.locator('#unlock-key').press('ShiftLeft');await commitUI();
-    assert.equal((await call('state')).settings.shiftMount,false);assert.equal(await page.locator('#shift-mount').isChecked(),true,'Failed save preserves the draft');
-    assert.match(await page.locator('#feedback').innerText(),/different cursor-lock shortcut/);await page.locator('#discard').click();
-    await section('Crosshair');await page.locator('#crosshair-style').selectOption('cross');await page.locator('#crosshair-size').selectOption('32');
-    assert.equal((await measure('draft-crosshair')).crosshair.style,'default','Unsaved pointer never reaches the game');
-    await page.locator('.panel').screenshot({path:path.join(out,'settings-crosshair-preview.png')});
-    await commitUI();
-    const crosshairCaptures=[];
-    for(const style of ['cross','dot','ring']){
-      await page.locator('#crosshair-style').selectOption(style);await commitUI();
-      const probe=await measure('crosshair-'+style),native=probe.crosshair;
-      const image=require('../src/crosshair.js').pixels(native,native.density),bgra=Buffer.from(image.rgba);
-      for(let i=0;i<bgra.length;i+=4){[bgra[i],bgra[i+2]]=[bgra[i+2],bgra[i]];}
-      assert.equal(native.style,style);assert.equal(native.dryRun,true);assert.deepEqual(Buffer.from(native.pixels,'base64'),bgra,'Actual Win32 pointer bitmap and centered hotspot must match preview');
-      const png=await app.evaluate(({nativeImage},data)=>nativeImage.createFromBitmap(Buffer.from(data.pixels,'base64'),{width:data.width,height:data.width}).toPNG().toString('base64'),{pixels:native.pixels,width:image.width});
-      fs.writeFileSync(path.join(out,'native-pointer-'+style+'.png'),Buffer.from(png,'base64'));crosshairCaptures.push({style,width:image.width,hotspot:image.hotspot});
-    }
-    await page.locator('#crosshair-style').selectOption('default');await commitUI();assert.equal((await measure('crosshair-restored')).crosshair.pixels,'','Default removes only the custom game cursor');
-    assert.equal((await call('save-settings',{crosshair:{style:'cross',size:100000,color:'#fff',outline:true}})).ok,false);
-    checks.push('Explicit Save commits drafts atomically; Close/Back/Escape/Discard never autosave; invalid saves retain edits; native crosshair bitmap/hotspot readback matches preview');
+    const preferences = () =>
+      fs.readFileSync(path.join(root, '.test-profile/preferences.json'), 'utf8');
+    const originalPreferences = preferences();
+    await section('Audio');
+    await page.locator('#volume-number').fill('23');
     await section('Display');
-    assert.equal(await page.locator('#volume').getAttribute('min'),'0');assert.equal(await page.locator('#volume').getAttribute('max'),'100');assert.equal(await page.locator('#volume').getAttribute('step'),'1');
-    assert.equal(await page.locator('#volume').inputValue(),'100');assert.equal(await page.locator('#unlock-key').getAttribute('data-code'),'AltLeft');assert.equal(await page.locator('#cursor-lock').isChecked(),false);
-    await section('Updates');assert.equal(await page.locator('#auto-updates').isChecked(),true);
-    await page.locator('#auto-updates').uncheck();await commitUI();await until(async()=> (await call('state')).settings.autoUpdates===false,'Update opt-out not saved');
-    await page.locator('#auto-updates').check();await commitUI();await until(async()=> (await call('state')).settings.autoUpdates===true,'Updates not re-enabled');
-    assert.equal((await call('save-settings',{autoUpdates:'yes'})).ok,false);
+    await page.locator('#centered-camera').check();
+    await section('Controls');
+    await page.locator('#cursor-lock').check();
+    await section('Crosshair');
+    await page.locator('#crosshair-style').selectOption('cross');
+    await wait(1200);
+    assert.equal(preferences(), originalPreferences, 'Draft edits must never write preferences');
+    assert.equal((await call('state')).settings.volume, 100);
+    assert.equal((await call('state')).settings.centeredCamera, false);
+    assert.equal((await call('state')).settings.cursorLock, false);
+    assert.equal((await call('state')).settings.crosshair.style, 'default');
+    await section('Audio');
+    assert.equal(
+      await page.locator('#volume-number').inputValue(),
+      '23',
+      'Drafts survive pane changes and native status'
+    );
+    await page.locator('#dismiss').click();
+    await call('settings');
+    assert.equal(await page.locator('#volume-number').inputValue(), '100');
+    await page.locator('#volume-number').fill('17');
+    await page.locator('#discard').click();
+    assert.equal(await page.locator('#volume-number').inputValue(), '100');
+    await page.locator('#volume-number').fill('29');
+    await page.locator('#done').click();
+    await call('settings');
+    assert.equal(await page.locator('#volume-number').inputValue(), '100');
+    await page.locator('#volume-number').fill('43');
+    await shellKey('Escape');
+    await call('settings');
+    assert.equal(await page.locator('#volume-number').inputValue(), '100');
+    assert.equal(
+      preferences(),
+      originalPreferences,
+      'Close, Back, Escape and Discard leave saved values intact'
+    );
+    await section('Controls');
+    await page.locator('#shift-mount').check();
+    await page.locator('#unlock-key').click();
+    await page.locator('#unlock-key').press('ShiftLeft');
+    await commitUI();
+    assert.equal((await call('state')).settings.shiftMount, false);
+    assert.equal(
+      await page.locator('#shift-mount').isChecked(),
+      true,
+      'Failed save preserves the draft'
+    );
+    assert.match(await page.locator('#feedback').innerText(), /different cursor-lock shortcut/);
+    await page.locator('#discard').click();
+    await section('Crosshair');
+    await page.locator('#crosshair-style').selectOption('cross');
+    await page.locator('#crosshair-size').selectOption('32');
+    assert.equal(
+      (await measure('draft-crosshair')).crosshair.style,
+      'default',
+      'Unsaved pointer never reaches the game'
+    );
+    await page
+      .locator('.panel')
+      .screenshot({ path: path.join(out, 'settings-crosshair-preview.png') });
+    await commitUI();
+    const crosshairCaptures = [];
+    for (const style of ['cross', 'dot', 'ring']) {
+      await page.locator('#crosshair-style').selectOption(style);
+      await commitUI();
+      const probe = await measure('crosshair-' + style),
+        native = probe.crosshair;
+      const image = require('../src/crosshair.js').pixels(native, native.density),
+        bgra = Buffer.from(image.rgba);
+      for (let i = 0; i < bgra.length; i += 4) {
+        [bgra[i], bgra[i + 2]] = [bgra[i + 2], bgra[i]];
+      }
+      assert.equal(native.style, style);
+      assert.equal(native.dryRun, true);
+      assert.deepEqual(
+        Buffer.from(native.pixels, 'base64'),
+        bgra,
+        'Actual Win32 pointer bitmap and centered hotspot must match preview'
+      );
+      const png = await app.evaluate(
+        ({ nativeImage }, data) =>
+          nativeImage
+            .createFromBitmap(Buffer.from(data.pixels, 'base64'), {
+              width: data.width,
+              height: data.width,
+            })
+            .toPNG()
+            .toString('base64'),
+        { pixels: native.pixels, width: image.width }
+      );
+      fs.writeFileSync(
+        path.join(out, 'native-pointer-' + style + '.png'),
+        Buffer.from(png, 'base64')
+      );
+      crosshairCaptures.push({ style, width: image.width, hotspot: image.hotspot });
+    }
+    await page.locator('#crosshair-style').selectOption('default');
+    await commitUI();
+    assert.equal(
+      (await measure('crosshair-restored')).crosshair.pixels,
+      '',
+      'Default removes only the custom game cursor'
+    );
+    assert.equal(
+      (
+        await call('save-settings', {
+          crosshair: { style: 'cross', size: 100000, color: '#fff', outline: true },
+        })
+      ).ok,
+      false
+    );
+    checks.push(
+      'Explicit Save commits drafts atomically; Close/Back/Escape/Discard never autosave; invalid saves retain edits; native crosshair bitmap/hotspot readback matches preview'
+    );
+    await section('Display');
+    assert.equal(await page.locator('#volume').getAttribute('min'), '0');
+    assert.equal(await page.locator('#volume').getAttribute('max'), '100');
+    assert.equal(await page.locator('#volume').getAttribute('step'), '1');
+    assert.equal(await page.locator('#volume').inputValue(), '100');
+    assert.equal(await page.locator('#unlock-key').getAttribute('data-code'), 'AltLeft');
+    assert.equal(await page.locator('#cursor-lock').isChecked(), false);
+    await section('Updates');
+    assert.equal(await page.locator('#auto-updates').isChecked(), true);
+    await page.locator('#auto-updates').uncheck();
+    await commitUI();
+    await until(
+      async () => (await call('state')).settings.autoUpdates === false,
+      'Update opt-out not saved'
+    );
+    await page.locator('#auto-updates').check();
+    await commitUI();
+    await until(
+      async () => (await call('state')).settings.autoUpdates === true,
+      'Updates not re-enabled'
+    );
+    assert.equal((await call('save-settings', { autoUpdates: 'yes' })).ok, false);
     checks.push('Actual automatic-update checkbox saves both choices and rejects malformed values');
-    await section('Audio');for(const bus of ['player','music','environment','creatures']){
-      const slider=page.locator('#audio-'+bus);assert.equal(await slider.inputValue(),'100');assert.equal(await slider.getAttribute('step'),'1');assert.equal(await slider.isEnabled(),true);
-      await slider.press('Home');await commitUI();await until(async()=> (await call('state')).settings.audioMix[bus]===0,'Sound bus zero not saved');
-      await slider.press('ArrowRight');await commitUI();await until(async()=> (await call('state')).settings.audioMix[bus]===1,'Sound bus one-step increment not saved');
-      await slider.press('End');await commitUI();await until(async()=> (await call('state')).settings.audioMix[bus]===100,'Sound bus reset not saved');
+    await section('Audio');
+    for (const bus of ['player', 'music', 'environment', 'creatures']) {
+      const slider = page.locator('#audio-' + bus);
+      assert.equal(await slider.inputValue(), '100');
+      assert.equal(await slider.getAttribute('step'), '1');
+      assert.equal(await slider.isEnabled(), true);
+      await slider.press('Home');
+      await commitUI();
+      await until(
+        async () => (await call('state')).settings.audioMix[bus] === 0,
+        'Sound bus zero not saved'
+      );
+      await slider.press('ArrowRight');
+      await commitUI();
+      await until(
+        async () => (await call('state')).settings.audioMix[bus] === 1,
+        'Sound bus one-step increment not saved'
+      );
+      await slider.press('End');
+      await commitUI();
+      await until(
+        async () => (await call('state')).settings.audioMix[bus] === 100,
+        'Sound bus reset not saved'
+      );
     }
-    await call('save-settings',{audioMix:{player:17,music:29,environment:43,creatures:61}});await wait(1200);
-    assert.deepEqual((await measure('live-audio-mix')).audioProbe.levels,{player:.17,music:.29,environment:.43,creatures:.61});
-    await call('save-settings',{audioMix:{player:100,music:100,environment:100,creatures:100}});
-    checks.push('All four category sliders start at 100, step by 1, and reach the actual live Flash audio adapter');
-    assert.equal(await page.locator('#titlebar').evaluate(el=>el.getBoundingClientRect().height),32);
-    const settingsRects=[];
-    await page.evaluate(()=>document.fonts.ready);
-    assert(await page.evaluate(()=>[...document.fonts].some(face=>face.family==='BlitzRounded'&&face.status==='loaded')),'Bundled rounded Settings font must load under the local CSP');
-    for(const name of ['Audio','Controls','Crosshair','Display','Connection','Updates']){
-      await section(name);settingsRects.push(await page.locator('.panel').boundingBox());
-      await page.screenshot({path:path.join(out,'settings-'+name.toLowerCase()+'.png')});
+    await call('save-settings', {
+      audioMix: { player: 17, music: 29, environment: 43, creatures: 61 },
+    });
+    await wait(1200);
+    assert.deepEqual((await measure('live-audio-mix')).audioProbe.levels, {
+      player: 0.17,
+      music: 0.29,
+      environment: 0.43,
+      creatures: 0.61,
+    });
+    await call('save-settings', {
+      audioMix: { player: 100, music: 100, environment: 100, creatures: 100 },
+    });
+    checks.push(
+      'All four category sliders start at 100, step by 1, and reach the actual live Flash audio adapter'
+    );
+    assert.equal(
+      await page.locator('#titlebar').evaluate((el) => el.getBoundingClientRect().height),
+      32
+    );
+    const settingsRects = [];
+    await page.evaluate(() => document.fonts.ready);
+    assert(
+      await page.evaluate(() =>
+        [...document.fonts].some(
+          (face) => face.family === 'BlitzRounded' && face.status === 'loaded'
+        )
+      ),
+      'Bundled rounded Settings font must load under the local CSP'
+    );
+    for (const name of ['Audio', 'Controls', 'Crosshair', 'Display', 'Connection', 'Updates']) {
+      await section(name);
+      settingsRects.push(await page.locator('.panel').boundingBox());
+      await page.screenshot({ path: path.join(out, 'settings-' + name.toLowerCase() + '.png') });
     }
-    assert(settingsRects.every(rect=>rect.width===settingsRects[0].width&&rect.height===settingsRects[0].height&&rect.x===settingsRects[0].x&&rect.y===settingsRects[0].y),'Settings frame must not move or resize across panes');
+    assert(
+      settingsRects.every(
+        (rect) =>
+          rect.width === settingsRects[0].width &&
+          rect.height === settingsRects[0].height &&
+          rect.x === settingsRects[0].x &&
+          rect.y === settingsRects[0].y
+      ),
+      'Settings frame must not move or resize across panes'
+    );
     checks.push('All six rendered Settings panes retain the same frame and scroll longer content');
     await section('Display');
-    assert.equal(await page.getByRole('tabpanel').count(),1);
-    assert.equal(await page.getByRole('tab',{selected:true}).count(),1);
-    await page.getByRole('tab',{name:'Display',exact:true}).press('ArrowDown');
-    assert.equal(await page.getByRole('tab',{name:'Audio',exact:true}).getAttribute('aria-selected'),'true','Vertical arrows activate the next category');
-    await page.getByRole('tab',{name:'Audio',exact:true}).press('End');
-    assert.equal(await page.getByRole('tab',{name:'Updates',exact:true}).getAttribute('aria-selected'),'true');
-    await page.getByRole('tab',{name:'Updates',exact:true}).press('Home');
-    assert.equal(await page.getByRole('tab',{name:'Display',exact:true}).getAttribute('aria-selected'),'true');
-    assert(await page.locator('#centered-hotbar').isDisabled(),'Original hotbar requires widescreen without discarding its saved preference');
-    await page.locator('#experimental-widescreen').check();await commitUI();await until(async()=>(await call('state')).settings.experimentalWidescreen,'Widescreen must save');
-    await until(()=>page.locator('#centered-hotbar').isEnabled(),'Original hotbar becomes available with widescreen');
-    await page.locator('#centered-hotbar').check();await commitUI();await until(async()=>(await call('state')).settings.centeredHotbar,'Centered hotbar must save');
-    await page.locator('#experimental-widescreen').uncheck();await commitUI();await until(()=>page.locator('#centered-hotbar').isDisabled(),'Disabling widescreen disables its dependent control');
-    assert.equal((await call('state')).settings.centeredHotbar,true,'Dependent setting must remain saved');
-    await page.locator('#experimental-widescreen').check();await commitUI();await until(()=>page.locator('#centered-hotbar').isEnabled(),'Re-enabling widescreen restores access');
-    await page.locator('#centered-hotbar').uncheck();await commitUI();await until(async()=>!(await call('state')).settings.centeredHotbar,'Restore original hotbar default');
-    await page.locator('#experimental-widescreen').uncheck();await commitUI();await until(async()=>!(await call('state')).settings.experimentalWidescreen,'Restore width default');
-    await page.locator('#centered-camera').check();await commitUI();await until(async()=>(await call('state')).settings.centeredCamera,'New layout camera checkbox must save');
-    await page.locator('#centered-camera').uncheck();await commitUI();await until(async()=>!(await call('state')).settings.centeredCamera,'Restore camera default');
+    assert.equal(await page.getByRole('tabpanel').count(), 1);
+    assert.equal(await page.getByRole('tab', { selected: true }).count(), 1);
+    await page.getByRole('tab', { name: 'Display', exact: true }).press('ArrowDown');
+    assert.equal(
+      await page.getByRole('tab', { name: 'Audio', exact: true }).getAttribute('aria-selected'),
+      'true',
+      'Vertical arrows activate the next category'
+    );
+    await page.getByRole('tab', { name: 'Audio', exact: true }).press('End');
+    assert.equal(
+      await page.getByRole('tab', { name: 'Updates', exact: true }).getAttribute('aria-selected'),
+      'true'
+    );
+    await page.getByRole('tab', { name: 'Updates', exact: true }).press('Home');
+    assert.equal(
+      await page.getByRole('tab', { name: 'Display', exact: true }).getAttribute('aria-selected'),
+      'true'
+    );
+    assert(
+      await page.locator('#centered-hotbar').isDisabled(),
+      'Original hotbar requires widescreen without discarding its saved preference'
+    );
+    await page.locator('#experimental-widescreen').check();
+    await commitUI();
+    await until(
+      async () => (await call('state')).settings.experimentalWidescreen,
+      'Widescreen must save'
+    );
+    await until(
+      () => page.locator('#centered-hotbar').isEnabled(),
+      'Original hotbar becomes available with widescreen'
+    );
+    await page.locator('#centered-hotbar').check();
+    await commitUI();
+    await until(
+      async () => (await call('state')).settings.centeredHotbar,
+      'Centered hotbar must save'
+    );
+    await page.locator('#experimental-widescreen').uncheck();
+    await commitUI();
+    await until(
+      () => page.locator('#centered-hotbar').isDisabled(),
+      'Disabling widescreen disables its dependent control'
+    );
+    assert.equal(
+      (await call('state')).settings.centeredHotbar,
+      true,
+      'Dependent setting must remain saved'
+    );
+    await page.locator('#experimental-widescreen').check();
+    await commitUI();
+    await until(
+      () => page.locator('#centered-hotbar').isEnabled(),
+      'Re-enabling widescreen restores access'
+    );
+    await page.locator('#centered-hotbar').uncheck();
+    await commitUI();
+    await until(
+      async () => !(await call('state')).settings.centeredHotbar,
+      'Restore original hotbar default'
+    );
+    await page.locator('#experimental-widescreen').uncheck();
+    await commitUI();
+    await until(
+      async () => !(await call('state')).settings.experimentalWidescreen,
+      'Restore width default'
+    );
+    await page.locator('#centered-camera').check();
+    await commitUI();
+    await until(
+      async () => (await call('state')).settings.centeredCamera,
+      'New layout camera checkbox must save'
+    );
+    await page.locator('#centered-camera').uncheck();
+    await commitUI();
+    await until(
+      async () => !(await call('state')).settings.centeredCamera,
+      'Restore camera default'
+    );
     await page.locator('.advanced-options summary').click();
     await page.locator('#hardware-acceleration').scrollIntoViewIfNeeded();
-    const displayScroll=await page.locator('#settings-content').evaluate(el=>el.scrollTop);
-    assert(displayScroll>0);await section('Audio');await section('Display');
-    assert.equal(await page.locator('#settings-content').evaluate(el=>el.scrollTop),displayScroll,'Each category keeps its own scroll position');
-    await page.locator('.advanced-options summary').click();await page.locator('#settings-content').evaluate(el=>el.scrollTop=0);
-    checks.push('Accessible category keyboard navigation, saved 16:9 dependency, camera checkbox and per-category scroll restoration');
-    if(privateDesktop){
-      const owner=await app.evaluate(({BrowserWindow})=>({handle:BrowserWindow.getAllWindows()[0].getNativeWindowHandle().readBigUInt64LE().toString(),pid:process.pid}));
-      execFileSync(path.join(root,'.test-tools/WindowCapture.exe'),[owner.handle,String(owner.pid),path.join(out,'settings-native-window.png')],{windowsHide:true});
+    const displayScroll = await page.locator('#settings-content').evaluate((el) => el.scrollTop);
+    assert(displayScroll > 0);
+    await section('Audio');
+    await section('Display');
+    assert.equal(
+      await page.locator('#settings-content').evaluate((el) => el.scrollTop),
+      displayScroll,
+      'Each category keeps its own scroll position'
+    );
+    await page.locator('.advanced-options summary').click();
+    await page.locator('#settings-content').evaluate((el) => (el.scrollTop = 0));
+    checks.push(
+      'Accessible category keyboard navigation, saved 16:9 dependency, camera checkbox and per-category scroll restoration'
+    );
+    if (privateDesktop) {
+      const owner = await app.evaluate(({ BrowserWindow }) => ({
+        handle: BrowserWindow.getAllWindows()[0]
+          .getNativeWindowHandle()
+          .readBigUInt64LE()
+          .toString(),
+        pid: process.pid,
+      }));
+      execFileSync(
+        path.join(root, '.test-tools/WindowCapture.exe'),
+        [owner.handle, String(owner.pid), path.join(out, 'settings-native-window.png')],
+        { windowsHide: true }
+      );
     }
     await section('Audio');
-    async function purplePixels(slider){
-      const png=await slider.screenshot();return app.evaluate(({nativeImage},data)=>{
-        const image=nativeImage.createFromBuffer(Buffer.from(data,'base64')),size=image.getSize(),pixels=image.toBitmap();let purple=0;
-        for(let x=0;x<size.width;x++){const offset=(Math.floor(size.height/2)*size.width+x)*4,b=pixels[offset],g=pixels[offset+1],r=pixels[offset+2];if(b>g*1.8&&b>r*1.3)purple++;}
-        return {purple,width:size.width};
-      },png.toString('base64'));
+    async function purplePixels(slider) {
+      const png = await slider.screenshot();
+      return app.evaluate(({ nativeImage }, data) => {
+        const image = nativeImage.createFromBuffer(Buffer.from(data, 'base64')),
+          size = image.getSize(),
+          pixels = image.toBitmap();
+        let purple = 0;
+        for (let x = 0; x < size.width; x++) {
+          const offset = (Math.floor(size.height / 2) * size.width + x) * 4,
+            b = pixels[offset],
+            g = pixels[offset + 1],
+            r = pixels[offset + 2];
+          if (b > g * 1.8 && b > r * 1.3) purple++;
+        }
+        return { purple, width: size.width };
+      }, png.toString('base64'));
     }
-    const fillCounts=[];
-    for(const value of [0,25,50,100]){
-      await page.locator('#volume-number').fill(String(value));await commitUI();await until(async()=>(await call('state')).settings.volume===value,'Master fill value must save');
-      const fill=await purplePixels(page.locator('#volume'));fillCounts.push(fill.purple);
-      assert(Math.abs(fill.purple-fill.width*value/100)<24,'Rendered purple width must follow the actual master slider value');
-      await page.locator('.panel').screenshot({path:path.join(out,'settings-volume-'+value+'.png')});
+    const fillCounts = [];
+    for (const value of [0, 25, 50, 100]) {
+      await page.locator('#volume-number').fill(String(value));
+      await commitUI();
+      await until(
+        async () => (await call('state')).settings.volume === value,
+        'Master fill value must save'
+      );
+      const fill = await purplePixels(page.locator('#volume'));
+      fillCounts.push(fill.purple);
+      assert(
+        Math.abs(fill.purple - (fill.width * value) / 100) < 24,
+        'Rendered purple width must follow the actual master slider value'
+      );
+      await page
+        .locator('.panel')
+        .screenshot({ path: path.join(out, 'settings-volume-' + value + '.png') });
     }
-    assert.equal(fillCounts[0],0,'Zero volume must have no purple track');assert(fillCounts.every((count,n)=>!n||count>fillCounts[n-1]),'Purple fill must grow from zero to full');
-    for(const bus of ['player','music','environment','creatures']){
-      const slider=page.locator('#audio-'+bus);await slider.press('Home');await commitUI();await until(async()=>(await call('state')).settings.audioMix[bus]===0,'Category zero must save');assert.equal((await purplePixels(slider)).purple,0);
-      await slider.press('End');await commitUI();await until(async()=>(await call('state')).settings.audioMix[bus]===100,'Category full must save');const full=await purplePixels(slider);assert(full.purple>full.width-24);
+    assert.equal(fillCounts[0], 0, 'Zero volume must have no purple track');
+    assert(
+      fillCounts.every((count, n) => !n || count > fillCounts[n - 1]),
+      'Purple fill must grow from zero to full'
+    );
+    for (const bus of ['player', 'music', 'environment', 'creatures']) {
+      const slider = page.locator('#audio-' + bus);
+      await slider.press('Home');
+      await commitUI();
+      await until(
+        async () => (await call('state')).settings.audioMix[bus] === 0,
+        'Category zero must save'
+      );
+      assert.equal((await purplePixels(slider)).purple, 0);
+      await slider.press('End');
+      await commitUI();
+      await until(
+        async () => (await call('state')).settings.audioMix[bus] === 100,
+        'Category full must save'
+      );
+      const full = await purplePixels(slider);
+      assert(full.purple > full.width - 24);
     }
-    await page.locator('#volume-number').fill('37');await commitUI();await until(async()=>(await call('state')).settings.volume===37,'Restored master fill must save');
-    await page.locator('#done').click();await page.getByRole('button',{name:'Settings',exact:true}).click();await section('Audio');
-    assert.equal(await page.locator('#volume').inputValue(),'37');const restored=await purplePixels(page.locator('#volume'));assert(Math.abs(restored.purple-restored.width*.37)<24,'Reopened Settings must restore the persisted fill');
-    checks.push('Actual rendered purple slider fill at 0/25/50/100%, all category endpoints and saved-value restoration');
-    assert(await page.locator('.wordmark').evaluate(el=>el.complete&&el.naturalWidth>0),'Actual titlebar wordmark loads');
-    async function bind(code){await section('Controls');await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Shortcut capture must arm');await page.locator('#unlock-key').press(code);await commitUI();await until(async()=> !(await call('state')).capturingShortcut,'Shortcut capture must finish');await commitUI();}
-    if(privateDesktop)assert.equal((await measure('hidden-in-settings')).visible,false);
-    await page.locator('#volume').focus();await page.locator('#volume').press('Home');await commitUI();await until(async()=> (await call('state')).settings.volume===0,'Volume zero not saved');
-    await page.locator('#volume').press('ArrowRight');await commitUI();await until(async()=> (await call('state')).settings.volume===1,'Volume increment not saved');
-    await page.locator('#volume-number').fill('37');await commitUI();await until(async()=> (await call('state')).settings.volume===37,'Volume 37 not saved');
-    await section('Controls');await page.locator('#cursor-lock').check();await commitUI();await until(async()=> (await call('state')).settings.cursorLock,'Cursor checkbox not saved');
-    await bind('F8');await until(async()=> (await call('state')).settings.unlockKey==='F8','Shortcut not saved');
-    await bind('g');await until(async()=> (await call('state')).settings.unlockKey==='KeyG','Letter shortcut not saved');
-    await page.locator('#unlock-key').click();await until(async()=> (await call('state')).capturingShortcut,'Capture arm');await page.locator('#unlock-key').press('F11');assert.equal((await call('state')).fullscreen,false,'Reserved F11 during capture must not enter fullscreen');await page.locator('#unlock-key').press('Escape');await commitUI();await until(async()=> !(await call('state')).capturingShortcut,'Escape cancels capture');assert.equal((await call('state')).settings.unlockKey,'KeyG');
-    await bind('F8');await until(async()=> (await call('state')).settings.unlockKey==='F8','Reset F8');
-    if(privateDesktop){
-      await until(async()=> (await call('state')).cursor.enabled,'Native cursor settings not applied');
-      assert.equal((await call('state')).cursor.active,false,'Cursor never confines in settings');assert.equal((await call('state')).cursor.dryRun,true);
-      const savedLock=()=>JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8')).settings.cursorLock;
-      await page.locator('#cursor-lock').uncheck();await commitUI();await until(async()=> !(await call('state')).settings.cursorLock&&!(await call('state')).cursor.enabled,'Cursor checkbox must disable and save');
-      assert.equal(await page.locator('#cursor-lock').isChecked(),false);assert.equal(savedLock(),false);
-      await page.locator('#cursor-lock').check();await commitUI();await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Cursor checkbox must enable and save');
-      const host=line=>app.evaluate(({},line)=>global.__blitzTest.runtime().testHost(line),line);
-      await host('TESTKEY 119 1 1');await until(async()=> !(await call('state')).settings.cursorLock,'Native custom key must disable saved checkbox');
-      await host('TESTKEY 119 1 1');await wait(100);assert.equal((await call('state')).settings.cursorLock,false,'Saved-setting acknowledgement cannot turn a repeat into a new toggle');
-      await host('TESTKEY 119 0 1');await host('TESTKEY 119 1 1');await until(async()=> (await call('state')).settings.cursorLock,'Custom key must enable saved checkbox');await host('TESTKEY 119 0 1');
-      await bind('AltLeft');await until(async()=> (await call('state')).settings.unlockKey==='AltLeft','Alt save');
-      await host('TESTKEY 164 1 1');await host('TESTKEY 164 0 1');await until(async()=> !(await call('state')).settings.cursorLock,'Native Alt release must disable saved checkbox');
-      assert.equal(await page.locator('#cursor-lock').isChecked(),false);assert.equal(savedLock(),false);
-      await host('TESTKEY 164 1 1');await host('TESTKEY 164 0 1');await until(async()=> (await call('state')).settings.cursorLock&&(await call('state')).cursor.enabled,'Alt must also enable an unchecked saved checkbox');
-      assert.equal(await page.locator('#cursor-lock').isChecked(),true);assert.equal(savedLock(),true);
-      for(const key of [9,115]){await host('TESTKEY 164 1 1');await host('TESTKEY '+key+' 1 1');await host('TESTKEY 164 0 1');}
-      await wait(100);assert.equal((await call('state')).settings.cursorLock,true,'Alt+Tab and Alt+F4 cannot toggle checkbox');
+    await page.locator('#volume-number').fill('37');
+    await commitUI();
+    await until(
+      async () => (await call('state')).settings.volume === 37,
+      'Restored master fill must save'
+    );
+    await page.locator('#done').click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await section('Audio');
+    assert.equal(await page.locator('#volume').inputValue(), '37');
+    const restored = await purplePixels(page.locator('#volume'));
+    assert(
+      Math.abs(restored.purple - restored.width * 0.37) < 24,
+      'Reopened Settings must restore the persisted fill'
+    );
+    checks.push(
+      'Actual rendered purple slider fill at 0/25/50/100%, all category endpoints and saved-value restoration'
+    );
+    assert(
+      await page.locator('.wordmark').evaluate((el) => el.complete && el.naturalWidth > 0),
+      'Actual titlebar wordmark loads'
+    );
+    async function bind(code) {
+      await section('Controls');
+      await page.locator('#unlock-key').click();
+      await until(async () => (await call('state')).capturingShortcut, 'Shortcut capture must arm');
+      await page.locator('#unlock-key').press(code);
+      await commitUI();
+      await until(
+        async () => !(await call('state')).capturingShortcut,
+        'Shortcut capture must finish'
+      );
+      await commitUI();
     }
-    checks.push('Actual settings controls, 0/1/37 volume, cursor checkbox in both directions and shortcut selection');
-    await page.screenshot({path:path.join(out,privateDesktop?'settings-native.png':'settings.png')});
-    const initialSize=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentSize());
-    for(const size of [[800,600],[1440,900]]){
-      await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),size);await wait(300);
-      for(const section of ['Audio','Controls','Crosshair','Display','Connection','Updates']){
-        await page.getByRole('tab',{name:section,exact:true}).click();await wait(350);
-        const layout=await page.evaluate(()=>{
-          const rect=id=>{const r=document.querySelector(id).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
-          const pane=document.querySelector('[role=tabpanel]:not([hidden])');
-          return {height:innerHeight,width:innerWidth,panel:rect('.panel'),nav:rect('.settings-nav'),done:rect('#done'),content:rect('#settings-content'),horizontal:document.documentElement.scrollWidth>innerWidth,paneOverflow:pane.scrollWidth>pane.clientWidth+1};
+    if (privateDesktop) assert.equal((await measure('hidden-in-settings')).visible, false);
+    await page.locator('#volume').focus();
+    await page.locator('#volume').press('Home');
+    await commitUI();
+    await until(async () => (await call('state')).settings.volume === 0, 'Volume zero not saved');
+    await page.locator('#volume').press('ArrowRight');
+    await commitUI();
+    await until(
+      async () => (await call('state')).settings.volume === 1,
+      'Volume increment not saved'
+    );
+    await page.locator('#volume-number').fill('37');
+    await commitUI();
+    await until(async () => (await call('state')).settings.volume === 37, 'Volume 37 not saved');
+    await section('Controls');
+    await page.locator('#cursor-lock').check();
+    await commitUI();
+    await until(async () => (await call('state')).settings.cursorLock, 'Cursor checkbox not saved');
+    await bind('F8');
+    await until(
+      async () => (await call('state')).settings.unlockKey === 'F8',
+      'Shortcut not saved'
+    );
+    await bind('g');
+    await until(
+      async () => (await call('state')).settings.unlockKey === 'KeyG',
+      'Letter shortcut not saved'
+    );
+    await page.locator('#unlock-key').click();
+    await until(async () => (await call('state')).capturingShortcut, 'Capture arm');
+    await page.locator('#unlock-key').press('F11');
+    assert.equal(
+      (await call('state')).fullscreen,
+      false,
+      'Reserved F11 during capture must not enter fullscreen'
+    );
+    await page.locator('#unlock-key').press('Escape');
+    await commitUI();
+    await until(async () => !(await call('state')).capturingShortcut, 'Escape cancels capture');
+    assert.equal((await call('state')).settings.unlockKey, 'KeyG');
+    await bind('F8');
+    await until(async () => (await call('state')).settings.unlockKey === 'F8', 'Reset F8');
+    if (privateDesktop) {
+      await until(
+        async () => (await call('state')).cursor.enabled,
+        'Native cursor settings not applied'
+      );
+      assert.equal((await call('state')).cursor.active, false, 'Cursor never confines in settings');
+      assert.equal((await call('state')).cursor.dryRun, true);
+      const savedLock = () =>
+        JSON.parse(fs.readFileSync(path.join(root, '.test-profile/preferences.json'), 'utf8'))
+          .settings.cursorLock;
+      await page.locator('#cursor-lock').uncheck();
+      await commitUI();
+      await until(
+        async () =>
+          !(await call('state')).settings.cursorLock && !(await call('state')).cursor.enabled,
+        'Cursor checkbox must disable and save'
+      );
+      assert.equal(await page.locator('#cursor-lock').isChecked(), false);
+      assert.equal(savedLock(), false);
+      await page.locator('#cursor-lock').check();
+      await commitUI();
+      await until(
+        async () =>
+          (await call('state')).settings.cursorLock && (await call('state')).cursor.enabled,
+        'Cursor checkbox must enable and save'
+      );
+      const host = (line) =>
+        app.evaluate(({}, line) => global.__blitzTest.runtime().testHost(line), line);
+      await host('TESTKEY 119 1 1');
+      await until(
+        async () => !(await call('state')).settings.cursorLock,
+        'Native custom key must disable saved checkbox'
+      );
+      await host('TESTKEY 119 1 1');
+      await wait(100);
+      assert.equal(
+        (await call('state')).settings.cursorLock,
+        false,
+        'Saved-setting acknowledgement cannot turn a repeat into a new toggle'
+      );
+      await host('TESTKEY 119 0 1');
+      await host('TESTKEY 119 1 1');
+      await until(
+        async () => (await call('state')).settings.cursorLock,
+        'Custom key must enable saved checkbox'
+      );
+      await host('TESTKEY 119 0 1');
+      await bind('AltLeft');
+      await until(async () => (await call('state')).settings.unlockKey === 'AltLeft', 'Alt save');
+      await host('TESTKEY 164 1 1');
+      await host('TESTKEY 164 0 1');
+      await until(
+        async () => !(await call('state')).settings.cursorLock,
+        'Native Alt release must disable saved checkbox'
+      );
+      assert.equal(await page.locator('#cursor-lock').isChecked(), false);
+      assert.equal(savedLock(), false);
+      await host('TESTKEY 164 1 1');
+      await host('TESTKEY 164 0 1');
+      await until(
+        async () =>
+          (await call('state')).settings.cursorLock && (await call('state')).cursor.enabled,
+        'Alt must also enable an unchecked saved checkbox'
+      );
+      assert.equal(await page.locator('#cursor-lock').isChecked(), true);
+      assert.equal(savedLock(), true);
+      for (const key of [9, 115]) {
+        await host('TESTKEY 164 1 1');
+        await host('TESTKEY ' + key + ' 1 1');
+        await host('TESTKEY 164 0 1');
+      }
+      await wait(100);
+      assert.equal(
+        (await call('state')).settings.cursorLock,
+        true,
+        'Alt+Tab and Alt+F4 cannot toggle checkbox'
+      );
+    }
+    checks.push(
+      'Actual settings controls, 0/1/37 volume, cursor checkbox in both directions and shortcut selection'
+    );
+    await page.screenshot({
+      path: path.join(out, privateDesktop ? 'settings-native.png' : 'settings.png'),
+    });
+    const initialSize = await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].getContentSize()
+    );
+    for (const size of [
+      [800, 600],
+      [1440, 900],
+    ]) {
+      await app.evaluate(
+        ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setContentSize(...size),
+        size
+      );
+      await wait(300);
+      for (const section of [
+        'Audio',
+        'Controls',
+        'Crosshair',
+        'Display',
+        'Connection',
+        'Updates',
+      ]) {
+        await page.getByRole('tab', { name: section, exact: true }).click();
+        await wait(350);
+        const layout = await page.evaluate(() => {
+          const rect = (id) => {
+            const r = document.querySelector(id).getBoundingClientRect();
+            return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+          };
+          const pane = document.querySelector('[role=tabpanel]:not([hidden])');
+          return {
+            height: innerHeight,
+            width: innerWidth,
+            panel: rect('.panel'),
+            nav: rect('.settings-nav'),
+            done: rect('#done'),
+            content: rect('#settings-content'),
+            horizontal: document.documentElement.scrollWidth > innerWidth,
+            paneOverflow: pane.scrollWidth > pane.clientWidth + 1,
+          };
         });
-        assert.equal(layout.horizontal,false);assert.equal(layout.paneOverflow,false);assert(layout.panel.bottom<=layout.height&&layout.panel.top>=32);assert(layout.done.bottom<=layout.height&&layout.done.top>layout.nav.bottom,'Heading, navigation and Back to game must remain reachable');
+        assert.equal(layout.horizontal, false);
+        assert.equal(layout.paneOverflow, false);
+        assert(layout.panel.bottom <= layout.height && layout.panel.top >= 32);
+        assert(
+          layout.done.bottom <= layout.height && layout.done.top > layout.nav.bottom,
+          'Heading, navigation and Back to game must remain reachable'
+        );
       }
-      await page.screenshot({path:path.join(out,`settings-${size[0]}x${size[1]}.png`)});
-      if(size[0]===800){
-        await section('Display');await page.getByRole('tab',{name:'Display',exact:true}).press('ArrowRight');
-        assert.equal(await page.getByRole('tab',{name:'Audio',exact:true}).getAttribute('aria-selected'),'true','Compact category row uses horizontal arrows');
+      await page.screenshot({ path: path.join(out, `settings-${size[0]}x${size[1]}.png`) });
+      if (size[0] === 800) {
+        await section('Display');
+        await page.getByRole('tab', { name: 'Display', exact: true }).press('ArrowRight');
+        assert.equal(
+          await page.getByRole('tab', { name: 'Audio', exact: true }).getAttribute('aria-selected'),
+          'true',
+          'Compact category row uses horizontal arrows'
+        );
       }
     }
-    await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),initialSize);await wait(300);
-    await call('dismiss');await until(async()=>{const frame=await measure('settings-resize-restored');return frame.geometry.width===frame.viewport.width&&frame.geometry.height===frame.viewport.height;},'Returning from resized Settings must synchronize the native viewport');
-    await call('settings');await section('Display');await wait(350);
-    checks.push('Settings navigation at 800x600 and 1440x900 preserves heading/footer, fits horizontally and scrolls each section');
-    await page.locator('#game-zoom').selectOption('1.5');await commitUI();await wait(400);const enlarged=await measure('scale-150');
-    assert(enlarged.renderProbe&&live.renderProbe,'Reviewed native raster adapter must be active');
-    assert.equal(enlarged.renderProbe.zoom,1.5);
-    assert(enlarged.renderProbe.nativeScale*enlarged.scale>live.renderProbe.nativeScale*live.scale*1.45,'Game magnification must increase inside Flash');
-    assert(enlarged.renderProbe.bitmapWidth>live.renderProbe.bitmapWidth*1.45,'Magnification must allocate real game pixels');
-    await page.locator('#game-zoom').selectOption('1');await commitUI();await page.getByRole('button',{name:'Back to game'}).click();await commitUI();await wait(600);
-    if(privateDesktop){const restored=await measure('focus-restored');assert(restored.focused&&restored.contentFocused&&restored.geometry.focused);}
-    await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await wait(600);assert.equal((await call('state')).fullscreen,true);
-    assert.equal(await page.locator('#titlebar').isVisible(),false);assert.equal(await page.locator('#surface').evaluate(el=>el.getBoundingClientRect().y),0);
-    const full=await measure('fullscreen');const size=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentSize());assert.deepEqual(full.viewport,{width:size[0],height:size[1]});
-    if(privateDesktop){assert(full.focused);assert.equal(await app.evaluate(()=>global.__blitzTest.runtime().shellFullscreen.requested),true);}
-    for(const type of ['keyDown','keyUp'])await command({type:'test-input',input:{type,keyCode:'Escape'}});
-    await wait(400);assert.equal((await call('state')).fullscreen,true,'Escape belongs to the game and must keep fullscreen');
-    await shellKey('Escape');assert.equal((await call('state')).fullscreen,true,'Shell Escape must also keep fullscreen');
-    await command({type:'test-input',input:{type:'keyDown',keyCode:'F11'}});await wait(400);assert.equal((await call('state')).fullscreen,false);
-    await command({type:'test-input',input:{type:'keyUp',keyCode:'F11'}});
-    await call('fullscreen');await wait(400);await call('settings');await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();await wait(400);await shellKey('Escape');await wait(400);
-    assert.equal((await call('state')).modal,null,'Escape closes launcher Settings');assert.equal((await call('state')).fullscreen,true,'Closing Settings preserves fullscreen');
-    await call('exit-fullscreen');await wait(400);
-    checks.push('Rendered game scale, native focus restoration, fullscreen button/F11, Escape reaches game and keeps fullscreen, Escape closes Settings without exiting fullscreen');
-    await page.getByRole('button',{name:'Settings',exact:true}).click();await section('Connection');await page.locator('#game-url').fill('file:///C:/Windows/system.ini');await page.locator('#save-settings').click();await commitUI();await wait(200);assert.equal((await call('state')).settings.gameURL,LIVE);
-    await page.locator('#game-url').fill(fixture);await page.locator('#save-settings').click();await commitUI();await until(async()=> (await call('state')).pendingURL,'New URL not saved');assert.equal((await call('state')).gameURL,LIVE,'URL edit must not navigate current game');
-    await page.locator('#reconnect').click();await until(async()=> !(await call('state')).loading,'Fixture did not start');await wait(1000);assert.equal((await call('state')).gameURL,fixture);assert.equal((await call('state')).error,'');
-    const fixtureFrame=await measure('fixture-boundaries');assert.equal(fixtureFrame.windows,1,'Popup attempt must not create another native window');assert.deepEqual({...fixtureFrame.geometry.fixture,popup:undefined},{node:'undefined',process:'undefined',launcher:'undefined',popup:undefined,blocked:true});assert(!fixtureRequests.includes('/blocked'),'Cross-origin fetch must be denied before it reaches the server');
-    checks.push('Selected-origin runtime denies cross-origin requests and popups; game has no Node or launcher API');
-    const opened=()=>app.evaluate(()=>global.__blitzTest.externalLinks.slice());
-    assert.deepEqual(await opened(),[],'An unsolicited popup must not launch the default browser');
-    async function clickGame(x,y){
-      for(const type of ['mouseDown','mouseUp'])await command({type:'test-input',input:{type,x:Math.round(x),y:Math.round(y),button:'left',clickCount:1}});
+    await app.evaluate(
+      ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setContentSize(...size),
+      initialSize
+    );
+    await wait(300);
+    await call('dismiss');
+    await until(async () => {
+      const frame = await measure('settings-resize-restored');
+      return (
+        frame.geometry.width === frame.viewport.width &&
+        frame.geometry.height === frame.viewport.height
+      );
+    }, 'Returning from resized Settings must synchronize the native viewport');
+    await call('settings');
+    await section('Display');
+    await wait(350);
+    checks.push(
+      'Settings navigation at 800x600 and 1440x900 preserves heading/footer, fits horizontally and scrolls each section'
+    );
+    await page.locator('#game-zoom').selectOption('1.5');
+    await commitUI();
+    await wait(400);
+    const enlarged = await measure('scale-150');
+    assert(
+      enlarged.renderProbe && live.renderProbe,
+      'Reviewed native raster adapter must be active'
+    );
+    assert.equal(enlarged.renderProbe.zoom, 1.5);
+    assert(
+      enlarged.renderProbe.nativeScale * enlarged.scale >
+        live.renderProbe.nativeScale * live.scale * 1.45,
+      'Game magnification must increase inside Flash'
+    );
+    assert(
+      enlarged.renderProbe.bitmapWidth > live.renderProbe.bitmapWidth * 1.45,
+      'Magnification must allocate real game pixels'
+    );
+    await page.locator('#game-zoom').selectOption('1');
+    await commitUI();
+    await page.getByRole('button', { name: 'Back to game' }).click();
+    await commitUI();
+    await wait(600);
+    if (privateDesktop) {
+      const restored = await measure('focus-restored');
+      assert(restored.focused && restored.contentFocused && restored.geometry.focused);
     }
-    const scale=fixtureFrame.scale;
-    await call('save-settings',{crosshair:{style:'cross',color:'#8cff65',size:24,outline:true}});await wait(200);
-    await command({type:'test-input',input:{type:'mouseMove',x:Math.round(100*scale),y:Math.round(220*scale)}});await wait(250);
-    const textPointer=(await measure('crosshair-text-field')).crosshair;
-    assert.equal(textPointer.cursorType,'text','The offline input must request the real native text cursor');assert.equal(textPointer.eligible,false,'Text fields must not be overridden');
-    await command({type:'test-input',input:{type:'mouseMove',x:Math.round(400*scale),y:Math.round(400*scale)}});await wait(250);
-    const gameArea=await measure('crosshair-game-area'),gamePointer=gameArea.crosshair;assert.equal(gamePointer.eligible,true,'Native game cursor policy must accept the normal game pointer');assert(gameArea.focused&&gameArea.visible);
-    const scope=gameArea.geometry.cursorScope;assert.equal(scope[0],1,'The actual native launcher ancestor must admit game focus');assert.equal(scope[2],0,'No active launcher must reject');assert.equal(scope[3],1);if(scope[4])assert.equal(scope[1],0,'Foreground launcher with focus outside the embedded game must reject');
-    await call('settings');await section('Crosshair');await page.locator('#crosshair-style').selectOption('original');
-    assert(await page.locator('#crosshair-size').isDisabled());assert(await page.locator('#crosshair-color').isEnabled());
-    await page.locator('#crosshair-color').fill('#ff33aa');await page.locator('#save-settings').click();await commitUI();await call('dismiss');await wait(250);
-    const originalTint=await measure('original-pointer-tinted'),sourcePointer=(await call('state')).originalPointer;assert(sourcePointer,'Actual native pointer image must reach preview');
-    const expectedTint=require('../src/crosshair.js').recolor(Buffer.from(sourcePointer.rgba,'base64'),'#ff33aa'),nativeTint=Buffer.from(originalTint.crosshair.pixels,'base64');assert.equal(nativeTint.length,expectedTint.length);
-    for(let i=0;i<nativeTint.length;i+=4){assert.equal(nativeTint[i],expectedTint[i+2]);assert.equal(nativeTint[i+1],expectedTint[i+1]);assert.equal(nativeTint[i+2],expectedTint[i]);assert.equal(nativeTint[i+3],expectedTint[i+3]);}
-    await call('settings');await section('Crosshair');await page.screenshot({path:path.join(out,'settings-original-recolored.png')});await call('dismiss');
-    await command({type:'test-input',input:{type:'mouseMove',x:Math.round(100*scale),y:Math.round(220*scale)}});await wait(150);assert.equal((await measure('original-pointer-text')).crosshair.eligible,false);
-    await command({type:'test-input',input:{type:'mouseMove',x:Math.round(650*scale),y:Math.round(230*scale)}});await wait(350);
-    const customTint=await measure('original-custom-pointer-tinted'),customSource=(await call('state')).originalPointer;assert.equal(customTint.crosshair.cursorType,'custom');assert.equal(customTint.crosshair.eligible,true);assert.equal(customSource.hotspotX,3);assert.equal(customSource.hotspotY,7);
-    const customExpected=require('../src/crosshair.js').recolor(Buffer.from(customSource.rgba,'base64'),'#ff33aa'),customActual=Buffer.from(customTint.crosshair.pixels,'base64');assert.equal(customActual.length,customExpected.length);for(let i=0;i<customActual.length;i+=4){assert.equal(customActual[i],customExpected[i+2]);assert.equal(customActual[i+1],customExpected[i+1]);assert.equal(customActual[i+2],customExpected[i]);assert.equal(customActual[i+3],customExpected[i+3]);}
-    checks.push('Original pointer recoloring matches actual native cursor pixels, retains original hotspot/shape/alpha and leaves text fields native');
-    await call('settings');const hiddenPointer=await measure('crosshair-settings-hidden');assert.equal(hiddenPointer.visible,false);assert.equal(hiddenPointer.crosshair.active,false,'Settings hides the game and releases its pointer override');await call('dismiss');
-    await call('save-settings',{crosshair:require('../src/crosshair.js').valid()});
-    checks.push('Real renderer pointer/text transitions preserve text fields; Settings releases the game cursor; restoring Default clears the custom cursor');
-    await clickGame(25*scale,18*scale);await until(async()=> (await opened()).length===1,'Clicked external popup handoff missing');
-    assert.deepEqual(await opened(),['https://www.paypal.com/donate/?a=1&b=2']);await wait(1100);
-    await clickGame(25*scale,68*scale);await until(async()=> (await opened()).length===2,'Clicked same-window external handoff missing');
-    assert.equal((await opened())[1],'https://www.facebook.com/');assert.equal((await call('state')).error,'');await wait(1100);
-    const reloads=fixtureRequests.filter(u=>u==='/').length;
-    await clickGame(25*scale,118*scale);await until(()=>fixtureRequests.filter(u=>u==='/').length>reloads,'Game link must reload configured page');
-    assert(!fixtureRequests.includes('/game-link'),'Game links must not replace the game page');
-    assert.equal((await measure('after-links')).windows,1);assert.equal((await opened()).length,2,'Reload must not forward its unsolicited popup');
-    checks.push('Clicked HTML popup/self links hand off exact web URLs; game links reload; unsolicited popups stay blocked; no OS browser launched');
-    const characterReloads=fixtureRequests.filter(u=>u==='/').length;
-    await call('save-settings',{gameURL:fixture+'pending-server'});
+    await page.getByRole('button', { name: 'Fullscreen', exact: true }).click();
+    await wait(600);
+    assert.equal((await call('state')).fullscreen, true);
+    assert.equal(await page.locator('#titlebar').isVisible(), false);
+    assert.equal(await page.locator('#surface').evaluate((el) => el.getBoundingClientRect().y), 0);
+    const full = await measure('fullscreen');
+    const size = await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].getContentSize()
+    );
+    assert.deepEqual(full.viewport, { width: size[0], height: size[1] });
+    if (privateDesktop) {
+      assert(full.focused);
+      assert.equal(
+        await app.evaluate(() => global.__blitzTest.runtime().shellFullscreen.requested),
+        true
+      );
+    }
+    for (const type of ['keyDown', 'keyUp'])
+      await command({ type: 'test-input', input: { type, keyCode: 'Escape' } });
+    await wait(400);
+    assert.equal(
+      (await call('state')).fullscreen,
+      true,
+      'Escape belongs to the game and must keep fullscreen'
+    );
+    await shellKey('Escape');
+    assert.equal((await call('state')).fullscreen, true, 'Shell Escape must also keep fullscreen');
+    await command({ type: 'test-input', input: { type: 'keyDown', keyCode: 'F11' } });
+    await wait(400);
+    assert.equal((await call('state')).fullscreen, false);
+    await command({ type: 'test-input', input: { type: 'keyUp', keyCode: 'F11' } });
+    await call('fullscreen');
+    await wait(400);
+    await call('settings');
+    await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+    await wait(400);
+    await shellKey('Escape');
+    await wait(400);
+    assert.equal((await call('state')).modal, null, 'Escape closes launcher Settings');
+    assert.equal((await call('state')).fullscreen, true, 'Closing Settings preserves fullscreen');
+    await call('exit-fullscreen');
+    await wait(400);
+    checks.push(
+      'Rendered game scale, native focus restoration, fullscreen button/F11, Escape reaches game and keeps fullscreen, Escape closes Settings without exiting fullscreen'
+    );
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await section('Connection');
+    await page.locator('#game-url').fill('file:///C:/Windows/system.ini');
+    await page.locator('#save-settings').click();
+    await commitUI();
+    await wait(200);
+    assert.equal((await call('state')).settings.gameURL, LIVE);
+    await page.locator('#game-url').fill(fixture);
+    await page.locator('#save-settings').click();
+    await commitUI();
+    await until(async () => (await call('state')).pendingURL, 'New URL not saved');
+    assert.equal((await call('state')).gameURL, LIVE, 'URL edit must not navigate current game');
+    await page.locator('#reconnect').click();
+    await until(async () => !(await call('state')).loading, 'Fixture did not start');
+    await wait(1000);
+    assert.equal((await call('state')).gameURL, fixture);
+    assert.equal((await call('state')).error, '');
+    const fixtureFrame = await measure('fixture-boundaries');
+    assert.equal(fixtureFrame.windows, 1, 'Popup attempt must not create another native window');
+    assert.deepEqual(
+      { ...fixtureFrame.geometry.fixture, popup: undefined },
+      {
+        node: 'undefined',
+        process: 'undefined',
+        launcher: 'undefined',
+        popup: undefined,
+        blocked: true,
+      }
+    );
+    assert(
+      !fixtureRequests.includes('/blocked'),
+      'Cross-origin fetch must be denied before it reaches the server'
+    );
+    checks.push(
+      'Selected-origin runtime denies cross-origin requests and popups; game has no Node or launcher API'
+    );
+    const opened = () => app.evaluate(() => global.__blitzTest.externalLinks.slice());
+    assert.deepEqual(
+      await opened(),
+      [],
+      'An unsolicited popup must not launch the default browser'
+    );
+    async function clickGame(x, y) {
+      for (const type of ['mouseDown', 'mouseUp'])
+        await command({
+          type: 'test-input',
+          input: { type, x: Math.round(x), y: Math.round(y), button: 'left', clickCount: 1 },
+        });
+    }
+    const scale = fixtureFrame.scale;
+    await call('save-settings', {
+      crosshair: { style: 'cross', color: '#8cff65', size: 24, outline: true },
+    });
+    await wait(200);
+    await command({
+      type: 'test-input',
+      input: { type: 'mouseMove', x: Math.round(100 * scale), y: Math.round(220 * scale) },
+    });
+    await wait(250);
+    const textPointer = (await measure('crosshair-text-field')).crosshair;
+    assert.equal(
+      textPointer.cursorType,
+      'text',
+      'The offline input must request the real native text cursor'
+    );
+    assert.equal(textPointer.eligible, false, 'Text fields must not be overridden');
+    await command({
+      type: 'test-input',
+      input: { type: 'mouseMove', x: Math.round(400 * scale), y: Math.round(400 * scale) },
+    });
+    await wait(250);
+    const gameArea = await measure('crosshair-game-area'),
+      gamePointer = gameArea.crosshair;
+    assert.equal(
+      gamePointer.eligible,
+      true,
+      'Native game cursor policy must accept the normal game pointer'
+    );
+    assert(gameArea.focused && gameArea.visible);
+    const scope = gameArea.geometry.cursorScope;
+    assert.equal(scope[0], 1, 'The actual native launcher ancestor must admit game focus');
+    assert.equal(scope[2], 0, 'No active launcher must reject');
+    assert.equal(scope[3], 1);
+    if (scope[4])
+      assert.equal(
+        scope[1],
+        0,
+        'Foreground launcher with focus outside the embedded game must reject'
+      );
+    await call('settings');
+    await section('Crosshair');
+    await page.locator('#crosshair-style').selectOption('original');
+    assert(await page.locator('#crosshair-size').isDisabled());
+    assert(await page.locator('#crosshair-color').isEnabled());
+    await page.locator('#crosshair-color').fill('#ff33aa');
+    await page.locator('#save-settings').click();
+    await commitUI();
+    await call('dismiss');
+    await wait(250);
+    const originalTint = await measure('original-pointer-tinted'),
+      sourcePointer = (await call('state')).originalPointer;
+    assert(sourcePointer, 'Actual native pointer image must reach preview');
+    const expectedTint = require('../src/crosshair.js').recolor(
+        Buffer.from(sourcePointer.rgba, 'base64'),
+        '#ff33aa'
+      ),
+      nativeTint = Buffer.from(originalTint.crosshair.pixels, 'base64');
+    assert.equal(nativeTint.length, expectedTint.length);
+    for (let i = 0; i < nativeTint.length; i += 4) {
+      assert.equal(nativeTint[i], expectedTint[i + 2]);
+      assert.equal(nativeTint[i + 1], expectedTint[i + 1]);
+      assert.equal(nativeTint[i + 2], expectedTint[i]);
+      assert.equal(nativeTint[i + 3], expectedTint[i + 3]);
+    }
+    await call('settings');
+    await section('Crosshair');
+    await page.screenshot({ path: path.join(out, 'settings-original-recolored.png') });
+    await call('dismiss');
+    await command({
+      type: 'test-input',
+      input: { type: 'mouseMove', x: Math.round(100 * scale), y: Math.round(220 * scale) },
+    });
+    await wait(150);
+    assert.equal((await measure('original-pointer-text')).crosshair.eligible, false);
+    await command({
+      type: 'test-input',
+      input: { type: 'mouseMove', x: Math.round(650 * scale), y: Math.round(230 * scale) },
+    });
+    await wait(350);
+    const customTint = await measure('original-custom-pointer-tinted'),
+      customSource = (await call('state')).originalPointer;
+    assert.equal(customTint.crosshair.cursorType, 'custom');
+    assert.equal(customTint.crosshair.eligible, true);
+    assert.equal(customSource.hotspotX, 3);
+    assert.equal(customSource.hotspotY, 7);
+    const customExpected = require('../src/crosshair.js').recolor(
+        Buffer.from(customSource.rgba, 'base64'),
+        '#ff33aa'
+      ),
+      customActual = Buffer.from(customTint.crosshair.pixels, 'base64');
+    assert.equal(customActual.length, customExpected.length);
+    for (let i = 0; i < customActual.length; i += 4) {
+      assert.equal(customActual[i], customExpected[i + 2]);
+      assert.equal(customActual[i + 1], customExpected[i + 1]);
+      assert.equal(customActual[i + 2], customExpected[i]);
+      assert.equal(customActual[i + 3], customExpected[i + 3]);
+    }
+    checks.push(
+      'Original pointer recoloring matches actual native cursor pixels, retains original hotspot/shape/alpha and leaves text fields native'
+    );
+    await call('settings');
+    const hiddenPointer = await measure('crosshair-settings-hidden');
+    assert.equal(hiddenPointer.visible, false);
+    assert.equal(
+      hiddenPointer.crosshair.active,
+      false,
+      'Settings hides the game and releases its pointer override'
+    );
+    await call('dismiss');
+    await call('save-settings', { crosshair: require('../src/crosshair.js').valid() });
+    checks.push(
+      'Real renderer pointer/text transitions preserve text fields; Settings releases the game cursor; restoring Default clears the custom cursor'
+    );
+    await clickGame(25 * scale, 18 * scale);
+    await until(
+      async () => (await opened()).length === 1,
+      'Clicked external popup handoff missing'
+    );
+    assert.deepEqual(await opened(), ['https://www.paypal.com/donate/?a=1&b=2']);
+    await wait(1100);
+    await clickGame(25 * scale, 68 * scale);
+    await until(
+      async () => (await opened()).length === 2,
+      'Clicked same-window external handoff missing'
+    );
+    assert.equal((await opened())[1], 'https://www.facebook.com/');
+    assert.equal((await call('state')).error, '');
+    await wait(1100);
+    const reloads = fixtureRequests.filter((u) => u === '/').length;
+    await clickGame(25 * scale, 118 * scale);
+    await until(
+      () => fixtureRequests.filter((u) => u === '/').length > reloads,
+      'Game link must reload configured page'
+    );
+    assert(!fixtureRequests.includes('/game-link'), 'Game links must not replace the game page');
+    assert.equal((await measure('after-links')).windows, 1);
+    assert.equal((await opened()).length, 2, 'Reload must not forward its unsolicited popup');
+    checks.push(
+      'Clicked HTML popup/self links hand off exact web URLs; game links reload; unsolicited popups stay blocked; no OS browser launched'
+    );
+    const characterReloads = fixtureRequests.filter((u) => u === '/').length;
+    await call('save-settings', { gameURL: fixture + 'pending-server' });
     await page.locator('#change-character').click();
-    await until(()=>fixtureRequests.filter(u=>u==='/').length>characterReloads,'Change Character must reload the active game');
-    await until(async()=>!(await call('state')).loading,'Character reload must finish');
-    assert.equal((await call('state')).gameURL,fixture);assert(!fixtureRequests.includes('/pending-server'),'Change Character must not switch to a pending server URL');
-    await call('save-settings',{gameURL:fixture});
-    checks.push('Actual Change Character button reloads the current origin without changing profile, preferences or pending server');
-    if(privateDesktop){
-      const actuals=[];
-      console.log('Fixture audio state',JSON.stringify((await call('state')).audio));
-      await until(async()=> (await call('state')).audio?.sessions?.length,'Silent fixture must create a real game audio session');
-      for(const volume of [0,1,37,100]){
-        await call('save-settings',{volume});const audio=await until(async()=>{const a=(await call('state')).audio;return a?.requested===volume&&a.sessions.length&&a.sessions.every(s=>Math.abs(s.volume-volume/100)<.0001)?a:null},'Actual game audio session volume did not change');actuals.push(audio);
+    await until(
+      () => fixtureRequests.filter((u) => u === '/').length > characterReloads,
+      'Change Character must reload the active game'
+    );
+    await until(async () => !(await call('state')).loading, 'Character reload must finish');
+    assert.equal((await call('state')).gameURL, fixture);
+    assert(
+      !fixtureRequests.includes('/pending-server'),
+      'Change Character must not switch to a pending server URL'
+    );
+    await call('save-settings', { gameURL: fixture });
+    checks.push(
+      'Actual Change Character button reloads the current origin without changing profile, preferences or pending server'
+    );
+    if (privateDesktop) {
+      const actuals = [];
+      console.log('Fixture audio state', JSON.stringify((await call('state')).audio));
+      await until(
+        async () => (await call('state')).audio?.sessions?.length,
+        'Silent fixture must create a real game audio session'
+      );
+      for (const volume of [0, 1, 37, 100]) {
+        await call('save-settings', { volume });
+        const audio = await until(async () => {
+          const a = (await call('state')).audio;
+          return a?.requested === volume &&
+            a.sessions.length &&
+            a.sessions.every((s) => Math.abs(s.volume - volume / 100) < 0.0001)
+            ? a
+            : null;
+        }, 'Actual game audio session volume did not change');
+        actuals.push(audio);
       }
-      fs.writeFileSync(path.join(out,'audio-results.json'),JSON.stringify(actuals,null,2));checks.push('Windows audio sessions read back actual 0/1/37/100 attenuation on silent game-process fixture');
+      fs.writeFileSync(path.join(out, 'audio-results.json'), JSON.stringify(actuals, null, 2));
+      checks.push(
+        'Windows audio sessions read back actual 0/1/37/100 attenuation on silent game-process fixture'
+      );
     }
     checks.push('Invalid URL rejected; saved local URL is applied only by explicit reconnect');
-    if(fs.existsSync(path.join(root,'.test-tools/focus/link-probe.swf'))){
-      const flashURL=fixture+'flash-links';await call('save-settings',{gameURL:flashURL});await call('restart-game');await wait(2000);
-      const flash=await measure('flash-link-fixture');assert(flash.geometry.rect,'Flash link fixture must load');
+    if (fs.existsSync(path.join(root, '.test-tools/focus/link-probe.swf'))) {
+      const flashURL = fixture + 'flash-links';
+      await call('save-settings', { gameURL: flashURL });
+      await call('restart-game');
+      await wait(2000);
+      const flash = await measure('flash-link-fixture');
+      assert(flash.geometry.rect, 'Flash link fixture must load');
       // The probe uses actual Flash navigateToURL from MouseUp, not HTML links.
-      await clickGame(80*flash.scale,50*flash.scale);await until(async()=> (await opened()).length===3,'Flash external link handoff missing');assert.equal((await opened())[2],'https://www.paypal.com/donate/?from=flash');
-      await wait(1100);const count=fixtureRequests.filter(u=>u==='/flash-links').length;
-      await clickGame(260*flash.scale,50*flash.scale);await until(()=>fixtureRequests.filter(u=>u==='/flash-links').length>count,'Flash game link must reload');
-      assert(!fixtureRequests.includes('/flash-links/other'));assert.equal((await measure('flash-after-links')).windows,1);
-      await wait(1100);const rankingReloads=fixtureRequests.filter(u=>u==='/flash-links').length;
-      await clickGame(440*flash.scale,50*flash.scale);await until(async()=> (await opened()).length===4,'Flash legacy rankings browser handoff missing');
-      assert.equal((await opened())[3],'https://dungeonblitz.theminesa.studio/rankings/?level=Temple%20of%20Umbra&mode=heroic');
-      await wait(1100);await clickGame(620*flash.scale,50*flash.scale);await until(async()=> (await opened()).length===5,'Flash current-site rankings browser handoff missing');
-      assert.equal((await opened())[4],'https://dungeonblitz.theminesa.studio/rankings/');
-      await wait(200);assert.equal(fixtureRequests.filter(u=>u==='/flash-links').length,rankingReloads,'Rankings must leave the running game untouched');
-      assert.equal((await measure('flash-after-rankings')).windows,1);
-      checks.push('Flash Rankings clicks on legacy and current-site URLs hand off the official HTTPS rankings URL with level parameters, without reloading the game');
-      checks.push('Original Flash MouseUp/navigateToURL opens external URL and reloads game URL, without creating popup windows');
+      await clickGame(80 * flash.scale, 50 * flash.scale);
+      await until(async () => (await opened()).length === 3, 'Flash external link handoff missing');
+      assert.equal((await opened())[2], 'https://www.paypal.com/donate/?from=flash');
+      await wait(1100);
+      const count = fixtureRequests.filter((u) => u === '/flash-links').length;
+      await clickGame(260 * flash.scale, 50 * flash.scale);
+      await until(
+        () => fixtureRequests.filter((u) => u === '/flash-links').length > count,
+        'Flash game link must reload'
+      );
+      assert(!fixtureRequests.includes('/flash-links/other'));
+      assert.equal((await measure('flash-after-links')).windows, 1);
+      await wait(1100);
+      const rankingReloads = fixtureRequests.filter((u) => u === '/flash-links').length;
+      await clickGame(440 * flash.scale, 50 * flash.scale);
+      await until(
+        async () => (await opened()).length === 4,
+        'Flash legacy rankings browser handoff missing'
+      );
+      assert.equal(
+        (await opened())[3],
+        'https://dungeonblitz.theminesa.studio/rankings/?level=Temple%20of%20Umbra&mode=heroic'
+      );
+      await wait(1100);
+      await clickGame(620 * flash.scale, 50 * flash.scale);
+      await until(
+        async () => (await opened()).length === 5,
+        'Flash current-site rankings browser handoff missing'
+      );
+      assert.equal((await opened())[4], 'https://dungeonblitz.theminesa.studio/rankings/');
+      await wait(200);
+      assert.equal(
+        fixtureRequests.filter((u) => u === '/flash-links').length,
+        rankingReloads,
+        'Rankings must leave the running game untouched'
+      );
+      assert.equal((await measure('flash-after-rankings')).windows, 1);
+      checks.push(
+        'Flash Rankings clicks on legacy and current-site URLs hand off the official HTTPS rankings URL with level parameters, without reloading the game'
+      );
+      checks.push(
+        'Original Flash MouseUp/navigateToURL opens external URL and reloads game URL, without creating popup windows'
+      );
     }
-    await call('save-settings',{gameURL:fixture+'audio-fixture'});await call('restart-game');await wait(2000);await command({type:'test-audio-fixture'});await wait(500);
-    const mixChecks=[];
-    for(const bus of ['player','music','environment','creatures'])for(const value of [0,1,37,100]){
-      const mix={player:100,music:100,environment:100,creatures:100};mix[bus]=value;await call('save-settings',{audioMix:mix});
-      const probe=await until(async()=>{const p=(await measure('silent-audio-readback')).audioProbe;return p&&p.samples.length===4&&p.samples.every(s=>Math.abs(s.volume-(s.bus==='music'?.8:1)*mix[s.bus]/100)<.010001)?p:null},'Flash category gains must match actual independent SoundChannel volumes within native 1% quantization');
-      assert.equal(probe.contextDepth,0,'Emitter context must not leak');mixChecks.push({bus,value,probe});
-    }
-    fs.writeFileSync(path.join(out,'mixer-results.json'),JSON.stringify(mixChecks,null,2));checks.push('16 silent Flash mixer readbacks prove independent bus gains, zero/unmute, active loops and uncompounded stream fade gain');
-    if(privateDesktop){
-      await call('save-settings',{gameURL:fixture+'shortcuts',shiftMount:false,unlockKey:'AltLeft'});await call('restart-game');await wait(2000);
-      const control=async value=>{await command({type:'test-shortcut-control',value});await wait(100);};
-      const key=async(keyCode,modifiers=[])=>{for(const type of ['keyDown','keyUp'])await command({type:'test-input',input:{type,keyCode,modifiers}});await wait(250);};
-      const probe=async()=>(await measure('shortcut-keys')).geometry.inputProbe;
-      await until(async()=>{const p=await probe();if(p?.error)throw Error('Shortcut fixture '+p.phase+': '+p.error);return p?.phase==='ready';},'Real key manager fixture must initialize');await command({type:'test-shortcut-fixture'});await wait(200);
-      await clickGame(600,300);await wait(200);
-      await control('play');assert.equal((await probe()).key,56,'Actual reviewed client defaults Mount to 8');assert.equal((await probe()).mountCommand,12);
-      await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,'Disabled alias must do nothing');
-      await call('settings');await section('Controls');const checkbox=page.locator('#shift-mount');await checkbox.check();await commitUI();await until(async()=>(await call('state')).settings.shiftMount,'Mount checkbox saves');
-      assert.equal(JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'))).settings.shiftMount,true);
-      assert.equal((await call('save-settings',{shiftMount:'yes'})).ok,false);assert.equal((await call('save-settings',{unlockKey:'ShiftLeft'})).ok,false,'Shortcut conflict must be explained');
-      await call('dismiss');await wait(500);await control('play');await key('Shift',['left']);
-      let p=await probe();assert.deepEqual(p.events.filter(e=>e.command===12).map(e=>[e.type,e.code]),[['keyDown',56],['keyUp',56]],'Left Shift sends exactly one paired current mount key');
-      await control('rebind');await key('Shift',['left']);p=await probe();assert.deepEqual(p.events.filter(e=>e.command===12).map(e=>[e.type,e.code]),[['keyDown',81],['keyUp',81]],'Alias follows actual in-game rebind to Q');
-      await control('play');await key('8');assert.equal((await probe()).events.filter(e=>e.command===12&&e.type==='keyDown').length,1,'Original mount key still works');
-      for(const mode of ['login','capture','unbound','typing']){await control(mode);await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,mode+' must not mount');}
-      await command({type:'test-input',input:{type:'char',keyCode:'A'}});await wait(200);assert.equal((await probe()).text,'A','Typing stays available');
+    await call('save-settings', { gameURL: fixture + 'audio-fixture' });
+    await call('restart-game');
+    await wait(2000);
+    await command({ type: 'test-audio-fixture' });
+    await wait(500);
+    const mixChecks = [];
+    for (const bus of ['player', 'music', 'environment', 'creatures'])
+      for (const value of [0, 1, 37, 100]) {
+        const mix = { player: 100, music: 100, environment: 100, creatures: 100 };
+        mix[bus] = value;
+        await call('save-settings', { audioMix: mix });
+        const probe = await until(async () => {
+          const p = (await measure('silent-audio-readback')).audioProbe;
+          return p &&
+            p.samples.length === 4 &&
+            p.samples.every(
+              (s) =>
+                Math.abs(s.volume - ((s.bus === 'music' ? 0.8 : 1) * mix[s.bus]) / 100) < 0.010001
+            )
+            ? p
+            : null;
+        }, 'Flash category gains must match actual independent SoundChannel volumes within native 1% quantization');
+        assert.equal(probe.contextDepth, 0, 'Emitter context must not leak');
+        mixChecks.push({ bus, value, probe });
+      }
+    fs.writeFileSync(path.join(out, 'mixer-results.json'), JSON.stringify(mixChecks, null, 2));
+    checks.push(
+      '16 silent Flash mixer readbacks prove independent bus gains, zero/unmute, active loops and uncompounded stream fade gain'
+    );
+    if (privateDesktop) {
+      await call('save-settings', {
+        gameURL: fixture + 'shortcuts',
+        shiftMount: false,
+        unlockKey: 'AltLeft',
+      });
+      await call('restart-game');
+      await wait(2000);
+      const control = async (value) => {
+        await command({ type: 'test-shortcut-control', value });
+        await wait(100);
+      };
+      const key = async (keyCode, modifiers = []) => {
+        for (const type of ['keyDown', 'keyUp'])
+          await command({ type: 'test-input', input: { type, keyCode, modifiers } });
+        await wait(250);
+      };
+      const probe = async () => (await measure('shortcut-keys')).geometry.inputProbe;
+      await until(async () => {
+        const p = await probe();
+        if (p?.error) throw Error('Shortcut fixture ' + p.phase + ': ' + p.error);
+        return p?.phase === 'ready';
+      }, 'Real key manager fixture must initialize');
+      await command({ type: 'test-shortcut-fixture' });
+      await wait(200);
+      await clickGame(600, 300);
+      await wait(200);
+      await control('play');
+      assert.equal((await probe()).key, 56, 'Actual reviewed client defaults Mount to 8');
+      assert.equal((await probe()).mountCommand, 12);
+      await key('Shift', ['left']);
+      assert.equal(
+        (await probe()).events.filter((e) => e.command === 12).length,
+        0,
+        'Disabled alias must do nothing'
+      );
+      await call('settings');
+      await section('Controls');
+      const checkbox = page.locator('#shift-mount');
+      await checkbox.check();
+      await commitUI();
+      await until(async () => (await call('state')).settings.shiftMount, 'Mount checkbox saves');
+      assert.equal(
+        JSON.parse(fs.readFileSync(path.join(root, '.test-profile/preferences.json'))).settings
+          .shiftMount,
+        true
+      );
+      assert.equal((await call('save-settings', { shiftMount: 'yes' })).ok, false);
+      assert.equal(
+        (await call('save-settings', { unlockKey: 'ShiftLeft' })).ok,
+        false,
+        'Shortcut conflict must be explained'
+      );
+      await call('dismiss');
+      await wait(500);
+      await control('play');
+      await key('Shift', ['left']);
+      let p = await probe();
+      assert.deepEqual(
+        p.events.filter((e) => e.command === 12).map((e) => [e.type, e.code]),
+        [
+          ['keyDown', 56],
+          ['keyUp', 56],
+        ],
+        'Left Shift sends exactly one paired current mount key'
+      );
+      await control('rebind');
+      await key('Shift', ['left']);
+      p = await probe();
+      assert.deepEqual(
+        p.events.filter((e) => e.command === 12).map((e) => [e.type, e.code]),
+        [
+          ['keyDown', 81],
+          ['keyUp', 81],
+        ],
+        'Alias follows actual in-game rebind to Q'
+      );
+      await control('play');
+      await key('8');
+      assert.equal(
+        (await probe()).events.filter((e) => e.command === 12 && e.type === 'keyDown').length,
+        1,
+        'Original mount key still works'
+      );
+      for (const mode of ['login', 'capture', 'unbound', 'typing']) {
+        await control(mode);
+        await key('Shift', ['left']);
+        assert.equal(
+          (await probe()).events.filter((e) => e.command === 12).length,
+          0,
+          mode + ' must not mount'
+        );
+      }
+      await command({ type: 'test-input', input: { type: 'char', keyCode: 'A' } });
+      await wait(200);
+      assert.equal((await probe()).text, 'A', 'Typing stays available');
       // Electron 11 sendInputEvent derives dom_code solely from generic Shift;
       // even modifiers:['right'] produces ShiftLeft. Right-side filtering is
       // covered by the pure production-policy test, without physical OS input.
       await control('play');
-      await key('Shift',['left','control']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0,'Shift chord must not mount');
-      await control('play');for(let i=0;i<4;i++)await command({type:'test-input',input:{type:'keyDown',keyCode:'Shift',modifiers:['left']}});await wait(400);
-      await command({type:'test-input',input:{type:'keyUp',keyCode:'Shift',modifiers:['left']}});assert.equal((await probe()).events.filter(e=>e.command===12&&e.type==='keyDown').length,1,'Held Shift cannot repeat mounting');
-      await control('menu');await call('fullscreen');await wait(400);await key('Escape');assert.equal((await call('state')).fullscreen,true);assert.equal((await probe()).panel,false,'Escape must reach Flash stage to close its panel');
-      await call('exit-fullscreen');await call('settings');await checkbox.uncheck();await commitUI();await until(async()=>!(await call('state')).settings.shiftMount,'Mount opt-out saves');await call('dismiss');await wait(400);await control('play');await key('Shift',['left']);assert.equal((await probe()).events.filter(e=>e.command===12).length,0);
-      checks.push('Real Flash stage Esc remains fullscreen; actual reviewed key manager and new helper prove opt-in Left Shift/current mount rebind, one paired event, original key, typing/login/capture/unbound/chord guards and saved checkbox; right-side filtering separately unit-tested');
-      const run=async()=>{await command({type:'test-autorun-key',value:'keyDown'});await command({type:'test-autorun-key',value:'keyUp'});await wait(180);};
-      await call('save-settings',{autorun:true});
-      await call('dismiss');await wait(400);await clickGame(600,300);await wait(250);
-      fs.writeFileSync(path.join(out,'autorun-start-state.json'),JSON.stringify(await call('state'),null,2));
-      assert((await measure('autorun-start')).visible,'Autorun test needs a visible game');
-      for(const [mode,expected] of [['run-play',39],['left',37],['run-rebind',68]]){
-       await control(mode);await run();let events=(await probe()).events;const pressed=events.filter(e=>e.type==='keyDown'&&e.command===(mode==='left'?1:2));assert.equal(pressed.length,1,'Autorun reads facing/current movement command');const held=pressed[0].code;assert.equal(events.filter(e=>e.type==='keyUp'&&e.code===held).length,0,'Movement stays held');
-       await run();events=(await probe()).events;assert.equal(events.filter(e=>e.type==='keyUp'&&e.code===held).length,1,'Second Ö releases the exact held key');
+      await key('Shift', ['left', 'control']);
+      assert.equal(
+        (await probe()).events.filter((e) => e.command === 12).length,
+        0,
+        'Shift chord must not mount'
+      );
+      await control('play');
+      for (let i = 0; i < 4; i++)
+        await command({
+          type: 'test-input',
+          input: { type: 'keyDown', keyCode: 'Shift', modifiers: ['left'] },
+        });
+      await wait(400);
+      await command({
+        type: 'test-input',
+        input: { type: 'keyUp', keyCode: 'Shift', modifiers: ['left'] },
+      });
+      assert.equal(
+        (await probe()).events.filter((e) => e.command === 12 && e.type === 'keyDown').length,
+        1,
+        'Held Shift cannot repeat mounting'
+      );
+      await control('menu');
+      await call('fullscreen');
+      await wait(400);
+      await key('Escape');
+      assert.equal((await call('state')).fullscreen, true);
+      assert.equal(
+        (await probe()).panel,
+        false,
+        'Escape must reach Flash stage to close its panel'
+      );
+      await call('exit-fullscreen');
+      await call('settings');
+      await checkbox.uncheck();
+      await commitUI();
+      await until(async () => !(await call('state')).settings.shiftMount, 'Mount opt-out saves');
+      await call('dismiss');
+      await wait(400);
+      await control('play');
+      await key('Shift', ['left']);
+      assert.equal((await probe()).events.filter((e) => e.command === 12).length, 0);
+      checks.push(
+        'Real Flash stage Esc remains fullscreen; actual reviewed key manager and new helper prove opt-in Left Shift/current mount rebind, one paired event, original key, typing/login/capture/unbound/chord guards and saved checkbox; right-side filtering separately unit-tested'
+      );
+      const run = async () => {
+        await command({ type: 'test-autorun-key', value: 'keyDown' });
+        await command({ type: 'test-autorun-key', value: 'keyUp' });
+        await wait(180);
+      };
+      await call('save-settings', { autorun: true });
+      await call('dismiss');
+      await wait(400);
+      await clickGame(600, 300);
+      await wait(250);
+      fs.writeFileSync(
+        path.join(out, 'autorun-start-state.json'),
+        JSON.stringify(await call('state'), null, 2)
+      );
+      assert((await measure('autorun-start')).visible, 'Autorun test needs a visible game');
+      for (const [mode, expected] of [
+        ['run-play', 39],
+        ['left', 37],
+        ['run-rebind', 68],
+      ]) {
+        await control(mode);
+        await run();
+        let events = (await probe()).events;
+        const pressed = events.filter(
+          (e) => e.type === 'keyDown' && e.command === (mode === 'left' ? 1 : 2)
+        );
+        assert.equal(pressed.length, 1, 'Autorun reads facing/current movement command');
+        const held = pressed[0].code;
+        assert.equal(
+          events.filter((e) => e.type === 'keyUp' && e.code === held).length,
+          0,
+          'Movement stays held'
+        );
+        await run();
+        events = (await probe()).events;
+        assert.equal(
+          events.filter((e) => e.type === 'keyUp' && e.code === held).length,
+          1,
+          'Second Ö releases the exact held key'
+        );
       }
-      for(const mode of ['login','typing','capture','run-map']){await control(mode);await run();assert.equal((await probe()).events.filter(e=>[37,39,68].includes(e.code)).length,0,mode+' must not autorun');}
-      await control('run-play');await run();await key('Left');assert((await probe()).events.some(e=>e.type==='keyUp'&&e.code===39),'Manual direction stops autorun before native movement');
-      await control('run-play');await run();await call('settings');await wait(250);assert((await probe()).events.some(e=>e.type==='keyUp'&&e.code===39),'Opening Settings releases the held movement');await call('dismiss');await wait(250);
-      await control('run-play');await call('save-settings',{autorun:false});await run();assert.equal((await probe()).events.filter(e=>e.code===39).length,0,'Disabled autorun leaves Ö alone');await call('save-settings',{autorun:true});
-      checks.push('Ö autorun uses actual facing and current native movement bindings; toggle/manual movement/Settings release paired input; typing, login, key capture, map and disabled cases do nothing; alias text/repeat/chord policy separately unit-tested');
+      for (const mode of ['login', 'typing', 'capture', 'run-map']) {
+        await control(mode);
+        await run();
+        assert.equal(
+          (await probe()).events.filter((e) => [37, 39, 68].includes(e.code)).length,
+          0,
+          mode + ' must not autorun'
+        );
+      }
+      await control('run-play');
+      await run();
+      await key('Left');
+      assert(
+        (await probe()).events.some((e) => e.type === 'keyUp' && e.code === 39),
+        'Manual direction stops autorun before native movement'
+      );
+      await control('run-play');
+      await run();
+      await call('settings');
+      await wait(250);
+      assert(
+        (await probe()).events.some((e) => e.type === 'keyUp' && e.code === 39),
+        'Opening Settings releases the held movement'
+      );
+      await call('dismiss');
+      await wait(250);
+      await control('run-play');
+      await call('save-settings', { autorun: false });
+      await run();
+      assert.equal(
+        (await probe()).events.filter((e) => e.code === 39).length,
+        0,
+        'Disabled autorun leaves Ö alone'
+      );
+      await call('save-settings', { autorun: true });
+      checks.push(
+        'Ö autorun uses actual facing and current native movement bindings; toggle/manual movement/Settings release paired input; typing, login, key capture, map and disabled cases do nothing; alias text/repeat/chord policy separately unit-tested'
+      );
     }
-    await call('save-settings',{gameURL:LIVE,volume:100,cursorLock:false,unlockKey:'AltLeft',gameZoom:1,shiftMount:false});
-    const stored=JSON.parse(fs.readFileSync(path.join(root,'.test-profile/preferences.json'),'utf8'));assert.equal(stored.settings.volume,100);assert(!stored.tabs&&!stored.history);
-    fs.writeFileSync(path.join(out,privateDesktop?'native-results.json':'hidden-results.json'),JSON.stringify({time:new Date().toISOString(),version:(await call('state')).version,checks,live,full,limitation:'No desktop mouse/keyboard events or clipboard used. Cursor confinement is dry-run; its real state machine and native settings/key routing are tested without calling ClipCursor. The inactive desktop has no Explorer; taskbar visibility and authenticated dungeon play are not verified.'},null,2));
-    for(const check of checks)console.log('PASS',check);
-  }finally{await app.evaluate(()=>global.__blitzTest.shutdown()).catch(()=>{});await app.close().catch(()=>{});await new Promise(r=>server.close(r));}
-})().catch(e=>{console.error(e);process.exitCode=1});
+    await call('save-settings', {
+      gameURL: LIVE,
+      volume: 100,
+      cursorLock: false,
+      unlockKey: 'AltLeft',
+      gameZoom: 1,
+      shiftMount: false,
+    });
+    const stored = JSON.parse(
+      fs.readFileSync(path.join(root, '.test-profile/preferences.json'), 'utf8')
+    );
+    assert.equal(stored.settings.volume, 100);
+    assert(!stored.tabs && !stored.history);
+    fs.writeFileSync(
+      path.join(out, privateDesktop ? 'native-results.json' : 'hidden-results.json'),
+      JSON.stringify(
+        {
+          time: new Date().toISOString(),
+          version: (await call('state')).version,
+          checks,
+          live,
+          full,
+          limitation:
+            'No desktop mouse/keyboard events or clipboard used. Cursor confinement is dry-run; its real state machine and native settings/key routing are tested without calling ClipCursor. The inactive desktop has no Explorer; taskbar visibility and authenticated dungeon play are not verified.',
+        },
+        null,
+        2
+      )
+    );
+    for (const check of checks) console.log('PASS', check);
+  } finally {
+    await app.evaluate(() => global.__blitzTest.shutdown()).catch(() => {});
+    await app.close().catch(() => {});
+    await new Promise((r) => server.close(r));
+  }
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

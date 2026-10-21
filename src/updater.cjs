@@ -1,70 +1,379 @@
 'use strict';
-const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{EventEmitter}=require('node:events'),{execFile,spawn}=require('node:child_process');
+const fs = require('node:fs'),
+  path = require('node:path'),
+  crypto = require('node:crypto'),
+  { EventEmitter } = require('node:events'),
+  { execFile, spawn } = require('node:child_process');
 // Electron's normal fs presents .asar files as virtual directories. Update
 // payloads must be hashed, enumerated and removed as physical signed files.
 // Keep normal fs only for the pinned key bundled inside this app's own ASAR.
-const disk=process.versions.electron?require('original-fs'):fs;
-const {REPO,newer,verifyManifest,releaseAsset,allowedDownload}=require('./update-policy.cjs');
-async function response(url,signal,maxRedirects=4){
- if(!allowedDownload(url))throw Error('Update download origin rejected');
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),120000);
- try{const res=await fetch(url,{redirect:'manual',signal:signal?AbortSignal.any([signal,controller.signal]):controller.signal,headers:{'User-Agent':'DungeonBlitzLauncher-updates','Accept':'application/json'}});
-  if(res.status>=300&&res.status<400){await res.body?.cancel();clearTimeout(timer);if(!maxRedirects)throw Error('Too many update redirects');return response(new URL(res.headers.get('location'),url).href,signal,maxRedirects-1);}
-  if(!res.ok){await res.body?.cancel();throw Error(`GitHub update request failed (${res.status})`);}return {res,finish:()=>clearTimeout(timer)};
- }catch(e){clearTimeout(timer);throw e;}
+const disk = process.versions.electron ? require('original-fs') : fs;
+const {
+  REPO,
+  newer,
+  verifyManifest,
+  releaseAsset,
+  allowedDownload,
+} = require('./update-policy.cjs');
+async function response(url, signal, maxRedirects = 4) {
+  if (!allowedDownload(url)) throw Error('Update download origin rejected');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120000);
+  try {
+    const res = await fetch(url, {
+      redirect: 'manual',
+      signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal,
+      headers: { 'User-Agent': 'DungeonBlitzLauncher-updates', 'Accept': 'application/json' },
+    });
+    if (res.status >= 300 && res.status < 400) {
+      await res.body?.cancel();
+      clearTimeout(timer);
+      if (!maxRedirects) throw Error('Too many update redirects');
+      return response(new URL(res.headers.get('location'), url).href, signal, maxRedirects - 1);
+    }
+    if (!res.ok) {
+      await res.body?.cancel();
+      throw Error(`GitHub update request failed (${res.status})`);
+    }
+    return { res, finish: () => clearTimeout(timer) };
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
 }
-async function json(url,limit,signal){const {res,finish}=await response(url,signal);try{const chunks=[];let size=0;for await(const chunk of res.body){size+=chunk.length;if(size>limit)throw Error('Update response too large');chunks.push(Buffer.from(chunk));}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}finally{finish();}}
-async function verifyFiles(root,manifest,signal,progress=()=>{}){
- const expected=new Map(manifest.files.map(file=>[file.path,file]));let count=0;
- async function walk(relative=''){for(const entry of await disk.promises.readdir(path.join(root,relative),{withFileTypes:true})){signal?.throwIfAborted();const name=relative?relative+'/'+entry.name:entry.name,file=path.join(root,name);if(entry.isSymbolicLink())throw Error('Update links rejected');if(entry.isDirectory())await walk(name);else{const item=expected.get(name),stat=await disk.promises.lstat(file);if(!item||!stat.isFile()||stat.size!==item.size)throw Error('Extracted update mismatch');const hash=crypto.createHash('sha256');let size=0;for await(const chunk of disk.createReadStream(file,{signal})){signal?.throwIfAborted();size+=chunk.length;if(size>item.size)throw Error('Extracted update grew during verification');hash.update(chunk);}if(size!==item.size||hash.digest('hex')!==item.sha256)throw Error('Extracted update mismatch');count++;progress(count,manifest.files.length);}}}
- await walk();if(count!==manifest.files.length)throw Error('Incomplete extracted update');
+async function json(url, limit, signal) {
+  const { res, finish } = await response(url, signal);
+  try {
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of res.body) {
+      size += chunk.length;
+      if (size > limit) throw Error('Update response too large');
+      chunks.push(Buffer.from(chunk));
+    }
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } finally {
+    finish();
+  }
+}
+async function verifyFiles(root, manifest, signal, progress = () => {}) {
+  const expected = new Map(manifest.files.map((file) => [file.path, file]));
+  let count = 0;
+  async function walk(relative = '') {
+    for (const entry of await disk.promises.readdir(path.join(root, relative), {
+      withFileTypes: true,
+    })) {
+      signal?.throwIfAborted();
+      const name = relative ? relative + '/' + entry.name : entry.name,
+        file = path.join(root, name);
+      if (entry.isSymbolicLink()) throw Error('Update links rejected');
+      if (entry.isDirectory()) await walk(name);
+      else {
+        const item = expected.get(name),
+          stat = await disk.promises.lstat(file);
+        if (!item || !stat.isFile() || stat.size !== item.size)
+          throw Error('Extracted update mismatch');
+        const hash = crypto.createHash('sha256');
+        let size = 0;
+        for await (const chunk of disk.createReadStream(file, { signal })) {
+          signal?.throwIfAborted();
+          size += chunk.length;
+          if (size > item.size) throw Error('Extracted update grew during verification');
+          hash.update(chunk);
+        }
+        if (size !== item.size || hash.digest('hex') !== item.sha256)
+          throw Error('Extracted update mismatch');
+        count++;
+        progress(count, manifest.files.length);
+      }
+    }
+  }
+  await walk();
+  if (count !== manifest.files.length) throw Error('Incomplete extracted update');
 }
 class Updater extends EventEmitter {
- constructor({current,cache,installRoot,helper,enabled=true,publicKey,waitPids=()=>[]}){super();this.current=current;this.cache=cache;this.installRoot=installRoot;this.helper=helper;this.enabled=enabled;this.waitPids=waitPids;this.publicKey=publicKey||fs.readFileSync(path.join(__dirname,'update-key.pem'));this.status={phase:'idle',version:'',percent:0,error:''};this.busy=false;}
- publish(patch){Object.assign(this.status,patch);this.emit('state');}
- start(){this.stop(false);void this.refreshPrevious();if(this.enabled){this.first=setTimeout(()=>void this.check(),10000);this.first.unref();this.timer=setInterval(()=>void this.check(),6*60*60*1000);this.timer.unref();}}
- async refreshPrevious(){
-  try{const version=await new Promise((resolve,reject)=>execFile(this.helper,['previous',this.installRoot],{windowsHide:true,timeout:10000},(error,out)=>error?reject(error):resolve(out.trim())));if(!/^\d{1,5}\.\d{1,5}\.\d{1,5}$/.test(version)||version===this.current)throw Error('No distinct previous version');this.publish({previousVersion:version,rollbackError:''});}
-  catch{this.publish({previousVersion:'',rollbackError:''});}
- }
- async prepareRollback(){
-  if(this.busy)throw Error('Wait for the current update operation to finish.');
-  this.busy=true;this.stop();this.controller=new AbortController();const signal=AbortSignal.any([this.controller.signal,AbortSignal.timeout(120000)]);let dir;
-  try{
-   await this.refreshPrevious();const version=this.status.previousVersion;if(!version)throw Error('No complete previous launcher is saved.');
-   this.publish({phase:'rollback',rollbackError:'',percent:0});
-   const envelope=await json(releaseAsset(version,`Dungeon-Blitz-Launcher-${version}-update.json`),6000000,signal);
-   disk.mkdirSync(this.cache,{recursive:true});dir=disk.mkdtempSync(path.join(this.cache,'rollback-'));
-   await new Promise((resolve,reject)=>execFile(this.helper,['protect',dir],{windowsHide:true,timeout:10000},e=>e?reject(e):resolve()));
-   const source=path.join(dir,'files');const manifest=await require('./rollback.cjs').stagePrevious({envelope,key:this.publicKey,version,current:this.current,root:this.installRoot,stage:source,signal,progress:(n,total)=>this.publish({percent:Math.floor(100*n/total)})});
-   disk.writeFileSync(path.join(dir,'install.json'),JSON.stringify({version,source,destination:this.installRoot,pid:process.pid,files:manifest.files}));
-   this.stage=dir;this.publish({phase:'rollback-ready',version,percent:100});return true;
-  }catch(e){if(dir&&path.dirname(path.resolve(dir))===path.resolve(this.cache)&&/^rollback-[A-Za-z0-9]+$/.test(path.basename(dir)))await disk.promises.rm(dir,{recursive:true,force:true});this.publish({phase:'error',rollbackError:String(e.message).slice(0,200)});throw e;}
-  finally{this.busy=false;this.controller=null;}
- }
- stop(cancel=true){clearTimeout(this.first);clearInterval(this.timer);if(cancel)this.controller?.abort();}
- checkForClientUpdate(){
-  // One extra automatic check per launcher session. Remote game reloads must
-  // not produce repeated GitHub requests or override the automatic-update opt-out.
-  if(!this.enabled||this.clientUpdateChecked)return;
-  this.clientUpdateChecked=true;clearTimeout(this.first);return this.check();
- }
- async check(){if(this.busy||this.status.phase==='ready')return;this.busy=true;this.controller=new AbortController();const signal=this.controller.signal;this.publish({phase:'checking',error:''});
-  try{const release=await json(`https://api.github.com/repos/${REPO}/releases/latest`,2000000,signal);if(release.draft||release.prerelease||!/^v\d+\.\d+\.\d+$/.test(release.tag_name))throw Error('Invalid GitHub release');const next=release.tag_name.slice(1);
-   if(!newer(next,this.current)){this.publish({phase:'current'});return;}
-   const name=`Dungeon-Blitz-Launcher-${next}-update.json`;if(!release.assets?.some(asset=>asset.name===name))throw Error('Latest release has no signed update; use its manual download');
-   const manifest=verifyManifest(await json(releaseAsset(next,name),6000000,signal),this.publicKey,this.current);if(manifest.version!==next)throw Error('Release and manifest disagree');
-   await new Promise((resolve,reject)=>execFile(this.helper,['preflight',this.installRoot],{windowsHide:true,timeout:10000},error=>error?reject(Error('Installation folder is not writable. Reinstall for your Windows account, or keep the portable launcher in a writable folder.')):resolve()));
-   disk.mkdirSync(this.cache,{recursive:true});const dir=disk.mkdtempSync(path.join(this.cache,'stage-'));this.stage=dir;const archive=path.join(dir,'payload.zip');
-   await new Promise((resolve,reject)=>execFile(this.helper,['protect',dir],{windowsHide:true,timeout:10000},error=>error?reject(error):resolve()));
-   this.publish({phase:'downloading',version:next,percent:0});const {res,finish}=await response(releaseAsset(next,manifest.zip.name),signal);const file=disk.openSync(archive,'wx');let size=0;const hash=crypto.createHash('sha256');
-   try{for await(const chunk of res.body){size+=chunk.length;if(size>manifest.zip.size)throw Error('Update archive exceeded signed size');disk.writeSync(file,chunk);hash.update(chunk);this.publish({percent:Math.floor(size/manifest.zip.size*100)});}}finally{disk.closeSync(file);finish();}
-   if(size!==manifest.zip.size||hash.digest('hex')!==manifest.zip.sha256)throw Error('Update archive hash mismatch');
-   this.publish({phase:'verifying',percent:0});const extracted=path.join(dir,'files'),verification=AbortSignal.any([signal,AbortSignal.timeout(120000)]);
-   await new Promise((resolve,reject)=>execFile(this.helper,['extract',archive,extracted],{windowsHide:true,timeout:120000,signal:verification},error=>error?reject(error):resolve()));verification.throwIfAborted();await verifyFiles(extracted,manifest,verification,(count,total)=>this.publish({percent:Math.floor(count/total*100)}));
-   disk.writeFileSync(path.join(dir,'install.json'),JSON.stringify({version:next,source:extracted,destination:this.installRoot,pid:process.pid,files:manifest.files}));this.publish({phase:'ready',percent:100});
-  }catch(error){const stage=this.stage;this.stage=null;this.publish({phase:signal.aborted?'idle':'error',error:signal.aborted?'':String(error.message).slice(0,200)});if(stage&&path.dirname(path.resolve(stage))===path.resolve(this.cache)&&/^stage-[A-Za-z0-9]+$/.test(path.basename(stage))){try{await disk.promises.rm(stage,{recursive:true,force:true,maxRetries:3,retryDelay:200});}catch{}}}finally{this.busy=false;this.controller=null;}
- }
- installAfterExit(restart=false,explicitRollback=false){if(this.status.phase!=='ready'&&!(explicitRollback&&this.status.phase==='rollback-ready'))return false;try{const configPath=path.join(this.stage,'install.json'),config=JSON.parse(disk.readFileSync(configPath,'utf8'));config.pids=[...new Set([process.pid,...this.waitPids()].filter(pid=>Number.isInteger(pid)&&pid>0&&pid<=2147483647))];disk.writeFileSync(configPath,JSON.stringify(config));const helper=path.join(this.stage,'UpdateInstaller.exe');disk.copyFileSync(this.helper,helper);const child=spawn(helper,['install',configPath,restart?'restart':'close'],{detached:true,windowsHide:true,stdio:'ignore'});child.on('error',error=>this.publish({phase:'error',error:String(error.message).slice(0,200)}));child.unref();return true;}catch(error){this.publish({phase:'error',error:String(error.message).slice(0,200)});return false;}}
+  constructor({
+    current,
+    cache,
+    installRoot,
+    helper,
+    enabled = true,
+    publicKey,
+    waitPids = () => [],
+  }) {
+    super();
+    this.current = current;
+    this.cache = cache;
+    this.installRoot = installRoot;
+    this.helper = helper;
+    this.enabled = enabled;
+    this.waitPids = waitPids;
+    this.publicKey = publicKey || fs.readFileSync(path.join(__dirname, 'update-key.pem'));
+    this.status = { phase: 'idle', version: '', percent: 0, error: '' };
+    this.busy = false;
+  }
+  publish(patch) {
+    Object.assign(this.status, patch);
+    this.emit('state');
+  }
+  start() {
+    this.stop(false);
+    void this.refreshPrevious();
+    if (this.enabled) {
+      this.first = setTimeout(() => void this.check(), 10000);
+      this.first.unref();
+      this.timer = setInterval(() => void this.check(), 6 * 60 * 60 * 1000);
+      this.timer.unref();
+    }
+  }
+  async refreshPrevious() {
+    try {
+      const version = await new Promise((resolve, reject) =>
+        execFile(
+          this.helper,
+          ['previous', this.installRoot],
+          { windowsHide: true, timeout: 10000 },
+          (error, out) => (error ? reject(error) : resolve(out.trim()))
+        )
+      );
+      if (!/^\d{1,5}\.\d{1,5}\.\d{1,5}$/.test(version) || version === this.current)
+        throw Error('No distinct previous version');
+      this.publish({ previousVersion: version, rollbackError: '' });
+    } catch {
+      this.publish({ previousVersion: '', rollbackError: '' });
+    }
+  }
+  async prepareRollback() {
+    if (this.busy) throw Error('Wait for the current update operation to finish.');
+    this.busy = true;
+    this.stop();
+    this.controller = new AbortController();
+    const signal = AbortSignal.any([this.controller.signal, AbortSignal.timeout(120000)]);
+    let dir;
+    try {
+      await this.refreshPrevious();
+      const version = this.status.previousVersion;
+      if (!version) throw Error('No complete previous launcher is saved.');
+      this.publish({ phase: 'rollback', rollbackError: '', percent: 0 });
+      const envelope = await json(
+        releaseAsset(version, `Dungeon-Blitz-Launcher-${version}-update.json`),
+        6000000,
+        signal
+      );
+      disk.mkdirSync(this.cache, { recursive: true });
+      dir = disk.mkdtempSync(path.join(this.cache, 'rollback-'));
+      await new Promise((resolve, reject) =>
+        execFile(this.helper, ['protect', dir], { windowsHide: true, timeout: 10000 }, (e) =>
+          e ? reject(e) : resolve()
+        )
+      );
+      const source = path.join(dir, 'files');
+      const manifest = await require('./rollback.cjs').stagePrevious({
+        envelope,
+        key: this.publicKey,
+        version,
+        current: this.current,
+        root: this.installRoot,
+        stage: source,
+        signal,
+        progress: (n, total) => this.publish({ percent: Math.floor((100 * n) / total) }),
+      });
+      disk.writeFileSync(
+        path.join(dir, 'install.json'),
+        JSON.stringify({
+          version,
+          source,
+          destination: this.installRoot,
+          pid: process.pid,
+          files: manifest.files,
+        })
+      );
+      this.stage = dir;
+      this.publish({ phase: 'rollback-ready', version, percent: 100 });
+      return true;
+    } catch (e) {
+      if (
+        dir &&
+        path.dirname(path.resolve(dir)) === path.resolve(this.cache) &&
+        /^rollback-[A-Za-z0-9]+$/.test(path.basename(dir))
+      )
+        await disk.promises.rm(dir, { recursive: true, force: true });
+      this.publish({ phase: 'error', rollbackError: String(e.message).slice(0, 200) });
+      throw e;
+    } finally {
+      this.busy = false;
+      this.controller = null;
+    }
+  }
+  stop(cancel = true) {
+    clearTimeout(this.first);
+    clearInterval(this.timer);
+    if (cancel) this.controller?.abort();
+  }
+  checkForClientUpdate() {
+    // One extra automatic check per launcher session. Remote game reloads must
+    // not produce repeated GitHub requests or override the automatic-update opt-out.
+    if (!this.enabled || this.clientUpdateChecked) return;
+    this.clientUpdateChecked = true;
+    clearTimeout(this.first);
+    return this.check();
+  }
+  async check() {
+    if (this.busy || this.status.phase === 'ready') return;
+    this.busy = true;
+    this.controller = new AbortController();
+    const signal = this.controller.signal;
+    this.publish({ phase: 'checking', error: '' });
+    try {
+      const release = await json(
+        `https://api.github.com/repos/${REPO}/releases/latest`,
+        2000000,
+        signal
+      );
+      if (release.draft || release.prerelease || !/^v\d+\.\d+\.\d+$/.test(release.tag_name))
+        throw Error('Invalid GitHub release');
+      const next = release.tag_name.slice(1);
+      if (!newer(next, this.current)) {
+        this.publish({ phase: 'current' });
+        return;
+      }
+      const name = `Dungeon-Blitz-Launcher-${next}-update.json`;
+      if (!release.assets?.some((asset) => asset.name === name))
+        throw Error('Latest release has no signed update; use its manual download');
+      const manifest = verifyManifest(
+        await json(releaseAsset(next, name), 6000000, signal),
+        this.publicKey,
+        this.current
+      );
+      if (manifest.version !== next) throw Error('Release and manifest disagree');
+      await new Promise((resolve, reject) =>
+        execFile(
+          this.helper,
+          ['preflight', this.installRoot],
+          { windowsHide: true, timeout: 10000 },
+          (error) =>
+            error
+              ? reject(
+                  Error(
+                    'Installation folder is not writable. Reinstall for your Windows account, or keep the portable launcher in a writable folder.'
+                  )
+                )
+              : resolve()
+        )
+      );
+      disk.mkdirSync(this.cache, { recursive: true });
+      const dir = disk.mkdtempSync(path.join(this.cache, 'stage-'));
+      this.stage = dir;
+      const archive = path.join(dir, 'payload.zip');
+      await new Promise((resolve, reject) =>
+        execFile(this.helper, ['protect', dir], { windowsHide: true, timeout: 10000 }, (error) =>
+          error ? reject(error) : resolve()
+        )
+      );
+      this.publish({ phase: 'downloading', version: next, percent: 0 });
+      const { res, finish } = await response(releaseAsset(next, manifest.zip.name), signal);
+      const file = disk.openSync(archive, 'wx');
+      let size = 0;
+      const hash = crypto.createHash('sha256');
+      try {
+        for await (const chunk of res.body) {
+          size += chunk.length;
+          if (size > manifest.zip.size) throw Error('Update archive exceeded signed size');
+          disk.writeSync(file, chunk);
+          hash.update(chunk);
+          this.publish({ percent: Math.floor((size / manifest.zip.size) * 100) });
+        }
+      } finally {
+        disk.closeSync(file);
+        finish();
+      }
+      if (size !== manifest.zip.size || hash.digest('hex') !== manifest.zip.sha256)
+        throw Error('Update archive hash mismatch');
+      this.publish({ phase: 'verifying', percent: 0 });
+      const extracted = path.join(dir, 'files'),
+        verification = AbortSignal.any([signal, AbortSignal.timeout(120000)]);
+      await new Promise((resolve, reject) =>
+        execFile(
+          this.helper,
+          ['extract', archive, extracted],
+          { windowsHide: true, timeout: 120000, signal: verification },
+          (error) => (error ? reject(error) : resolve())
+        )
+      );
+      verification.throwIfAborted();
+      await verifyFiles(extracted, manifest, verification, (count, total) =>
+        this.publish({ percent: Math.floor((count / total) * 100) })
+      );
+      disk.writeFileSync(
+        path.join(dir, 'install.json'),
+        JSON.stringify({
+          version: next,
+          source: extracted,
+          destination: this.installRoot,
+          pid: process.pid,
+          files: manifest.files,
+        })
+      );
+      this.publish({ phase: 'ready', percent: 100 });
+    } catch (error) {
+      const stage = this.stage;
+      this.stage = null;
+      this.publish({
+        phase: signal.aborted ? 'idle' : 'error',
+        error: signal.aborted ? '' : String(error.message).slice(0, 200),
+      });
+      if (
+        stage &&
+        path.dirname(path.resolve(stage)) === path.resolve(this.cache) &&
+        /^stage-[A-Za-z0-9]+$/.test(path.basename(stage))
+      ) {
+        try {
+          await disk.promises.rm(stage, {
+            recursive: true,
+            force: true,
+            maxRetries: 3,
+            retryDelay: 200,
+          });
+        } catch {}
+      }
+    } finally {
+      this.busy = false;
+      this.controller = null;
+    }
+  }
+  installAfterExit(restart = false, explicitRollback = false) {
+    if (
+      this.status.phase !== 'ready' &&
+      !(explicitRollback && this.status.phase === 'rollback-ready')
+    )
+      return false;
+    try {
+      const configPath = path.join(this.stage, 'install.json'),
+        config = JSON.parse(disk.readFileSync(configPath, 'utf8'));
+      config.pids = [
+        ...new Set(
+          [process.pid, ...this.waitPids()].filter(
+            (pid) => Number.isInteger(pid) && pid > 0 && pid <= 2147483647
+          )
+        ),
+      ];
+      disk.writeFileSync(configPath, JSON.stringify(config));
+      const helper = path.join(this.stage, 'UpdateInstaller.exe');
+      disk.copyFileSync(this.helper, helper);
+      const child = spawn(helper, ['install', configPath, restart ? 'restart' : 'close'], {
+        detached: true,
+        windowsHide: true,
+        stdio: 'ignore',
+      });
+      child.on('error', (error) =>
+        this.publish({ phase: 'error', error: String(error.message).slice(0, 200) })
+      );
+      child.unref();
+      return true;
+    } catch (error) {
+      this.publish({ phase: 'error', error: String(error.message).slice(0, 200) });
+      return false;
+    }
+  }
 }
-module.exports={Updater,verifyFiles};
+module.exports = { Updater, verifyFiles };

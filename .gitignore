@@ -10,8 +10,4 @@ Blitz Browser.exe
 Dungeon Blitz Launcher.exe
 Dungeon Blitz Launcher Setup.exe
 docs/*
-!docs/TESTING.md
-!docs/CLIENT-FEATURES.md
-!docs/PROJECTOR.md
-!docs/WIDESCREEN.md
-!docs/MINESA-UPDATES.md
+!docs/*.md

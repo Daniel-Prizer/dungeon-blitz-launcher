@@ -1,1 +1,76 @@
-let running=true;self.onmessage=async({data})=>{if(data.stop){running=false;return;}try{const c=data.canvas;c.width=1000;c.height=720;const gl=c.getContext('webgl2',{alpha:true,antialias:false});if(!gl)throw Error('Worker WebGL2 unavailable');const ch=new MessageChannel(),queue=[];ch.port1.onmessage=()=>queue.shift()?.();const yieldTask=()=>new Promise(r=>{queue.push(r);ch.port2.postMessage(1);});const program=gl.createProgram();for(const [type,code]of [[gl.VERTEX_SHADER,'#version 300 es\nvoid main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0,1);}'],[gl.FRAGMENT_SHADER,'#version 300 es\nprecision highp float;uniform vec4 color;out vec4 pixel;void main(){pixel=color;}']]){const s=gl.createShader(type);gl.shaderSource(s,code.replace(/\\n/g,'\n'));gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));gl.attachShader(program,s);}gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));gl.useProgram(program);const color=gl.getUniformLocation(program,'color');gl.viewport(0,0,1000,720);postMessage({ready:true,version:gl.getParameter(gl.VERSION),renderer:gl.getParameter(gl.RENDERER)});let count=0,start=performance.now(),last=start;while(running){gl.uniform4f(color,.1+.05*Math.sin(count/20),.4,.9,1);gl.drawArrays(gl.TRIANGLES,0,3);const sync=gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE,0);gl.flush();while(gl.clientWaitSync(sync,0,0)===gl.TIMEOUT_EXPIRED)await yieldTask();gl.deleteSync(sync);count++;const now=performance.now();if(now-last>200){postMessage({completed:count,elapsed:now-start,completedFPS:count*1000/(now-start)});last=now;}await yieldTask();}ch.port1.close();ch.port2.close();}catch(e){postMessage({error:e.message});}};
+let running = true;
+self.onmessage = async ({ data }) => {
+  if (data.stop) {
+    running = false;
+    return;
+  }
+  try {
+    const c = data.canvas;
+    c.width = 1000;
+    c.height = 720;
+    const gl = c.getContext('webgl2', { alpha: true, antialias: false });
+    if (!gl) throw Error('Worker WebGL2 unavailable');
+    const ch = new MessageChannel(),
+      queue = [];
+    ch.port1.onmessage = () => queue.shift()?.();
+    const yieldTask = () =>
+      new Promise((r) => {
+        queue.push(r);
+        ch.port2.postMessage(1);
+      });
+    const program = gl.createProgram();
+    for (const [type, code] of [
+      [
+        gl.VERTEX_SHADER,
+        '#version 300 es\nvoid main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0,1);}',
+      ],
+      [
+        gl.FRAGMENT_SHADER,
+        '#version 300 es\nprecision highp float;uniform vec4 color;out vec4 pixel;void main(){pixel=color;}',
+      ],
+    ]) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, code.replace(/\\n/g, '\n'));
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw Error(gl.getShaderInfoLog(s));
+      gl.attachShader(program, s);
+    }
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+      throw Error(gl.getProgramInfoLog(program));
+    gl.useProgram(program);
+    const color = gl.getUniformLocation(program, 'color');
+    gl.viewport(0, 0, 1000, 720);
+    postMessage({
+      ready: true,
+      version: gl.getParameter(gl.VERSION),
+      renderer: gl.getParameter(gl.RENDERER),
+    });
+    let count = 0,
+      start = performance.now(),
+      last = start;
+    while (running) {
+      gl.uniform4f(color, 0.1 + 0.05 * Math.sin(count / 20), 0.4, 0.9, 1);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      gl.flush();
+      while (gl.clientWaitSync(sync, 0, 0) === gl.TIMEOUT_EXPIRED) await yieldTask();
+      gl.deleteSync(sync);
+      count++;
+      const now = performance.now();
+      if (now - last > 200) {
+        postMessage({
+          completed: count,
+          elapsed: now - start,
+          completedFPS: (count * 1000) / (now - start),
+        });
+        last = now;
+      }
+      await yieldTask();
+    }
+    ch.port1.close();
+    ch.port2.close();
+  } catch (e) {
+    postMessage({ error: e.message });
+  }
+};

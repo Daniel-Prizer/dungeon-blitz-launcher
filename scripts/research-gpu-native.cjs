@@ -1,19 +1,166 @@
 // Execute original native game methods only in a socket-blocked owned fixture,
 // then compare its layer data on the GPU. Never starts a Flash/Blitz process.
-const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),crypto=require('node:crypto'),{execFileSync}=require('node:child_process'),{chromium}=require('playwright');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'.test-tools/gpu-native'),files=new Map(['scene.mjs','renderer.mjs','deadline-clock.mjs','deadline-worker.mjs','art-worker.mjs','binary.mjs','art-pool.mjs','native-probe.html'].map(n=>['/'+n,path.join(root,n.endsWith('.mjs')?'src/gpu':'research/gpu',n)]));
-const assets=['UI_0.swf','UI_0_1.swf','UI_0_2.swf','UI_0_3.swf','UI_1.swf','UI_2.swf','UI_4.swf','UI_Library.swf','UI_Seasonal.swf','LevelsHome.swf','LevelsJC.swf','LevelsBT.swf','GlobalMap01.swf'];for(const n of assets)files.set('/assets/'+n,path.join(root,'.test-tools/wide-live-assets',n));
-files.set('/fixture.swf',path.join(out,'fixture.swf'));const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
-(async()=>{
- execFileSync(process.execPath,[path.join(__dirname,'prepare-gpu-native-fixture.cjs')],{windowsHide:true,stdio:'inherit'});for(const f of files.values())if(!fs.existsSync(f))throw Error('Missing offline fixture input: '+path.relative(root,f));
- const cache=path.join(out,'engine');fs.mkdirSync(cache,{recursive:true});const engineFiles=new Map();
- async function engine(name){if(!/^[a-zA-Z0-9_.-]+\.(js|wasm)$/.test(name))throw Error('Disallowed engine path');const local=path.join(cache,name);let b;if(fs.existsSync(local))b=fs.readFileSync(local);else{const r=await fetch('https://dungeonblitz.theminesa.studio/ruffle/'+name,{signal:AbortSignal.timeout(20000)});if(!r.ok)throw Error('Public engine HTTP '+r.status);b=Buffer.from(await r.arrayBuffer());if(b.length>32*1024*1024)throw Error('Engine resource exceeds research budget');fs.writeFileSync(local,b);}engineFiles.set(name,hash(b));return b;}
- await engine('ruffle.js');const failures=[];const server=http.createServer(async(req,res)=>{try{
-  if(req.method!=='GET'){res.writeHead(405);return res.end();}const url=new URL(req.url,'http://localhost');if(url.pathname.startsWith('/engine/')){res.setHeader('Content-Type',url.pathname.endsWith('.wasm')?'application/wasm':'text/javascript');return res.end(await engine(url.pathname.slice(8)));}
-  const file=files.get(url.pathname);if(!file){res.writeHead(404);return res.end();}res.setHeader('Content-Type',file.endsWith('.mjs')?'text/javascript':file.endsWith('.swf')?'application/x-shockwave-flash':'text/html');res.setHeader('Cache-Control','no-store');fs.createReadStream(file).pipe(res);
- }catch(e){failures.push(e.message);res.writeHead(500);res.end();}});
- await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;try{const origin='http://127.0.0.1:'+server.address().port,executable=[chromium.executablePath(),'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find(f=>fs.existsSync(f));if(!executable)throw Error('No headless browser');browser=await chromium.launch({headless:true,executablePath:executable,args:['--enable-unsafe-webgpu','--use-angle=d3d11']});const context=await browser.newContext({viewport:{width:1200,height:800},serviceWorkers:'block'});await context.route('**/*',route=>new URL(route.request().url()).origin===origin&&route.request().method()==='GET'?route.continue():route.abort());await context.routeWebSocket('**/*',ws=>ws.close());const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&errors.length<10)errors.push(m.text().slice(0,400));});await page.goto(origin+'/native-probe.html');await page.waitForFunction(()=>typeof window.verifyNativeGpu==='function');
-  let result;try{result=await Promise.race([page.evaluate(()=>window.verifyNativeGpu()),new Promise((_,reject)=>setTimeout(()=>reject(Error('Bounded native/GPU probe timed out')),60000).unref())]);}catch(e){await page.screenshot({path:path.join(out,'native-gpu-failure.png')});throw Error(e.message+'; browser errors: '+JSON.stringify(errors));}
-  if(failures.length)throw Error(failures.join(';'));await page.locator('#proof').screenshot({path:path.join(out,'native-world-gpu.png')});result.checkedAt=new Date().toISOString();result.browser=await browser.version();result.engine=Object.fromEntries(engineFiles);result.fixture=JSON.parse(fs.readFileSync(path.join(out,'provenance.json'),'utf8'));fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
- }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
-})().catch(e=>{console.error(e.stack||e);process.exitCode=1;});
+const fs = require('node:fs'),
+  path = require('node:path'),
+  http = require('node:http'),
+  crypto = require('node:crypto'),
+  { execFileSync } = require('node:child_process'),
+  { chromium } = require('playwright');
+const root = path.resolve(__dirname, '..'),
+  out = path.join(root, '.test-tools/gpu-native'),
+  files = new Map(
+    [
+      'scene.mjs',
+      'renderer.mjs',
+      'deadline-clock.mjs',
+      'deadline-worker.mjs',
+      'art-worker.mjs',
+      'binary.mjs',
+      'art-pool.mjs',
+      'native-probe.html',
+    ].map((n) => ['/' + n, path.join(root, n.endsWith('.mjs') ? 'src/gpu' : 'research/gpu', n)])
+  );
+const assets = [
+  'UI_0.swf',
+  'UI_0_1.swf',
+  'UI_0_2.swf',
+  'UI_0_3.swf',
+  'UI_1.swf',
+  'UI_2.swf',
+  'UI_4.swf',
+  'UI_Library.swf',
+  'UI_Seasonal.swf',
+  'LevelsHome.swf',
+  'LevelsJC.swf',
+  'LevelsBT.swf',
+  'GlobalMap01.swf',
+];
+for (const n of assets)
+  files.set('/assets/' + n, path.join(root, '.test-tools/wide-live-assets', n));
+files.set('/fixture.swf', path.join(out, 'fixture.swf'));
+const hash = (b) => crypto.createHash('sha256').update(b).digest('hex');
+(async () => {
+  execFileSync(process.execPath, [path.join(__dirname, 'prepare-gpu-native-fixture.cjs')], {
+    windowsHide: true,
+    stdio: 'inherit',
+  });
+  for (const f of files.values())
+    if (!fs.existsSync(f)) throw Error('Missing offline fixture input: ' + path.relative(root, f));
+  const cache = path.join(out, 'engine');
+  fs.mkdirSync(cache, { recursive: true });
+  const engineFiles = new Map();
+  async function engine(name) {
+    if (!/^[a-zA-Z0-9_.-]+\.(js|wasm)$/.test(name)) throw Error('Disallowed engine path');
+    const local = path.join(cache, name);
+    let b;
+    if (fs.existsSync(local)) b = fs.readFileSync(local);
+    else {
+      const r = await fetch('https://dungeonblitz.theminesa.studio/ruffle/' + name, {
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!r.ok) throw Error('Public engine HTTP ' + r.status);
+      b = Buffer.from(await r.arrayBuffer());
+      if (b.length > 32 * 1024 * 1024) throw Error('Engine resource exceeds research budget');
+      fs.writeFileSync(local, b);
+    }
+    engineFiles.set(name, hash(b));
+    return b;
+  }
+  await engine('ruffle.js');
+  const failures = [];
+  const server = http.createServer(async (req, res) => {
+    try {
+      if (req.method !== 'GET') {
+        res.writeHead(405);
+        return res.end();
+      }
+      const url = new URL(req.url, 'http://localhost');
+      if (url.pathname.startsWith('/engine/')) {
+        res.setHeader(
+          'Content-Type',
+          url.pathname.endsWith('.wasm') ? 'application/wasm' : 'text/javascript'
+        );
+        return res.end(await engine(url.pathname.slice(8)));
+      }
+      const file = files.get(url.pathname);
+      if (!file) {
+        res.writeHead(404);
+        return res.end();
+      }
+      res.setHeader(
+        'Content-Type',
+        file.endsWith('.mjs')
+          ? 'text/javascript'
+          : file.endsWith('.swf')
+            ? 'application/x-shockwave-flash'
+            : 'text/html'
+      );
+      res.setHeader('Cache-Control', 'no-store');
+      fs.createReadStream(file).pipe(res);
+    } catch (e) {
+      failures.push(e.message);
+      res.writeHead(500);
+      res.end();
+    }
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  let browser;
+  try {
+    const origin = 'http://127.0.0.1:' + server.address().port,
+      executable = [
+        chromium.executablePath(),
+        'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+        'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+      ].find((f) => fs.existsSync(f));
+    if (!executable) throw Error('No headless browser');
+    browser = await chromium.launch({
+      headless: true,
+      executablePath: executable,
+      args: ['--enable-unsafe-webgpu', '--use-angle=d3d11'],
+    });
+    const context = await browser.newContext({
+      viewport: { width: 1200, height: 800 },
+      serviceWorkers: 'block',
+    });
+    await context.route('**/*', (route) =>
+      new URL(route.request().url()).origin === origin && route.request().method() === 'GET'
+        ? route.continue()
+        : route.abort()
+    );
+    await context.routeWebSocket('**/*', (ws) => ws.close());
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => {
+      if (m.type() === 'error' && errors.length < 10) errors.push(m.text().slice(0, 400));
+    });
+    await page.goto(origin + '/native-probe.html');
+    await page.waitForFunction(() => typeof window.verifyNativeGpu === 'function');
+    let result;
+    try {
+      result = await Promise.race([
+        page.evaluate(() => window.verifyNativeGpu()),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(Error('Bounded native/GPU probe timed out')), 60000).unref()
+        ),
+      ]);
+    } catch (e) {
+      await page.screenshot({ path: path.join(out, 'native-gpu-failure.png') });
+      throw Error(e.message + '; browser errors: ' + JSON.stringify(errors));
+    }
+    if (failures.length) throw Error(failures.join(';'));
+    await page.locator('#proof').screenshot({ path: path.join(out, 'native-world-gpu.png') });
+    result.checkedAt = new Date().toISOString();
+    result.browser = await browser.version();
+    result.engine = Object.fromEntries(engineFiles);
+    result.fixture = JSON.parse(fs.readFileSync(path.join(out, 'provenance.json'), 'utf8'));
+    fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result, null, 2));
+  } finally {
+    if (browser) await browser.close();
+    await new Promise((r) => server.close(r));
+  }
+})().catch((e) => {
+  console.error(e.stack || e);
+  process.exitCode = 1;
+});

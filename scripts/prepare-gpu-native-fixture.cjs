@@ -1,13 +1,76 @@
-const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'.test-tools/gpu-native'),input=path.join(root,'.test-tools/transition/fixed.swf'),jar=path.join(root,'.test-tools/focus/ffdec/ffdec.jar');
-for(const p of [input,jar])if(!fs.existsSync(p))throw Error('Prepare the original offline camera fixture first');
-const text=fs.readFileSync(path.join(root,'test/transition-fixture/DungeonBlitz.as'),'utf8'),anchor='private function setup(event:Event=null):void {';
-if(text.split(anchor).length!==2)throw Error('Owned fixture setup changed; review before importing');
-const methods=fs.readFileSync(path.join(root,'research/gpu/native-fixture-methods.as'),'utf8');
-const end=text.lastIndexOf('}'),classEnd=text.lastIndexOf('}',end-1);if(classEnd<0)throw Error('Owned class boundary not found');
-let source=text.slice(0,classEnd)+methods+'\n'+text.slice(classEnd);source=source.replace(anchor,anchor+'\n   ExternalInterface.addCallback("BlitzGpuExport",gpuExport);');
-fs.mkdirSync(path.join(out,'source'),{recursive:true});fs.writeFileSync(path.join(out,'source/DungeonBlitz.as'),source);
-execFileSync('java',['-Djava.awt.headless=true','-jar',jar,'-importScript',input,path.join(out,'fixture.swf'),path.join(out,'source')],{stdio:'inherit',windowsHide:true,timeout:120000});
-execFileSync('javac',['-cp',path.join(root,'.test-tools/focus/ffdec/lib/*'),'-d',out,path.join(root,'research/gpu/VerifyFixture.java')],{stdio:'inherit',windowsHide:true});
-execFileSync('java',['-Djava.awt.headless=true','-cp',out+path.delimiter+path.join(root,'.test-tools/focus/ffdec/lib/*'),'VerifyFixture',input,path.join(out,'fixture.swf')],{stdio:'inherit',windowsHide:true});
-fs.writeFileSync(path.join(out,'provenance.json'),JSON.stringify({inputSHA256:crypto.createHash('sha256').update(fs.readFileSync(input)).digest('hex'),outputSHA256:crypto.createHash('sha256').update(fs.readFileSync(path.join(out,'fixture.swf'))).digest('hex'),scope:'Owned offline fixture callback only; no live patch or game clock changes'},null,2));
+const fs = require('node:fs'),
+  path = require('node:path'),
+  crypto = require('node:crypto'),
+  { execFileSync } = require('node:child_process');
+const root = path.resolve(__dirname, '..'),
+  out = path.join(root, '.test-tools/gpu-native'),
+  input = path.join(root, '.test-tools/transition/fixed.swf'),
+  jar = path.join(root, '.test-tools/focus/ffdec/ffdec.jar');
+for (const p of [input, jar])
+  if (!fs.existsSync(p)) throw Error('Prepare the original offline camera fixture first');
+const text = fs.readFileSync(path.join(root, 'test/transition-fixture/DungeonBlitz.as'), 'utf8'),
+  anchor = 'private function setup(event:Event=null):void {';
+if (text.split(anchor).length !== 2)
+  throw Error('Owned fixture setup changed; review before importing');
+const methods = fs.readFileSync(path.join(root, 'research/gpu/native-fixture-methods.as'), 'utf8');
+const end = text.lastIndexOf('}'),
+  classEnd = text.lastIndexOf('}', end - 1);
+if (classEnd < 0) throw Error('Owned class boundary not found');
+let source = text.slice(0, classEnd) + methods + '\n' + text.slice(classEnd);
+source = source.replace(
+  anchor,
+  anchor + '\n   ExternalInterface.addCallback("BlitzGpuExport",gpuExport);'
+);
+fs.mkdirSync(path.join(out, 'source'), { recursive: true });
+fs.writeFileSync(path.join(out, 'source/DungeonBlitz.as'), source);
+execFileSync(
+  'java',
+  [
+    '-Djava.awt.headless=true',
+    '-jar',
+    jar,
+    '-importScript',
+    input,
+    path.join(out, 'fixture.swf'),
+    path.join(out, 'source'),
+  ],
+  { stdio: 'inherit', windowsHide: true, timeout: 120000 }
+);
+execFileSync(
+  'javac',
+  [
+    '-cp',
+    path.join(root, '.test-tools/focus/ffdec/lib/*'),
+    '-d',
+    out,
+    path.join(root, 'research/gpu/VerifyFixture.java'),
+  ],
+  { stdio: 'inherit', windowsHide: true }
+);
+execFileSync(
+  'java',
+  [
+    '-Djava.awt.headless=true',
+    '-cp',
+    out + path.delimiter + path.join(root, '.test-tools/focus/ffdec/lib/*'),
+    'VerifyFixture',
+    input,
+    path.join(out, 'fixture.swf'),
+  ],
+  { stdio: 'inherit', windowsHide: true }
+);
+fs.writeFileSync(
+  path.join(out, 'provenance.json'),
+  JSON.stringify(
+    {
+      inputSHA256: crypto.createHash('sha256').update(fs.readFileSync(input)).digest('hex'),
+      outputSHA256: crypto
+        .createHash('sha256')
+        .update(fs.readFileSync(path.join(out, 'fixture.swf')))
+        .digest('hex'),
+      scope: 'Owned offline fixture callback only; no live patch or game clock changes',
+    },
+    null,
+    2
+  )
+);
