@@ -33,8 +33,8 @@ function boot(){
  const provenance=JSON.parse(fs.readFileSync(path.join(bundle,'provenance.json'),'utf8'));
  for(const [name,expected]of Object.entries(provenance.files)){
   if(!/^[a-zA-Z0-9_ .\/-]+$/.test(name)||name.split('/').includes('..'))throw Error('Invalid singleplayer bundle');
-  const source=path.join(bundle,name);if(fs.lstatSync(source).isSymbolicLink()||hash(fs.readFileSync(source))!==expected)throw Error('Singleplayer bundle changed');
-  if(name.startsWith('server/data/')&&!name.endsWith('.js')){const target=path.join(world,name.slice(7));safeFile(target);fs.copyFileSync(source,target);}
+  const source=path.join(bundle,name),bytes=fs.readFileSync(source);if(fs.lstatSync(source).isSymbolicLink()||hash(bytes)!==expected)throw Error('Singleplayer bundle changed');
+  if(name.startsWith('server/data/')&&!name.endsWith('.js')){const target=path.join(world,name.slice(7));safeFile(target);fs.writeFileSync(target,bytes);}
  }
  for(const name of ['data/Accounts.json','data/saves','Accounts.json','saves']){
   const file=path.join(world,name);if(fs.existsSync(file)&&fs.lstatSync(file).isSymbolicLink())throw Error('Linked singleplayer saves');

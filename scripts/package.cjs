@@ -27,6 +27,14 @@ const root = path.resolve(__dirname, '..');
   // Unfinished projector experiments are source/tests only. A release must not
   // accidentally advertise or bundle a runtime which failed compatibility tests.
   const packagedRuntime=path.join(output,'resources/runtime');
+  // Keep update/rollback paths within the older native helper's limits. The
+  // utility process can require/read this signed ASAR directly; local saves
+  // remain outside it. Only this new packaged copy is removed afterward.
+  const localSource=path.join(root,'runtime/singleplayer'),localCopy=path.join(packagedRuntime,'singleplayer');
+  for(const name of fs.readdirSync(localSource,{recursive:true}))if(fs.lstatSync(path.join(localSource,name)).isSymbolicLink())throw Error('Singleplayer archive source contains a link');
+  await require('@electron/asar').createPackageWithOptions(localSource,path.join(packagedRuntime,'singleplayer.asar'),{unpackDir:'content'});
+  if(fs.realpathSync(path.dirname(localCopy))!==fs.realpathSync(packagedRuntime)||fs.lstatSync(localCopy).isSymbolicLink())throw Error('Unexpected packaged singleplayer copy');
+  fs.rmSync(localCopy,{recursive:true,force:true});
   for(const name of ['SandboxHost.exe','projector']){const item=path.join(packagedRuntime,name);if(fs.existsSync(item))fs.rmSync(item,{recursive:true,force:true});}
   // A running source session can recreate its log while resources are copied.
   // Clean the copied output, leaving the active session's diagnostics alone.

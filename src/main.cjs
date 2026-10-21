@@ -169,7 +169,8 @@ async function action(name, value) {
 }
 async function start() {
   const runtimeRoot=app.isPackaged?path.join(process.resourcesPath,'runtime'):path.join(__dirname,'../runtime');
-  singleplayer=new Singleplayer({bundle:path.join(runtimeRoot,'singleplayer'),dataDir:path.join(app.getPath('userData'),'singleplayer'),fork:(entry,args,options)=>require('electron').utilityProcess.fork(entry,args,options)});
+  const localArchive=path.join(runtimeRoot,'singleplayer.asar');
+  singleplayer=new Singleplayer({bundle:fs.existsSync(localArchive)?localArchive:path.join(runtimeRoot,'singleplayer'),dataDir:path.join(app.getPath('userData'),'singleplayer'),fork:(entry,args,options)=>require('electron').utilityProcess.fork(entry,args,options)});
   singleplayer.on('status',()=>{if(!closing&&activeSettings?.ownedSingleplayer&&singleplayer.status.phase==='error'){error=singleplayer.status.error;loading=false;modal='error';layout();}else publish();});
   if(app.isPackaged){
     const installRoot=require('./update-policy.cjs').installationRoot(process.execPath,app.getVersion());
