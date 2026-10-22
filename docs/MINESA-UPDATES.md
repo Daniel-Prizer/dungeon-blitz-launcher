@@ -62,7 +62,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## Native 120 FPS admission
 
-The native player is qualified separately for **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract produces enhanced SHA-256 `dc1f074c7838df061aaf6f6e379dd11bbb2661086bc832b5fc9ce56dda0b795f`. Admission verifies the 52 master-list SWFs and 21 separately requested level libraries on both official origins.
+The native player is qualified separately for **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract produces enhanced SHA-256 `45def6a6cd08d01d5ab7a256b60cd5495c17bb6e0ffbf8e512dc88ad16649350`. Admission verifies the 52 master-list SWFs and 21 separately requested level libraries on both official origins.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. The latest deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 

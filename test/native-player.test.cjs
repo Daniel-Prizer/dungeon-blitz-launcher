@@ -3,6 +3,33 @@ const test = require('node:test'),
   assert = require('node:assert/strict');
 const { prepare, manifestFiles, levelFiles } = require('../src/native-player-resources.cjs');
 const { validSettings } = require('../src/policy.cjs');
+const { NativePlayerRuntime } = require('../src/native-player-runtime.cjs');
+
+test('Native Save applies the saved crosshair without replacing the runtime or preferences', () => {
+  const runtime = Object.create(NativePlayerRuntime.prototype);
+  Object.assign(runtime, { nativePlayer: true, pending: [] });
+  const saved = validSettings({
+    crosshair: { style: 'ring', color: '#ff8000', size: 32, outline: false },
+    renderResolution: 0.5,
+  });
+  const before = structuredClone(saved);
+  runtime.configure(saved);
+  assert.deepEqual(saved, before);
+  assert.equal(runtime.settings.renderResolution, 1);
+  assert.deepEqual(runtime.settings.crosshair, saved.crosshair);
+  assert.deepEqual(
+    runtime.pending.map(JSON.parse).find((v) => v.type === 'crosshair').value,
+    saved.crosshair
+  );
+  runtime.pending.length = 0;
+  runtime.configure(saved);
+  assert.equal(runtime.pending.length, 0);
+  saved.crosshair.style = 'dot';
+  runtime.configure(saved);
+  assert.deepEqual(runtime.pending.map(JSON.parse), [
+    { type: 'crosshair', value: saved.crosshair },
+  ]);
+});
 test('120 FPS is an opt-in renderer and does not change the existing cap or defaults', () => {
   assert.equal(validSettings().gameRenderer, 'original');
   const saved = validSettings({ gameRenderer: 'native', gpuFrameCap: 480, renderResolution: 0.5 });

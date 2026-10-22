@@ -130,10 +130,21 @@ const root = path.resolve(__dirname, '..'),
       assert.equal(await page.locator('#render-resolution').isDisabled(), true);
       assert.match(await page.locator('#renderer-hint').textContent(), /separate sign-in profile/);
       await page.screenshot({ path: path.join(out, `native-settings-${size.width}.png`) });
+      await page.locator('#tab-crosshair').click();
+      assert.equal(await page.locator('#crosshair-style').isEnabled(), true);
+      await page.locator('#crosshair-style').selectOption('ring');
+      await page.locator('#crosshair-size').selectOption('32');
+      await page.locator('#crosshair-color').fill('#ff8000');
       await page.locator('#discard').click();
+      assert.equal(await page.locator('#crosshair-style').inputValue(), 'default');
+      await page.locator('#tab-display').click();
       assert.equal(await page.locator('#game-renderer').inputValue(), 'gpu');
       assert.equal(await page.locator('#gpu-frame-cap').isEnabled(), true);
       await page.locator('#game-renderer').selectOption('native');
+      await page.locator('#tab-crosshair').click();
+      await page.locator('#crosshair-style').selectOption('ring');
+      await page.locator('#crosshair-size').selectOption('32');
+      await page.locator('#crosshair-color').fill('#ff8000');
       await page.locator('#save-settings').click();
       await page.waitForFunction(() => document.querySelector('#save-settings').disabled);
       assert.equal(
@@ -142,6 +153,13 @@ const root = path.resolve(__dirname, '..'),
         ),
         'native'
       );
+      assert.equal(
+        await page.evaluate(
+          () => fixtureCalls.findLast((c) => c.name === 'save-settings').value.crosshair.style
+        ),
+        'ring'
+      );
+      await page.screenshot({ path: path.join(out, `native-crosshair-${size.width}.png`) });
       assert.equal(
         await page.evaluate(() => fixtureCalls.some((c) => c.name === 'restart-game')),
         false
@@ -213,7 +231,7 @@ const root = path.resolve(__dirname, '..'),
             'Disabled graphics preserves cap',
             'Pinned footer remains visible',
             '120 FPS selection remains a draft until Save and never reconnects automatically',
-            'Native mode preserves the GPU world cap and disables unsupported controls',
+            'Native crosshair supports draft, Discard and Save without restarting',
           ],
           checkedAt: new Date().toISOString(),
         },

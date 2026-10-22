@@ -22,7 +22,7 @@ Both multiplayer renderer choices use the existing Flash profile. Old WebView2 s
 
 This optional multiplayer player renders the original game scene on the GPU with a 120 FPS cap. Automatic movie timelines retain their effective 60/s ceiling; the movie's requested rate and elapsed-time game step remain unchanged. Settings reports completed GPU renders separately from the in-game callback counter and physical scanout.
 
-It uses a separate sign-in profile and a separately qualified client/artwork inventory. Unknown deployments restore Original; the saved renderer choice remains. Initial asset parsing can lower startup FPS. Custom pointers and reduced rendering resolution are not supported in this player yet; those preferences remain available in the Flash modes. Singleplayer retains its independent Original contract.
+It uses a separate sign-in profile and a separately qualified client/artwork inventory. Unknown deployments restore Original; the saved renderer choice remains. Initial asset parsing can lower startup FPS. Custom pointers apply on Save, including recolored Original pointers. Reduced rendering resolution remains available in the Flash modes. Singleplayer retains its independent Original contract.
 
 ## Controls
 
@@ -39,6 +39,6 @@ Rankings and approved external game links open in the default browser. Genuine g
 
 ## Settings and compatibility
 
-Settings edits are local drafts until Save. Discard, Close, Back and Escape do not apply them. Saving a new server address does not reconnect. The explicit Reconnect action applies server/renderer changes; acceleration requires restart.
+Settings edits are local drafts until Save. Discard, Close, Back and Escape do not apply them. Crosshair, display and sound settings apply without restarting and are restored when the game replaces its session. Saving a new server address does not reconnect. The explicit Reconnect action applies server/renderer changes; acceleration requires restart.
 
 Display, input and category-audio helpers depend on reviewed client contracts. Window controls, settings and signed updating remain independent. See [compatibility review](MINESA-UPDATES.md) and [test coverage](TESTING.md).

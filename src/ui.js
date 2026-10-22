@@ -225,11 +225,6 @@ function render(next) {
     ['gpu', 'native'].includes(s.gameRenderer) && !s.ownedSingleplayer
       ? 'The in-game counter measures native game ticks. GPU rendering is measured above.'
       : 'Current FPS and 30-second low / high averages, in the gray margin.';
-  for (const id of ['crosshair-style', 'crosshair-color', 'crosshair-size', 'crosshair-outline'])
-    $(id).disabled = nativeSelection;
-  if (nativeSelection)
-    $('crosshair-preview-label').textContent =
-      'The 120 FPS player uses the game pointer. Your custom pointer preference is kept.';
   $('show-fps').disabled = state.clientIntegration === false || state.audioIntegration === false;
   $('experimental-widescreen').disabled =
     state.clientIntegration === false || state.audioIntegration === false;

@@ -23,7 +23,7 @@ For singleplayer, choose **Settings → Connection → Use singleplayer**, Save,
 
 Original Flash is the default. GPU world mode renders artwork separately and interpolates between native snapshots. Its counter measures world renders, not whole-game FPS. Its 1000 cap is a ceiling.
 
-The **120 FPS player · Beta** runs the game in a native GPU player with separate animation timing. It uses its own sign-in profile. Performance depends on the scene and hardware; cold artwork loading can take longer. Custom pointers and reduced rendering resolution currently require Original or GPU world mode. Singleplayer uses Original.
+The **120 FPS player · Beta** runs the game in a native GPU player with separate animation timing. It uses its own sign-in profile. Performance depends on the scene and hardware; cold artwork loading can take longer. Custom pointers apply when you press Save. Reduced rendering resolution requires Original or GPU world mode. Singleplayer uses Original.
 
 Client-dependent enhancements disable themselves when the downloaded game no longer matches a reviewed compatibility contract. The unmodified game remains available.
 

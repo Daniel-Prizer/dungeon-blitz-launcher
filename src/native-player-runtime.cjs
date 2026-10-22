@@ -30,7 +30,6 @@ class NativePlayerRuntime extends LegacyRuntime {
     super.configure({
       ...settings,
       renderResolution: 1,
-      crosshair: { ...settings.crosshair, style: 'default' },
     });
   }
   close() {

@@ -1,8 +1,8 @@
 {
-  "version": "0.31.2",
-  "checkedAtUtc": "2026-10-22T16:57:24.251Z",
-  "nativeSha256": "acd783efa341d216682b82b3af7824d83349a572f2a2e1c62d50d2f212fd7376",
-  "patchSha256": "669a054890f24506d7abc4e33688dbae40413de70cc6846ae827b87353c28ac3",
+  "version": "0.31.3",
+  "checkedAtUtc": "2026-10-22T19:33:51.248Z",
+  "nativeSha256": "25fdc06f19bb2f352a30903097353a06bcd4c0ccb785d9ec181523588d92ebb3",
+  "patchSha256": "c50434b15f6fc469cd67738426f7ffc2feec3c6bcca3a7644e852b822d8871f4",
   "clientSha256": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
   "dungeon": {
     "viewport": [
@@ -12,21 +12,23 @@
     "room": "a_Room_BT12",
     "level": "LevelsBT.swf",
     "elapsedMs": 20003,
-    "gameUpdates": 2400,
-    "completedGpuPerSecond": 120.00378528752486,
-    "nativeSteps": 480.04800000001137,
-    "nativeElapsedMs": 20002,
+    "gameUpdates": 2399,
+    "completedGpuPerSecond": 120.02211061702316,
+    "nativeSteps": 480.0960000000116,
+    "nativeElapsedMs": 20004,
     "timerEvents": 200,
     "markerPixels": 256,
     "normalExit": true
   },
   "automaticTimeline": {
-    "frames": 151,
-    "callbacks": 301,
-    "elapsedMs": 2509,
-    "hostElapsedMs": 2511,
-    "requestedStageRate": 100,
-    "timerEvents": 25
+    "automaticFrames": 151,
+    "elapsed": 2512,
+    "frames": 302,
+    "stageRate": 100,
+    "timerTicks": 25,
+    "totalFrames": 1000,
+    "hostElapsed": 2512,
+    "production": true
   },
   "publicStartup": {
     "origins": [
@@ -38,14 +40,24 @@
       1600,
       900
     ],
-    "secondaryGpuMean": 120.02065699300044,
+    "secondaryGpuMean": 120.1331241519514,
     "audioLevels": {
       "creatures": 1,
       "environment": 0.75,
       "music": 0.5,
       "player": 0.25
     },
-    "levelLibraries": 21
+    "levelLibraries": 21,
+    "runs": [
+      {
+        "gpuMean": 119.89719302817136,
+        "allSwfAssets": 73
+      },
+      {
+        "gpuMean": 120.1331241519514,
+        "allSwfAssets": 73
+      }
+    ]
   },
   "controls": [
     "typed Ö",
@@ -55,15 +67,19 @@
     "hide release",
     "disable release",
     "four viewports and 96 own-window hit tests",
-    "normal close and synthetic storage reopen"
+    "normal close and synthetic storage reopen",
+    "all cursor styles and exact generated RGBA/hotspot parity",
+    "native text cursor retained",
+    "live Save without runtime replacement",
+    "settings restored after three synthetic Game replacements"
   ],
-  "unitGroups": 106,
+  "unitGroups": 107,
   "scope": "Original game artwork/HUD and anonymous public startup; no authenticated gameplay, physical desktop input or monitor scanout. Broader combat and long-session performance are unmeasured.",
   "resourceFix": {
     "brokeredDungeonFixture": true,
     "review": "level-resources.json",
-    "binaryUnchangedFrom": "0.31.0",
-    "packagedModule": true
+    "packagedModule": true,
+    "timingUnchangedFrom": "0.31.0"
   },
   "deploymentReview": "deployments/2026-10-22.json",
   "upstreamRepaint": {
@@ -72,5 +88,36 @@
     "unchangedScreenAddsNothing": true,
     "malformedUiCaught": true
   },
-  "retainedControlsQualification": "0.31.1; native binary and control implementation unchanged"
+  "retainedControlsQualification": "Native window bridge, four sizes and 96 HTCLIENT samples rechecked; existing camera/map and transition suites pass.",
+  "settings": {
+    "sessionPollMs": 500,
+    "profileValuesUnchanged": true,
+    "actionsNotReplayed": true,
+    "cursorTestsDryRun": true
+  },
+  "adaptedClients": [
+    {
+      "source": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
+      "enhanced": "c925db5f76eaa33ef351a3b19fc4f373b4fd2729abea362228927ad1a3038595",
+      "mode": "contract"
+    },
+    {
+      "source": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
+      "enhanced": "a5ce6a03f3c56777a6a5b56784f386ac1bb6f2e3a23baef1401e73abccbca928",
+      "mode": "contract"
+    },
+    {
+      "source": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
+      "enhanced": "45def6a6cd08d01d5ab7a256b60cd5495c17bb6e0ffbf8e512dc88ad16649350",
+      "mode": "contract"
+    }
+  ],
+  "packaging": {
+    "signedFiles": 442,
+    "packagedResources": true,
+    "packagedSingleplayer": true,
+    "packagedUpdater": true,
+    "previousUpdater": "0.31.2",
+    "installer": true
+  }
 }

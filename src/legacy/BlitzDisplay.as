@@ -22,6 +22,8 @@ package {
  // change stage.frameRate, game clocks, input listeners or simulation state.
  public class BlitzDisplay {
   private static var main:Main;
+  private static var settingsGeneration:uint=0;
+  private static var settingsGame:Game;
   private static var registered:Boolean=false;
   private static var zoom:Number=1;
   private static var wideRequested:Boolean=false;
@@ -71,6 +73,7 @@ package {
    saved.last=object.width;
   }
   public static function Attach(value:Main):void {
+   if(main!=value){settingsGeneration++;settingsGame=null;}
    main=value;
    BlitzInput.Attach(value);
    if(main&&main.stage)BlitzFrameCounter.Attach(main.stage,main,PositionCounter);
@@ -81,8 +84,17 @@ package {
     ExternalInterface.addCallback("BlitzSetWidescreen",SetWidescreen);
     ExternalInterface.addCallback("BlitzSetCenteredHotbar",SetCenteredHotbar);
     ExternalInterface.addCallback("BlitzSetCenteredCamera",SetCenteredCamera);
+    ExternalInterface.addCallback("BlitzSettingsGeneration",SettingsGeneration);
     registered=true;
    }
+  }
+  public static function SettingsGeneration():Number {
+   var active:Game=null;
+   if(main&&main.var_523)for each(var game:Game in main.var_523){
+    active=game;if(game.gameState==Game.STATE_PLAY)break;
+   }
+   if(active!=settingsGame){settingsGame=active;settingsGeneration++;}
+   return settingsGeneration;
   }
   public static function SetWidescreen(value:Boolean):Boolean {
    if(!main||!main.stage)return false;

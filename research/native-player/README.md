@@ -2,7 +2,7 @@
 
 The optional 120 FPS player uses Ruffle v0.7.1 at `89a7049965f3090e706265670df309a5128233ac`, with the accompanying patch. It keeps the original Flash player as the default and fallback.
 
-The patch adds class-only placement and inherited-symbol handling, non-mutating `Graphics.readGraphicsData`, a separate automatic timeline clock, the restricted launcher bridge and resource policy. Private fixture controls require an inactive test desktop and are absent from the launcher's production child environment. No game-account state belongs here.
+The patch adds class-only placement and inherited-symbol handling, non-mutating `Graphics.readGraphicsData`, a separate automatic timeline clock, the restricted launcher bridge and resource policy. The 0.31.3 bridge applies bounded custom cursors on Save and restores acknowledged settings when the active Game changes. It does not replay input actions. Private fixture controls require an inactive test desktop and are absent from the launcher's production child environment. No game-account state belongs here.
 
 ## Build
 
@@ -26,4 +26,4 @@ Use the guarded inactive desktop, synthetic storage and TCP-denied public startu
 
 ## 240 FPS investigation
 
-The 120 FPS runtime remains unchanged. At a 240 target, the original dungeon-artwork/HUD fixture completed 233.83 renders/s at 1600×900. Experimental removal of desktop UI work and unused AVM1 cleanup reached 230.02/s there and 179.19/s at 2560×1440. A 1000-target throughput run reached 225.50/s at 1600×900. Timers and elapsed-time integration remained correct, but the 240 gate was not met. The experimental runtime changes were removed; no 240 option is shipped. These results show the current scene-processing limit, not that a future renderer redesign is impossible.
+The 120 FPS timing code remains unchanged. At a 240 target, the original dungeon-artwork/HUD fixture completed 233.83 renders/s at 1600×900. Experimental removal of desktop UI work and unused AVM1 cleanup reached 230.02/s there and 179.19/s at 2560×1440. A 1000-target throughput run reached 225.50/s at 1600×900. Timers and elapsed-time integration remained correct, but the 240 gate was not met. The experimental runtime changes were removed; no 240 option is shipped. These results show the current scene-processing limit, not that a future renderer redesign is impossible.
