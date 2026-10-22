@@ -45,7 +45,16 @@ public class AudioPatchBuilder {
  static void soundHooks(ABC abc){
   MethodBody tick=abc.findBodyByClassAndName("SoundManager","method_1017");
   for(int i=tick.getCode().code.size()-1;i>=0;i--)if(tick.getCode().code.get(i).definition.instructionName.equals("returnvoid"))tick.insertAll(i,call(abc,"AfterTick"));
-  tick.insertAll(0,call(abc,"BeforeTick"));tick.max_stack+=1;tick.setModified();tick.getCode().checkValidOffsets(tick);
+  List<AVM2Instruction> before=new ArrayList<>();
+  before.add(ins(0x60,abc.constants.getPublicQnameId("BlitzAudio",true)));
+  before.add(ins(0x46,abc.constants.getPublicQnameId("BeforeTick",true),0));
+  before.add(ins(0x11,1)); // Skip the early return when a fade tick is due.
+  before.add(ins(0x47));
+  tick.insertAll(0,before);
+  // insertAll relocates every insertion, including the new branch itself.
+  // Its target is the original first instruction, immediately past returnvoid.
+  before.get(2).operands[0]=1;
+  tick.max_stack+=1;tick.setModified();tick.getCode().checkValidOffsets(tick);
   String[] methods={"Play","method_103","method_748","method_218"};int[] locals={11,6,6,5};int[] expected={2,1,1,1};
   for(int n=0;n<methods.length;n++){
    MethodBody body=abc.findBodyByClassAndName("SoundManager",methods[n]);int count=0;

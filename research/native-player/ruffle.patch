@@ -543,8 +543,205 @@ index cb471eabd8cc2232c4bf370834a6b2eaadfc4334..39973a2c6a9b8aa677c81da2fd80f746
          let new_frame_rate = args.get_f64(0).clamp(0.01, 1000.0);
          *activation.context.frame_rate = new_frame_rate;
      }
+diff --git a/core/src/avm2/globals/flash/ui/MouseCursorData.as b/core/src/avm2/globals/flash/ui/MouseCursorData.as
+index 7b6a26e51b632a66a85ff1b22ac4e9134e0b35b9..c81386bd2d8b37d09b57a5651cb07f7cdde5a254 100644
+--- a/core/src/avm2/globals/flash/ui/MouseCursorData.as
++++ b/core/src/avm2/globals/flash/ui/MouseCursorData.as
+@@ -1,6 +1,4 @@
+ package flash.ui {
+-    import __ruffle__.stub_getter;
+-    import __ruffle__.stub_setter;
+ 
+     import flash.geom.Point;
+     import flash.display.BitmapData;
+@@ -11,32 +9,26 @@ package flash.ui {
+         private var _hotSpot:Point = new Point(0, 0);
+ 
+         public function get data():Vector.<BitmapData> {
+-            stub_getter("flash.ui.MouseCursorData", "data");
+             return this._data;
+         }
+ 
+         public function set data(value:Vector.<BitmapData>):void {
+-            stub_setter("flash.ui.MouseCursorData", "data");
+             this._data = value;
+         }
+ 
+         public function get frameRate():Number {
+-            stub_getter("flash.ui.MouseCursorData", "frameRate");
+             return this._frameRate;
+         }
+ 
+         public function set frameRate(value:Number):void {
+-            stub_setter("flash.ui.MouseCursorData", "frameRate");
+             this._frameRate = value;
+         }
+ 
+         public function get hotSpot():Point {
+-            stub_getter("flash.ui.MouseCursorData", "hotSpot");
+             return this._hotSpot;
+         }
+ 
+         public function set hotSpot(value:Point):void {
+-            stub_setter("flash.ui.MouseCursorData", "hotSpot");
+             this._hotSpot = value;
+         }
+     }
+diff --git a/core/src/avm2/globals/flash/ui/mouse.rs b/core/src/avm2/globals/flash/ui/mouse.rs
+index 9bc889ed76c28ebca017c4e3d7ee824fa5b094c3..c888deb54f3674917cebba45a83fe24511208cee 100644
+--- a/core/src/avm2/globals/flash/ui/mouse.rs
++++ b/core/src/avm2/globals/flash/ui/mouse.rs
+@@ -1,14 +1,16 @@
+ //! `flash.ui.Mouse` builtin
+ 
+ use crate::avm2::activation::Activation;
+-use crate::avm2::error::make_error_2008;
++use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2008};
+ use crate::avm2::function::FunctionArgs;
++use crate::avm2::globals::slots::flash_geom_point as point_slots;
++use crate::avm2::object::TObject;
+ use crate::avm2::parameters::ParametersExt;
+ use crate::avm2::value::Value;
+ use crate::avm2::{Avm2StrRepresentable, Error};
+-use crate::avm2_stub_method;
+-use crate::backend::ui::MouseCursor;
++use crate::backend::ui::{CustomMouseCursor, MouseCursor};
+ use ruffle_macros::istr;
++use ruffle_render::bitmap::PixelRegion;
+ 
+ pub fn hide<'gc>(
+     activation: &mut Activation<'_, 'gc>,
+@@ -52,7 +54,6 @@ pub fn set_cursor<'gc>(
+             .custom_cursors
+             .contains(&value)
+         {
+-            avm2_stub_method!(activation, "flash.ui.Mouse", "cursor", "with custom cursor");
+             activation.context.mouse_data.current_custom_cursor = Some(value);
+             None
+         } else {
+@@ -70,6 +71,12 @@ pub fn set_cursor<'gc>(
+         activation.context.mouse_data.current_custom_cursor = None;
+     }
+ 
++    let custom = activation
++        .context
++        .mouse_data
++        .current_custom_cursor
++        .map(|name| name.to_utf8_lossy().into_owned());
++    activation.context.ui.select_custom_cursor(custom);
+     activation.context.mouse_data.forced_cursor = forced;
+     Ok(Value::Undefined)
+ }
+@@ -88,9 +95,92 @@ pub fn register_cursor<'gc>(
+     _this: Value<'gc>,
+     args: FunctionArgs<'_, 'gc>,
+ ) -> Result<Value<'gc>, Error<'gc>> {
+-    avm2_stub_method!(activation, "flash.ui.Mouse", "registerCursor");
+     let name = args.get_string_non_null(activation, 0, "name")?;
++    if name.is_empty() || name.len() > 128 {
++        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
++    }
++    let data = Value::from(args.get_object(activation, 1, "cursor")?);
++    let vector = data
++        .get_public_property(istr!("data"), activation)?
++        .as_object()
++        .and_then(|o| o.as_vector_object())
++        .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
++    let count = vector.storage().length();
++    if count == 0 || count > 32 {
++        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
++    }
++    let point_name = crate::string::AvmString::new_utf8(activation.gc(), "hotSpot");
++    let point = data
++        .get_public_property(point_name, activation)?
++        .as_object()
++        .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
++    let x = point
++        .get_slot(point_slots::X)
++        .coerce_to_number(activation)?;
++    let y = point
++        .get_slot(point_slots::Y)
++        .coerce_to_number(activation)?;
++    let rate_name = crate::string::AvmString::new_utf8(activation.gc(), "frameRate");
++    let rate = data
++        .get_public_property(rate_name, activation)?
++        .coerce_to_number(activation)?;
++    let mut frames = Vec::with_capacity(count);
++    let mut size = (0, 0);
++    for index in 0..count {
++        let bitmap = vector
++            .storage()
++            .get_optional(index)
++            .and_then(|v| v.as_object())
++            .and_then(|o| o.as_bitmap_data())
++            .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
++        bitmap.check_valid(activation)?;
++        let (w, h) = (bitmap.width(), bitmap.height());
++        if w == 0
++            || h == 0
++            || w > 32
++            || h > 32
++            || (index > 0 && size != (w, h))
++            || !x.is_finite()
++            || !y.is_finite()
++            || x < 0.0
++            || y < 0.0
++            || x >= w as f64
++            || y >= h as f64
++        {
++            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
++        }
++        size = (w, h);
++        let read = bitmap.read_area(
++            PixelRegion::for_whole_size(w, h),
++            activation.context.renderer,
++        );
++        let mut rgba = Vec::with_capacity((w * h * 4) as usize);
++        for pixel in read.raw_pixels() {
++            let p = pixel.to_un_multiplied_alpha();
++            rgba.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()]);
++        }
++        frames.push(rgba);
++    }
++    let cursor = CustomMouseCursor {
++        width: size.0 as u16,
++        height: size.1 as u16,
++        hotspot: (x as u16, y as u16),
++        frames,
++        frame_rate: if rate.is_finite() {
++            rate.clamp(0.0, 1000.0)
++        } else {
++            0.0
++        },
++    };
++    if !activation
++        .context
++        .ui
++        .register_custom_cursor(name.to_utf8_lossy().into_owned(), cursor)
++    {
++        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
++    }
+     activation.context.mouse_data.custom_cursors.insert(name);
++
+     Ok(Value::Undefined)
+ }
+ 
+@@ -99,9 +189,12 @@ pub fn unregister_cursor<'gc>(
+     _this: Value<'gc>,
+     args: FunctionArgs<'_, 'gc>,
+ ) -> Result<Value<'gc>, Error<'gc>> {
+-    avm2_stub_method!(activation, "flash.ui.Mouse", "unregisterCursor");
+     let name = args.get_string_non_null(activation, 0, "name")?;
+     activation.context.mouse_data.custom_cursors.remove(&name);
++    activation
++        .context
++        .ui
++        .unregister_custom_cursor(&name.to_utf8_lossy());
+     if activation.context.mouse_data.current_custom_cursor == Some(name) {
+         activation.context.mouse_data.current_custom_cursor = None;
+     }
 diff --git a/core/src/backend/audio/mixer.rs b/core/src/backend/audio/mixer.rs
-index 67eac5725e5a850fdde1df4d90fe027a430c203b..714a89bbb269be4a3c59ac52058149ccdba06ea2 100644
+index 67eac5725e5a850fdde1df4d90fe027a430c203b..cc2eaaaae12e813cbccba11690d5b87f6f5c514e 100644
 --- a/core/src/backend/audio/mixer.rs
 +++ b/core/src/backend/audio/mixer.rs
 @@ -271,7 +271,8 @@ impl AudioMixer {
@@ -623,16 +820,20 @@ index 67eac5725e5a850fdde1df4d90fe027a430c203b..714a89bbb269be4a3c59ac52058149cc
  
              if output_memory.pos == 0 || output_memory.pos == 1024 {
                  for (_, sound) in sound_instances.iter_mut() {
-@@ -492,7 +495,7 @@ impl AudioMixer {
+@@ -491,8 +494,11 @@ impl AudioMixer {
+                 }
              }
  
++            // Surround endpoints can expose more channels than Flash's stereo
++            // mix. Write silence to every unused channel on every callback.
++            buf_frame.fill(0.0f32.to_sample::<T>());
              for (buf_sample, output_sample) in buf_frame.iter_mut().zip(output_frame.iter()) {
 -                *buf_sample = *output_sample;
 +                *buf_sample = output_sample.to_sample::<T>();
              }
          }
  
-@@ -744,7 +747,8 @@ impl AudioMixerProxy {
+@@ -744,7 +750,8 @@ impl AudioMixerProxy {
              + Default
              + dasp::Sample<Signed = T>
              + dasp::sample::ToSample<f32>
@@ -642,6 +843,40 @@ index 67eac5725e5a850fdde1df4d90fe027a430c203b..714a89bbb269be4a3c59ac52058149cc
      {
          let mut sound_instances = self
              .sound_instances
+diff --git a/core/src/backend/ui.rs b/core/src/backend/ui.rs
+index b68f74fcd60da0ce2b5071cc94670fcf5754e35a..4f0b85dbd54e380a56173cb8304373bf8d06f5c0 100644
+--- a/core/src/backend/ui.rs
++++ b/core/src/backend/ui.rs
+@@ -111,6 +111,13 @@ pub trait UiBackend: Any {
+     /// Changes the mouse cursor image.
+     fn set_mouse_cursor(&mut self, cursor: MouseCursor);
+ 
++    /// Register bounded Flash cursor artwork; backends without bitmap cursors retain their fallback.
++    fn register_custom_cursor(&mut self, _name: String, _cursor: CustomMouseCursor) -> bool {
++        true
++    }
++    fn select_custom_cursor(&mut self, _name: Option<String>) {}
++    fn unregister_custom_cursor(&mut self, _name: &str) {}
++
+     /// Get the clipboard content
+     fn clipboard_content(&mut self) -> String;
+ 
+@@ -185,6 +192,15 @@ pub trait UiBackend: Any {
+     fn close_file_dialog(&mut self);
+ }
+ 
++/// Straight-alpha RGBA frames copied at registration, independent of subsequent BitmapData edits.
++pub struct CustomMouseCursor {
++    pub width: u16,
++    pub height: u16,
++    pub hotspot: (u16, u16),
++    pub frames: Vec<Vec<u8>>,
++    pub frame_rate: f64,
++}
++
+ /// A mouse cursor icon displayed by the Flash Player.
+ /// Communicated from the core to the UI backend via `UiBackend::set_mouse_cursor`.
+ #[derive(Clone, Copy, Debug, PartialEq, Eq, Avm2Enum)]
 diff --git a/core/src/bitmap/operations.rs b/core/src/bitmap/operations.rs
 index 4db9211aa12c0789e911e1e7d1b04282899ec402..6ddc04aa1d3d08caf4d8b24c1deddabf458d7aaf 100644
 --- a/core/src/bitmap/operations.rs
@@ -1509,7 +1744,7 @@ index be36e8a8e1847d8c5a74e7d91508420f0d7d6e0a..0c1e9d889c33bdb1f638be42c452516b
      }
  
 diff --git a/desktop/src/app.rs b/desktop/src/app.rs
-index a3410740e5aaee3a0d5db0bd7cbba9f205449207..c23c476201544eab4d9c6d32ee712b7a91d68cf8 100644
+index a3410740e5aaee3a0d5db0bd7cbba9f205449207..5fc736880b5ec52ec2ae1c649daae08222fa0816 100644
 --- a/desktop/src/app.rs
 +++ b/desktop/src/app.rs
 @@ -24,6 +24,8 @@ use winit::keyboard::{Key, NamedKey};
@@ -1802,7 +2037,7 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..c23c476201544eab4d9c6d32ee712b7a
                  preferences,
                  gui,
                  player,
-@@ -574,6 +667,102 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -574,6 +667,107 @@ impl ApplicationHandler<RuffleEvent> for App {
          enter_runtime!(self);
  
          match (&mut self.main_window, event) {
@@ -1856,6 +2091,11 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..c23c476201544eab4d9c6d32ee712b7a
 +            }
 +            (window, RuffleEvent::FixtureControl(request)) => {
 +                let result = window.as_mut().and_then(|window| {
++                    if request.name == "BlitzFixtureGameCursor" {
++                        return Some(ruffle_core::external::Value::String(
++                            crate::launcher_cursor::game_snapshot().to_string(),
++                        ));
++                    }
 +                    if request.name == "BlitzFixtureCursor" {
 +                        return Some(ruffle_core::external::Value::String(
 +                            crate::launcher_cursor::snapshot().to_string(),
@@ -1905,7 +2145,7 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..c23c476201544eab4d9c6d32ee712b7a
              (Some(main_window), RuffleEvent::TaskPoll(task)) => main_window.player.poll(task),
  
              (Some(main_window), RuffleEvent::OnMetadata(swf_header)) => {
-@@ -671,6 +860,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -671,6 +865,7 @@ impl ApplicationHandler<RuffleEvent> for App {
              }
  
              (_, RuffleEvent::ExitRequested) => {
@@ -1913,7 +2153,15 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..c23c476201544eab4d9c6d32ee712b7a
                  event_loop.exit();
              }
  
-@@ -703,17 +893,32 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -695,6 +890,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+         enter_runtime!(self);
+ 
+         if let Some(main_window) = &mut self.main_window {
++            crate::launcher_cursor::prepare_game(event_loop);
+             main_window.about_to_wait(self.gilrs.as_mut());
+ 
+             // The event loop is finished; let's find out how long we need to wait for.
+@@ -703,17 +899,32 @@ impl ApplicationHandler<RuffleEvent> for App {
              // Note: the control flow might be set to `ControlFlow::WaitUntil` with a
              // timestamp in the past! Take that into consideration when changing this code.
              if let Some(next_frame_time) = main_window.next_frame_time {
@@ -1947,7 +2195,7 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..c23c476201544eab4d9c6d32ee712b7a
  
          // Manually stop the tokio runtime: this makes sure that any pending Player-bound futures
          // are properly cancelled and put back on the winit event loop before it closes, preventing
-@@ -721,6 +926,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -721,6 +932,7 @@ impl ApplicationHandler<RuffleEvent> for App {
          if let Some(runtime) = self.runtime.take() {
              runtime.shutdown_timeout(std::time::Duration::from_secs(1));
          }
@@ -1989,7 +2237,7 @@ index 9f4dd8d0bf7a86d682e2f87a2da14fc3951b07a4..c344161adb727a650f62be75d2068fc0
          if open_url_mode == OpenUrlMode::Deny {
              tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
 diff --git a/desktop/src/backends/ui.rs b/desktop/src/backends/ui.rs
-index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0cdb0b6fa0 100644
+index e04fa12220733c323c3d8e35002862480a27ccab..b79726c2aaa3ae9be85f0c7796aeefbb8508a92d 100644
 --- a/desktop/src/backends/ui.rs
 +++ b/desktop/src/backends/ui.rs
 @@ -144,6 +144,8 @@ impl FileDialogSelection for DesktopFileSelection {
@@ -2011,9 +2259,24 @@ index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0c
              window,
              event_loop,
              cursor_visible: true,
-@@ -237,14 +242,25 @@ impl UiBackend for DesktopUiBackend {
+@@ -236,15 +241,40 @@ impl UiBackend for DesktopUiBackend {
+         self.preferred_cursor = cursor;
      }
  
++    fn register_custom_cursor(
++        &mut self,
++        name: String,
++        cursor: ruffle_core::backend::ui::CustomMouseCursor,
++    ) -> bool {
++        crate::launcher_cursor::register_game(name, cursor)
++    }
++    fn select_custom_cursor(&mut self, name: Option<String>) {
++        crate::launcher_cursor::select_game(name);
++    }
++    fn unregister_custom_cursor(&mut self, name: &str) {
++        crate::launcher_cursor::unregister_game(name);
++    }
++
      fn clipboard_content(&mut self) -> String {
 +        if self.private_fixture {
 +            return self.fixture_clipboard.clone();
@@ -2037,7 +2300,7 @@ index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0c
          self.window.set_fullscreen(if is_full {
              Some(Fullscreen::Borderless(None))
          } else {
-@@ -254,6 +270,12 @@ impl UiBackend for DesktopUiBackend {
+@@ -254,6 +284,12 @@ impl UiBackend for DesktopUiBackend {
      }
  
      fn display_root_movie_download_failed_message(&self, _invalid_swf: bool, _fetch_error: String) {
@@ -2050,7 +2313,7 @@ index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0c
          let _ = self
              .event_loop
              .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
-@@ -278,6 +300,9 @@ impl UiBackend for DesktopUiBackend {
+@@ -278,6 +314,9 @@ impl UiBackend for DesktopUiBackend {
      }
  
      fn display_unsupported_video(&self, url: Url) {
@@ -2060,7 +2323,7 @@ index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0c
          if url.scheme() == "javascript" {
              tracing::warn!(
                  "SWF tried to run a script on desktop, but javascript calls are not allowed"
-@@ -385,6 +410,9 @@ impl UiBackend for DesktopUiBackend {
+@@ -385,6 +424,9 @@ impl UiBackend for DesktopUiBackend {
      }
  
      fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
@@ -2070,7 +2333,7 @@ index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0c
          let result = self.show_open_dialog(&filters, |d| d.pick_file())?;
  
          Some(Box::pin(async move {
-@@ -400,6 +428,9 @@ impl UiBackend for DesktopUiBackend {
+@@ -400,6 +442,9 @@ impl UiBackend for DesktopUiBackend {
          &mut self,
          filters: Vec<FileFilter>,
      ) -> Option<MultiDialogResultFuture> {
@@ -2080,7 +2343,7 @@ index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0c
          let result = self.show_open_dialog(&filters, |d| d.pick_files())?;
  
          Some(Box::pin(async move {
-@@ -421,6 +452,9 @@ impl UiBackend for DesktopUiBackend {
+@@ -421,6 +466,9 @@ impl UiBackend for DesktopUiBackend {
          file_name: String,
          title: String,
      ) -> Option<DialogResultFuture> {
@@ -3291,10 +3554,10 @@ index 0000000000000000000000000000000000000000..17a2c57a0c6716430d30832323c6f6e1
 +}
 diff --git a/desktop/src/launcher_cursor.rs b/desktop/src/launcher_cursor.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..faa34035632e57798e717053ec9b796544e53971
+index 0000000000000000000000000000000000000000..b31b7b570e8cf0713baec90ba00a0be378c7c0f9
 --- /dev/null
 +++ b/desktop/src/launcher_cursor.rs
-@@ -0,0 +1,447 @@
+@@ -0,0 +1,557 @@
 +use serde_json::Value;
 +use std::cell::RefCell;
 +use winit::{
@@ -3365,6 +3628,9 @@ index 0000000000000000000000000000000000000000..faa34035632e57798e717053ec9b7965
 +    width: u16,
 +    hotspot: (u16, u16),
 +    generation: u64,
++    game: std::collections::HashMap<String, GameCursor>,
++    selected_game: Option<String>,
++    game_frame: usize,
 +}
 +thread_local! { static STATE:RefCell<State>=RefCell::new(State::default()); }
 +
@@ -3440,6 +3706,9 @@ index 0000000000000000000000000000000000000000..faa34035632e57798e717053ec9b7965
 +pub fn refresh(event_loop: &ActiveEventLoop, window: &Window) {
 +    STATE.with_borrow_mut(|state| {
 +        state.generation += 1;
++        for game in state.game.values_mut() {
++            game.prepared.clear();
++        }
 +        state.applied = None;
 +        state.cursor = None;
 +        state.hand = None;
@@ -3498,7 +3767,33 @@ index 0000000000000000000000000000000000000000..faa34035632e57798e717053ec9b7965
 +                | egui::CursorIcon::Grab
 +                | egui::CursorIcon::Crosshair
 +        );
-+        let custom = eligible && state.cursor.is_some();
++        let frame = state
++            .selected_game
++            .as_ref()
++            .and_then(|name| state.game.get(name))
++            .map(|g| {
++                if g.prepared.len() > 1 && g.image.frame_rate > 0.0 {
++                    (g.started.elapsed().as_secs_f64() * g.image.frame_rate) as usize
++                        % g.prepared.len()
++                } else {
++                    0
++                }
++            })
++            .unwrap_or(0);
++        if state.game_frame != frame {
++            state.game_frame = frame;
++            state.applied = None;
++        }
++        let game = if ["default", "original"].contains(&state.settings.style.as_str()) {
++            state
++                .selected_game
++                .as_ref()
++                .and_then(|name| state.game.get(name))
++                .and_then(|g| g.prepared.get(frame))
++        } else {
++            None
++        };
++        let custom = eligible && (game.is_some() || state.cursor.is_some());
 +        if state.applied == Some((icon, custom)) {
 +            return;
 +        }
@@ -3509,7 +3804,9 @@ index 0000000000000000000000000000000000000000..faa34035632e57798e717053ec9b7965
 +        window.set_cursor_visible(icon != egui::CursorIcon::None);
 +        if custom {
 +            window.set_cursor(
-+                if icon == egui::CursorIcon::PointingHand {
++                if game.is_some() {
++                    game
++                } else if icon == egui::CursorIcon::PointingHand {
 +                    state.hand.as_ref().or(state.cursor.as_ref())
 +                } else {
 +                    state.cursor.as_ref()
@@ -3526,6 +3823,82 @@ index 0000000000000000000000000000000000000000..faa34035632e57798e717053ec9b7965
 +            });
 +        }
 +    });
++}
++
++struct GameCursor {
++    image: ruffle_core::backend::ui::CustomMouseCursor,
++    prepared: Vec<CustomCursor>,
++    started: std::time::Instant,
++}
++pub fn register_game(name: String, image: ruffle_core::backend::ui::CustomMouseCursor) -> bool {
++    STATE.with_borrow_mut(|s| {
++        if s.game.len() >= 64 && !s.game.contains_key(&name) {
++            return false;
++        }
++        s.game.insert(
++            name,
++            GameCursor {
++                image,
++                prepared: Vec::new(),
++                started: std::time::Instant::now(),
++            },
++        );
++        s.applied = None;
++        true
++    })
++}
++pub fn select_game(name: Option<String>) {
++    STATE.with_borrow_mut(|s| {
++        if s.selected_game != name {
++            if let Some(cursor) = name.as_ref().and_then(|name| s.game.get_mut(name)) {
++                cursor.started = std::time::Instant::now();
++            }
++            s.selected_game = name;
++            s.game_frame = 0;
++            s.applied = None;
++        }
++    });
++}
++pub fn unregister_game(name: &str) {
++    STATE.with_borrow_mut(|s| {
++        s.game.remove(name);
++        if s.selected_game.as_deref() == Some(name) {
++            s.selected_game = None;
++        }
++        s.applied = None;
++    });
++}
++pub fn prepare_game(event_loop: &ActiveEventLoop) {
++    STATE.with_borrow_mut(|s| {
++        let color = if s.settings.style == "original" {
++            Some(s.settings.color)
++        } else {
++            None
++        };
++        for game in s.game.values_mut().filter(|g| g.prepared.is_empty()) {
++            for raw in &game.image.frames {
++                let mut rgba = raw.clone();
++                if let Some(color) = color {
++                    recolor(&mut rgba, &color);
++                }
++                if let Ok(source) = CustomCursor::from_rgba(
++                    rgba,
++                    game.image.width,
++                    game.image.height,
++                    game.image.hotspot.0,
++                    game.image.hotspot.1,
++                ) {
++                    game.prepared.push(event_loop.create_custom_cursor(source));
++                }
++            }
++        }
++    });
++}
++pub fn game_snapshot() -> Value {
++    STATE.with_borrow(|s| {
++        let selected = s.selected_game.as_ref().and_then(|n|s.game.get(n));
++        serde_json::json!({"registered":s.game.len(),"selected":s.selected_game,"frame":s.game_frame,"ready":selected.is_some_and(|g|!g.prepared.is_empty()),"width":selected.map(|g|g.image.width),"height":selected.map(|g|g.image.height),"hotspot":selected.map(|g|g.image.hotspot),"rgba":selected.and_then(|g|g.image.frames.first()),"dryRun":crate::launcher_host::fixture()})
++    })
 +}
 +pub fn snapshot() -> Value {
 +    STATE.with_borrow(|s|serde_json::json!({"style":s.settings.style,"generation":s.generation,"width":s.width,"hotspot":[s.hotspot.0,s.hotspot.1],"rgba":s.pixels,"custom":s.cursor.is_some(),"applied":s.applied.map(|(_,v)|v),"dryRun":crate::launcher_host::fixture()}))
@@ -4059,6 +4432,80 @@ index 20c7461d44838e607b88d0fd31e850794ef81ef0..72a4e8a968ff2ab3dbb50b2a816a0345
  #[cfg(feature = "navigator")]
  pub mod navigator;
  #[cfg(feature = "fs")]
+diff --git a/frontend-utils/src/backends/audio.rs b/frontend-utils/src/backends/audio.rs
+index 07f01d05a8b1978e3b6785c0d945e2ab239a6ffd..726b750794db61d79f8f85f904c6a4aa6acaff76 100644
+--- a/frontend-utils/src/backends/audio.rs
++++ b/frontend-utils/src/backends/audio.rs
+@@ -6,6 +6,40 @@ use ruffle_core::backend::audio::{
+ };
+ use ruffle_core::impl_audio_mixer_backend;
+ 
++// WASAPI's callback thread is otherwise a normal worker in CPAL 0.16.
++// Register only this thread with MMCSS; never change process/endpoint policy.
++#[cfg(windows)]
++fn audio_thread_priority() {
++    use std::ffi::c_void;
++    #[link(name = "avrt")]
++    unsafe extern "system" {
++        fn AvSetMmThreadCharacteristicsW(task: *const u16, index: *mut u32) -> *mut c_void;
++        fn AvRevertMmThreadCharacteristics(handle: *mut c_void) -> i32;
++    }
++    struct Guard(*mut c_void);
++    impl Drop for Guard {
++        fn drop(&mut self) {
++            if !self.0.is_null() {
++                unsafe {
++                    AvRevertMmThreadCharacteristics(self.0);
++                }
++            }
++        }
++    }
++    thread_local! {
++        static PRIORITY: Guard = {
++            let mut index = 0;
++            let task = [65u16, 117, 100, 105, 111, 0]; // Audio
++            let handle = unsafe { AvSetMmThreadCharacteristicsW(task.as_ptr(), &mut index) };
++            if handle.is_null() { tracing::warn!("Audio thread scheduling unavailable; using the normal callback thread"); }
++            Guard(handle)
++        };
++    }
++    PRIORITY.with(|_| {});
++}
++#[cfg(not(windows))]
++fn audio_thread_priority() {}
++
+ #[derive(Debug, thiserror::Error)]
+ pub enum CpalError {
+     #[error("No audio devices available")]
+@@ -56,19 +90,26 @@ impl CpalAudioBackend {
+             match sample_format {
+                 cpal::SampleFormat::F32 => device.build_output_stream(
+                     &config,
+-                    move |buffer, _| mixer.mix::<f32>(buffer),
++                    move |buffer, _| {
++                        audio_thread_priority();
++                        mixer.mix::<f32>(buffer);
++                    },
+                     error_handler,
+                     None,
+                 ),
+                 cpal::SampleFormat::I16 => device.build_output_stream(
+                     &config,
+-                    move |buffer, _| mixer.mix::<i16>(buffer),
++                    move |buffer, _| {
++                        audio_thread_priority();
++                        mixer.mix::<i16>(buffer);
++                    },
+                     error_handler,
+                     None,
+                 ),
+                 cpal::SampleFormat::U16 => device.build_output_stream(
+                     &config,
+                     move |buffer: &mut [u16], _| {
++                        audio_thread_priority();
+                         // Since I couldn't easily make `mixer` work with `u16` samples,
+                         // we fill the buffer as if it was `&[i16]`, and then rotate
+                         // the sample values to make 32768 the equilibrium.
 diff --git a/frontend-utils/src/backends/native_resource.rs b/frontend-utils/src/backends/native_resource.rs
 new file mode 100644
 index 0000000000000000000000000000000000000000..d7aec6f25a21dfc1a63430fa1f4395d0112def91

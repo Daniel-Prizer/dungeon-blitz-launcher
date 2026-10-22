@@ -6,6 +6,8 @@ The patch adds class-only placement and inherited-symbol handling, non-mutating 
 
 Version 0.32.0 skips unused desktop-editor UI work in hosted mode, preserves child-filter caches in offscreen draws, and clamps the final audio mix. Render density changes the native viewport transform rather than the requested movie clock. The rolling FPS average counts completed renders, not just callbacks. Internal bridge/runtime identifiers retain their earlier `120` spelling for compatibility.
 
+Version 0.32.1 implements the game's registered bitmap cursors, retaining alpha, hotspots and animated frames. Default uses that artwork; launcher crosshairs can override it and text fields keep their text cursor. Registration copies bounded artwork, so disposing the source bitmap cannot invalidate the cursor. The audio callback joins Windows' [MMCSS Audio task](https://learn.microsoft.com/en-us/windows/win32/api/avrt/nf-avrt-avsetmmthreadcharacteristicsw) for its own thread and reverts on exit; unused surround channels receive silence. The AS3 helper keeps music fades independent of the presentation cap.
+
 ## Build
 
 1. Clone [Ruffle](https://github.com/ruffle-rs/ruffle) and check out the exact commit above.
@@ -22,12 +24,12 @@ Native admission is separate from the Original adapter contract. A reviewed sour
 
 The public master list contains 52 SWFs. The game requests another 21 level libraries separately; these have their own exact inventory and reviewed paths. Both sets pass the same bounded download and hash checks before launch. All 73 current libraries are AS3, without legacy action tags.
 
-The changing-artwork fixture must complete at least 118 GPU renders/s at the 120 target after warmup. Preserve effective 60/s automatic timelines, requested Stage rate, original 24-step elapsed-time integration and timer cadence. Native frame callbacks, GPU completion and physical scanout are distinct measurements.
+The changing-artwork baseline at 1600×900 must complete at least 118 GPU renders/s at the 120 target after warmup. Preserve effective 60/s automatic timelines, requested Stage rate, original 24-step elapsed-time integration and timer cadence. Native frame callbacks, GPU completion and physical scanout are distinct measurements. The wider 1440p scene is measured separately; its cap is a ceiling rather than a guaranteed rate.
 
 Use the guarded inactive desktop, synthetic storage and TCP-denied public startup. Check authored vectors against Flash references, input and rebinding, blur/hide, window sizing/hit tests, UI, audio helpers, normal shutdown and packaging. Account-free fixtures do not establish live combat, server behavior or monitor scanout.
 
 ## Performance
 
-The cap is adjustable from 30 to 1000, defaulting to 240. It limits rendering without promising that throughput. At 2560×1440 with widescreen enabled, the original dungeon-artwork/HUD fixture completed 145.81 renders/s at full raster resolution. At 75% resolution and a 240 cap it completed 166.46/s, with a measured 30-second average of 165.84/s. Each run measured 20 seconds after warmup on the RTX 4080 SUPER test PC. A changing marker and GPU texture capture distinguish fresh renders from duplicate submissions.
+The cap is adjustable from 30 to 1000, defaulting to 240. It limits rendering without promising that throughput. The 0.32.0 qualification at 2560×1440 recorded 145.81 renders/s in the widescreen dungeon-artwork/HUD fixture at full resolution. At 75% resolution and a 240 cap it recorded 166.46/s, with a measured 30-second average of 165.84/s. Each run measured 20 seconds after warmup on the RTX 4080 SUPER test PC. A changing marker and GPU texture capture distinguish fresh renders from duplicate submissions. Current measurements and their retained-runtime comparisons are recorded in `qualification.json`; background apps remain running and can change the available capacity.
 
 Elapsed-time integration retained 24 steps/s and 100-ms timers fired 200 times in 20 seconds. Automatic movie timelines remain about 60/s at a 240 presentation cap. This fixture has real artwork and HUD with synthetic activity; live combat and long sessions remain unmeasured. External PresentMon capture required unavailable ETW privileges, so monitor scanout and NVIDIA overlay compatibility are unverified. Sustained 240 FPS was not achieved in this widescreen scene.

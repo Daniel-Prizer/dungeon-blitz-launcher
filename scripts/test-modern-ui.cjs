@@ -162,6 +162,37 @@ const root = path.resolve(__dirname, '..'),
         'ring'
       );
       await page.screenshot({ path: path.join(out, `native-crosshair-${size.width}.png`) });
+      await page.locator('#tab-controls').click();
+      await page.locator('.autorun-setting').scrollIntoViewIfNeeded();
+      const saves = await page.evaluate(
+        () => fixtureCalls.filter((c) => c.name === 'save-settings').length
+      );
+      await page.locator('#autorun-key').click();
+      await page.keyboard.press('n');
+      assert.equal(await page.locator('#autorun-key').textContent(), 'N');
+      assert.match(await page.locator('#autorun-key-hint').textContent(), /Press Save/);
+      assert.equal(
+        await page.evaluate(() => fixtureCalls.filter((c) => c.name === 'save-settings').length),
+        saves
+      );
+      await page.locator('#discard').click();
+      assert.equal(await page.locator('#autorun-key').textContent(), 'Ö');
+      assert.doesNotMatch(await page.locator('#autorun-key-hint').textContent(), /Press Save/);
+      await page.locator('#autorun-key').click();
+      await page.keyboard.press('n');
+      await page.locator('#save-settings').click();
+      await page.waitForFunction(() => document.querySelector('#save-settings').disabled);
+      assert.equal(await page.locator('#autorun-key').textContent(), 'N');
+      assert.doesNotMatch(await page.locator('#autorun-key-hint').textContent(), /Press Save/);
+      await page.locator('#autorun-default').click();
+      assert.equal(await page.locator('#autorun-key').textContent(), 'Ö');
+      await page.locator('#discard').click();
+      assert.equal(await page.locator('#autorun-key').textContent(), 'N');
+      await page.locator('#autorun').uncheck();
+      assert.equal(await page.locator('#autorun-key').isDisabled(), true);
+      assert.equal(await page.locator('#autorun-default').isDisabled(), true);
+      await page.locator('#discard').click();
+      await page.screenshot({ path: path.join(out, `autorun-${size.width}.png`) });
       assert.equal(
         await page.evaluate(() => fixtureCalls.some((c) => c.name === 'restart-game')),
         false
@@ -234,6 +265,7 @@ const root = path.resolve(__dirname, '..'),
             'Pinned footer remains visible',
             '120 FPS selection remains a draft until Save and never reconnects automatically',
             'Native crosshair supports draft, Discard and Save without restarting',
+            'Grouped autorun shortcut keeps capture, Discard and toggle-dependent disabling',
           ],
           checkedAt: new Date().toISOString(),
         },

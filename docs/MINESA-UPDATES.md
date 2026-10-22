@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `b68dad012dc9565dd17eeaf6c2f91d395ca111ae241e22afb7d315e183094f96`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `b090e83fbce01a81525a293ba2ae0b35b69a5ccfe0d4b4fb9fe4c1b1f5a97752`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. The latest deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
@@ -61,3 +61,5 @@ Source or helper changes need fresh native qualification. Failure restores Origi
 The pinned fork supports class-only placements, inherited symbols and non-mutating vector extraction. Offscreen bitmap draws retain child filters while excluding the source root's own filter, matching the Flash reference. Mixing clips once after summing voices. Automatic timelines retain the effective 60/s ceiling while completed rendering uses its independent cap. Elapsed-time game methods, packet code, dungeon/session behavior and loot remain unchanged.
 
 Refresh and Enter-to-revive add guards for the original selection, respawn and button-handler dependencies. Twelve native method envelopes and their exception tables remain byte-identical; [the control review](../research/native-player/session-controls.json) records their hashes. The helper calls the original handlers and preserves their authentication, enabled-state and cooldown checks. See [native qualification](../research/native-player/README.md).
+
+The 0.32.1 audio correction gates the original fade loop at 60 Hz in the native player. Embedded Flash retains its existing callbacks. Its original loop instructions and exception data are retained; the other 3,775 game method bodies are unchanged from 0.32.0. Game cursor artwork now uses native `MouseCursorData` support without editing the client's cursor selection. [Audio and cursor review](../research/native-player/audio-cursor-review.json) records the comparison.

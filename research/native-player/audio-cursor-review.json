@@ -1,0 +1,63 @@
+{
+  "version": "0.32.1",
+  "reviewedAtUtc": "2026-10-22T22:02:26.131Z",
+  "clients": [
+    {
+      "source": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
+      "enhanced": "06e6c6cbd09803b33d83ef7374d2f516a731fb6e713d258db9780a3bc0dab0dd",
+      "mode": "contract",
+      "editedGameMethods": [
+        {
+          "name": "SoundManager.method_1017",
+          "before": "b4f95605476158f8b0c0dee8395c6239d9685243e381ed31e15ac67531bc4c15",
+          "after": "0f3a8435b7c0b38051cfbcfa1607e0c4f769ea2810586439ce90c175443a3c82"
+        }
+      ],
+      "unchangedGameMethodBodies": 3775,
+      "originalFadeBodySuffix": true,
+      "otherChangedTag": "BlitzAudio"
+    },
+    {
+      "source": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
+      "enhanced": "dc40e3e346a8b7762741ab1b1123a23d33a615daf79aff9de65609e861b98527",
+      "mode": "contract",
+      "editedGameMethods": [
+        {
+          "name": "SoundManager.method_1017",
+          "before": "b4f95605476158f8b0c0dee8395c6239d9685243e381ed31e15ac67531bc4c15",
+          "after": "0f3a8435b7c0b38051cfbcfa1607e0c4f769ea2810586439ce90c175443a3c82"
+        }
+      ],
+      "unchangedGameMethodBodies": 3775,
+      "originalFadeBodySuffix": true,
+      "otherChangedTag": "BlitzAudio"
+    },
+    {
+      "source": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
+      "enhanced": "b090e83fbce01a81525a293ba2ae0b35b69a5ccfe0d4b4fb9fe4c1b1f5a97752",
+      "mode": "contract",
+      "editedGameMethods": [
+        {
+          "name": "SoundManager.method_1017",
+          "before": "25283ff36f85aba6662aa2b69e6d385224690651e6713594dc9e6cd843d08ec0",
+          "after": "9694145f87768870da6dc36abc31dc37e5538c63b275a580f678da963caff403"
+        }
+      ],
+      "unchangedGameMethodBodies": 3775,
+      "originalFadeBodySuffix": true,
+      "otherChangedTag": "BlitzAudio"
+    }
+  ],
+  "clock": "SoundManager.method_1017 keeps its original instructions after a guarded early return. Only StandAlone uses a 60 Hz elapsed-time gate; embedded Flash keeps its existing callbacks. No catch-up bursts after a pause.",
+  "cursor": "The native runtime now consumes MouseCursorData artwork and hotspots. Client CustomMouse, cursor selection and native handlers are untouched.",
+  "audioOutput": "MMCSS Audio task registration is scoped to the CPAL callback thread and reverted on thread exit. Surround channels beyond the stereo mix are explicitly cleared. Private PCM diagnostics are excluded from the release patch/binary.",
+  "nativeQualification": {
+    "version": "0.32.1",
+    "nativeSha256": "032e3640907d021f91b9764bd7fc83d4c6e22d9b94d84ed34b4c102a3998b5a3",
+    "patchSha256": "c01ea9936d96552991d0acfa8c4e368500baedbc38246adbf7403dd216e796ec",
+    "gameCursors": 16,
+    "audioWaveformComparison": true,
+    "audioCallbackTiming": true
+  },
+  "originalExceptionTablesAndMethodLimitsUnchanged": true
+}

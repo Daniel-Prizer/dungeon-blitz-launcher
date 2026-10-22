@@ -38,10 +38,13 @@ The widescreen dungeon-artwork/HUD fixture at 2560×1440 completes about 146 ren
 Additional native fixtures:
 
 - `test-native-player-settings.cjs <stub.swf> <ruffle_desktop.exe>`: all cursor styles and exact pixels/hotspots, native text cursor, live Save, three Game replacements, raster density/cap changes, tutorial width and restored widescreen.
+- `test-native-game-cursor.cjs <stub.swf> <ruffle_desktop.exe>`: all 16 current game cursors through the original registration method, copied RGBA/hotspots, animation, disposed source bitmaps, invalid dimensions, unregister and text fallback. OS cursor application stays in dry-run mode.
 - `test-refresh-controls.cjs <stub.swf> <ruffle_desktop.exe>`: cached/list character selection, mismatch/missing/duplicate cancellation, manual input, dead/alive/typing/hidden/cooldown and held Enter. Only fixture authentication/packet callbacks are stubbed.
 - `test-native-media.cjs --stub=<stub.swf>`: seven real ability icons and five child-filter, root-filter, mask and density pixel checks. `--flash` constructs an independent Flash reference.
 
 The offline stub must derive from the exact admitted enhanced client and only suppress constructors that would start authentication. Both public origins are also tested with the real client, empty memory storage and denied TCP. Resource checks verify 73 SWFs; MP3 checks cover a real public file, format validation, authentication, unknown paths and traversal rejection. Audio playback fixtures compare native sound durations with Flash and check clipping with eight overlapping effects.
+
+Audio repair qualification also compares owned CPAL PCM with decoded Flash reference clips, checking waveform alignment and missing audio windows. Callback timing is measured separately because correct PCM can still stutter when delivery is late. The fade fixture exercises the original SoundManager stream loop at 60 and 240 FPS. These are pre-device measurements; they do not establish listening quality at the speakers.
 
 Camera/map, transition/terrain, native window bridge, production archive integrity, packaged resources, singleplayer, signed updating and independent installer remain release gates. Refresh/revive dependency review covers raw ABC instructions and exception tables, preserving all twelve original method envelopes. Minesa's TouchBridge cleanup and ScreenRepaint remain intact.
 

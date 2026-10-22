@@ -4,6 +4,8 @@ package {
  import flash.media.SoundTransform;
  import flash.utils.Dictionary;
  import flash.events.Event;
+ import flash.system.Capabilities;
+ import flash.utils.getTimer;
  // Launcher-owned mixer. No authentication, packets, saves or entity state edits.
  public class BlitzAudio {
   private static var initialized:Boolean=false;
@@ -11,6 +13,9 @@ package {
   private static var channels:Dictionary=new Dictionary(true);
   private static var contexts:Array=[];
   private static var bus:String="player";
+  private static var fadeClock:uint=0;
+  private static var fadeClockStarted:Boolean=false;
+  private static var fadeRemainder:Number=0;
   public static function Init():void {
    if(initialized)return;
    if(ExternalInterface.available){
@@ -46,9 +51,17 @@ package {
   }
   // Run original stream fading against its original gain, then apply bus gain.
   // This prevents a quiet bus from changing the game's fade timing or compounding.
-  public static function BeforeTick():void {
+  public static function BeforeTick():Boolean {
    Init();contexts.length=0;bus="player";
+   // Flash already limits ENTER_FRAME to 60/s. The native presentation clock
+   // can run faster; keep the original per-tick fade steps on their own clock.
+   if(Capabilities.playerType=="StandAlone"){
+    var now:uint=uint(getTimer());var elapsed:uint=uint(now-fadeClock);fadeClock=now;
+    if(!fadeClockStarted||elapsed>=250){fadeClockStarted=true;fadeRemainder=0;}
+    else {fadeRemainder+=elapsed;if(fadeRemainder<1000/60)return false;fadeRemainder%=1000/60;}
+   }
    for(var key:Object in channels){var record:Object=channels[key];if(record.stream){var channel:SoundChannel=key as SoundChannel;var transform:SoundTransform=channel.soundTransform;transform.volume=Number(record.base);channel.soundTransform=transform;}}
+   return true;
   }
   public static function AfterTick():void {
    for(var key:Object in channels){var record:Object=channels[key];if(record.stream){var channel:SoundChannel=key as SoundChannel;record.base=channel.soundTransform.volume;Apply(channel,record);}}

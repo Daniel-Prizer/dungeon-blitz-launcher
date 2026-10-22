@@ -171,9 +171,13 @@ function render(next) {
     $('unlock-key').textContent = window.blitzShortcuts.label(s.unlockKey);
     $('unlock-key').dataset.code = s.unlockKey;
   }
-  if (recording !== 'autorun-key')
+  if (recording !== 'autorun-key') {
     $('autorun-key').textContent =
       s.autorunKey === 'ö' ? 'Ö' : window.blitzShortcuts.label(s.autorunKey);
+    $('autorun-key-hint').textContent = Object.hasOwn(edits, 'autorunKey')
+      ? 'Shortcut selected. Press Save to apply it.'
+      : 'Click to choose an unused game key. Escape cancels.';
+  }
   for (const id of ['unlock-key', 'autorun-key'])
     $(id).setAttribute('aria-pressed', String(recording === id));
   $('autorun-key').disabled = $('autorun-default').disabled =
