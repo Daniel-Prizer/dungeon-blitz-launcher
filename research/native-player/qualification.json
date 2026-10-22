@@ -1,6 +1,6 @@
 {
-  "version": "0.31.0",
-  "checkedAtUtc": "2026-10-22T00:51:36.221Z",
+  "version": "0.31.1",
+  "checkedAtUtc": "2026-10-22T01:38:31.652Z",
   "nativeSha256": "acd783efa341d216682b82b3af7824d83349a572f2a2e1c62d50d2f212fd7376",
   "patchSha256": "669a054890f24506d7abc4e33688dbae40413de70cc6846ae827b87353c28ac3",
   "clientSha256": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
@@ -11,11 +11,11 @@
     ],
     "room": "a_Room_BT12",
     "level": "LevelsBT.swf",
-    "elapsedMs": 20007,
-    "gameUpdates": 2400,
-    "completedGpuPerSecond": 119.99002275499413,
-    "nativeSteps": 480.1680000000118,
-    "nativeElapsedMs": 20007,
+    "elapsedMs": 20000,
+    "gameUpdates": 2399,
+    "completedGpuPerSecond": 119.99038749817387,
+    "nativeSteps": 480.00000000001273,
+    "nativeElapsedMs": 20000,
     "timerEvents": 200,
     "markerPixels": 256,
     "normalExit": true
@@ -33,7 +33,7 @@
       "https://dungeonblitzr.theminesa.studio/",
       "https://dungeonblitz.theminesa.studio/"
     ],
-    "verifiedSwfAssets": 52,
+    "verifiedSwfAssets": 73,
     "viewport": [
       1600,
       900
@@ -44,7 +44,8 @@
       "environment": 0.75,
       "music": 0.5,
       "player": 0.25
-    }
+    },
+    "levelLibraries": 21
   },
   "controls": [
     "typed Ö",
@@ -56,6 +57,12 @@
     "four viewports and 96 own-window hit tests",
     "normal close and synthetic storage reopen"
   ],
-  "unitGroups": 105,
-  "scope": "Original game artwork/HUD and anonymous public startup; no authenticated gameplay, physical desktop input or monitor scanout. Broader combat and long-session performance are unmeasured."
+  "unitGroups": 106,
+  "scope": "Original game artwork/HUD and anonymous public startup; no authenticated gameplay, physical desktop input or monitor scanout. Broader combat and long-session performance are unmeasured.",
+  "resourceFix": {
+    "brokeredDungeonFixture": true,
+    "review": "level-resources.json",
+    "binaryUnchangedFrom": "0.31.0",
+    "packagedModule": true
+  }
 }

@@ -62,7 +62,9 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## Native 120 FPS admission
 
-The native player is qualified separately for **swf-eedde5fc22be**, 983,395 bytes, SHA-256 `c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d`. The complete Original contract produces enhanced SHA-256 `874171b528c3850b9fa17d6365f64cdc3ff94e843c0579627ee82999008d2532`. All 52 SWFs listed by this deployment match the reviewed artwork inventory.
+The native player is qualified separately for **swf-eedde5fc22be**, 983,395 bytes, SHA-256 `c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d`. The complete Original contract produces enhanced SHA-256 `874171b528c3850b9fa17d6365f64cdc3ff94e843c0579627ee82999008d2532`. Admission verifies the 52 master-list SWFs and 21 separately requested level libraries on both official origins.
+
+The 0.31.1 resource fix includes the level libraries, which are absent from `masterFileList.xml`. Two current level files contain the same dialogue spelling correction; their other tags, constant pools, class contracts and all raw method bodies/exception tables are unchanged. [Level review](../research/native-player/level-resources.json) records the hashes and comparison. Unknown files and changed bytes still fail admission.
 
 Admission checks both hashes, the complete adapter contract, the exact SWF inventory and every artwork hash. A source or helper change needs fresh native qualification. Failure restores Original and preserves preferences. This does not approve the same deployment for the separate retained GPU world adapter.
 

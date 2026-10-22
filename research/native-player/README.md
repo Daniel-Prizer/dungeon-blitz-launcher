@@ -18,6 +18,12 @@ The imported directory contains the runtime, upstream Ruffle/third-party notices
 
 Native admission is separate from the Original adapter contract. A reviewed source hash alone is insufficient: the complete adapter, exact SWF inventory and every artwork hash must also pass. Never add a future hash merely to dismiss fallback.
 
+The public master list contains 52 SWFs. The game requests another 21 level libraries separately; these have their own exact inventory and reviewed paths. Both sets pass the same bounded download and hash checks before launch. All 73 current libraries are AS3, without legacy action tags.
+
 The changing-artwork fixture must complete at least 118 GPU renders/s at the 120 target after warmup. Preserve effective 60/s automatic timelines, requested Stage rate, original 24-step elapsed-time integration and timer cadence. Native frame callbacks, GPU completion and physical scanout are distinct measurements.
 
 Use the guarded inactive desktop, synthetic storage and TCP-denied public startup. Check authored vectors against Flash references, input and rebinding, blur/hide, window sizing/hit tests, UI, audio helpers, normal shutdown and packaging. Account-free fixtures do not establish live combat, server behavior or monitor scanout.
+
+## 240 FPS investigation
+
+The 120 FPS runtime remains unchanged. At a 240 target, the original dungeon-artwork/HUD fixture completed 233.83 renders/s at 1600×900. Experimental removal of desktop UI work and unused AVM1 cleanup reached 230.02/s there and 179.19/s at 2560×1440. A 1000-target throughput run reached 225.50/s at 1600×900. Timers and elapsed-time integration remained correct, but the 240 gate was not met. The experimental runtime changes were removed; no 240 option is shipped. These results show the current scene-processing limit, not that a future renderer redesign is impossible.

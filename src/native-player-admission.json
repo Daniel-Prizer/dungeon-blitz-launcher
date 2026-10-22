@@ -2,7 +2,9 @@
   "runtime": "ruffle-0.7.1-blitz120",
   "upstreamCommit": "89a7049965f3090e706265670df309a5128233ac",
   "tcpHost": "dungeonblitzr.theminesa.studio",
-  "clients": ["c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d"],
+  "clients": [
+    "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d"
+  ],
   "enhanced": {
     "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d": "874171b528c3850b9fa17d6365f64cdc3ff94e843c0579627ee82999008d2532"
   },
@@ -59,5 +61,28 @@
     "UI_Seasonal.swf",
     "Utilities.swf",
     "sounds/Sound.swf"
+  ],
+  "levels": [
+    "LevelsAC.swf",
+    "LevelsBT.swf",
+    "LevelsCH.swf",
+    "LevelsEG.swf",
+    "LevelsHome.swf",
+    "LevelsJC.swf",
+    "LevelsLD.swf",
+    "LevelsLI01.swf",
+    "LevelsLI02.swf",
+    "LevelsLI03.swf",
+    "LevelsLI04.swf",
+    "LevelsLI05.swf",
+    "LevelsLI06.swf",
+    "LevelsLI07.swf",
+    "LevelsLI08.swf",
+    "LevelsLI09.swf",
+    "LevelsNR.swf",
+    "LevelsOMM.swf",
+    "LevelsSD.swf",
+    "LevelsSRN.swf",
+    "LevelsTut.swf"
   ]
 }

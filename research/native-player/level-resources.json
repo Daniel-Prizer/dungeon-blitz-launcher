@@ -1,0 +1,52 @@
+{
+  "checkedAtUtc": "2026-10-22T01:37:29.926Z",
+  "origin": "https://dungeonblitzr.theminesa.studio/",
+  "inventory": "src/native-player-admission.json#levels",
+  "hashes": "src/gpu/assets.json",
+  "levels": 21,
+  "changes": [
+    {
+      "name": "LevelsLI02.swf",
+      "oldHash": "b161276c441137f7178a9f1696180137b4fae75bb90a550fdde147faa9dc1d70",
+      "newHash": "6adae3043712016c47cf2ae234701c478fd1993bde2494820d00a1cf79a100ff",
+      "bytes": 475002,
+      "tags": 374,
+      "differences": [
+        {
+          "tag": 370,
+          "type": 82,
+          "rawBodiesUnchanged": 1341,
+          "strings": [
+            {
+              "index": 1172,
+              "old": "8 Minion2 Her offpring will trample your cities and devour your kind!",
+              "new": "8 Minion2 Her offspring will trample your cities and devour your kind!"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "LevelsSRN.swf",
+      "oldHash": "7272a13a3e6ee3fe423ef381dcbe94e42a7494c62c901948454deb2a4d5b9213",
+      "newHash": "0e8d519320b33bac404c8a6072e94fbc89182ae993ee735a26823d34ce77ba48",
+      "bytes": 3308220,
+      "tags": 2221,
+      "differences": [
+        {
+          "tag": 1956,
+          "type": 82,
+          "rawBodiesUnchanged": 1341,
+          "strings": [
+            {
+              "index": 1172,
+              "old": "8 Minion2 Her offpring will trample your cities and devour your kind!",
+              "new": "8 Minion2 Her offspring will trample your cities and devour your kind!"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "review": "Both changed files differ only in one dialogue string: offpring -> offspring. All non-ABC tags, class/interface contracts, constant pools other than that string, and 1341 raw method bodies including exception tables per file are unchanged."
+}

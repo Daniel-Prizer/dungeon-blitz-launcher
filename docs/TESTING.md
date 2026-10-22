@@ -20,6 +20,7 @@ A production-named game executable can trigger a running farmer's process guard.
 - `research-native-gpu-performance.cjs --60`: original-artwork/HUD fixture, source/native/render rates, GPU pixels, caps, resize and interrupted shutdown. The stage-rate flag is fixture-only.
 - `test-compatible-native-suites.cjs <fixture.exe>`: existing camera/map and transition/terrain/menu suites through the independent shared host.
 - `test-packaged-singleplayer.cjs`: actual packaged utility/server lifecycle, artwork, normal stop/restart and production archive-integrity positive/negative controls.
+- `test-packaged-native.cjs`: actual packaged native resource module under production fuses, public asset admission, authenticated dungeon reads and rejected unknown/unauthenticated reads.
 - `test-updater-electron.cjs --packaged --isolated-fixture`: packaged updater module, signatures, physical ASAR hashes, progress, tamper rejection, cleanup and rollback.
 - `test-installer.cjs --isolated-fixture`: fresh/repeat install, registration, real shortcut files, busy-process refusal, path rejection, newer-build retention, signed rollback and managed uninstall.
 - `test-previous-updater.cjs <signed-manifest> <retained-shim>`: complete new payload through an older signed native updater.
@@ -45,3 +46,5 @@ The 0.31.0 candidate passes 105 unit groups and Settings UI at both sizes. Its p
 Anonymous startup on both official addresses, audio helper levels, Ö/rebinding, repeat/chord handling, hide/disable, synthetic disk persistence, four window sizes and normal shutdown pass in owned fixtures. The alternative address exercises the client's hardcoded legacy resource URL through the same admitted HTTPS cache. No account, physical desktop input or scanout measurement was used. Native source/build instructions and the Flash vector reference are in [native-player](../research/native-player/README.md); the release qualification record binds the tested binary and source hashes.
 
 The packaged build passes source/runtime hashes, production fuses, registered archive integrity, singleplayer lifecycle, signed updater and independent installer checks. The retained signed 0.30.1 helper installs and verifies all 442 files of the complete new payload, including the native player.
+
+The 0.31.1 resource check verifies all 73 SWFs, including 21 level libraries, through the authenticated broker on both public origins. The 2560×1440 changing dungeon fixture loads its artwork through that broker and completes 119.99 GPU renders/s, with 256 matching marker pixels, normal timer cadence and original 24-step integration. The native binary and its timing code are unchanged from 0.31.0. See the native-player reference for the unsuccessful 240 FPS measurements and their limits.

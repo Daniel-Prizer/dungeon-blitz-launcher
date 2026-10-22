@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test'),
   assert = require('node:assert/strict');
-const { prepare, manifestFiles } = require('../src/native-player-resources.cjs');
+const { prepare, manifestFiles, levelFiles } = require('../src/native-player-resources.cjs');
 const { validSettings } = require('../src/policy.cjs');
 test('120 FPS is an opt-in renderer and does not change the existing cap or defaults', () => {
   assert.equal(validSettings().gameRenderer, 'original');
@@ -53,4 +53,27 @@ test('Native public manifest parser rejects traversal and unexpected resource ty
   for (const name of ['../saves.xml', 'https://evil/a.swf', 'Account.json', 'a.exe', 'a.swf?x'])
     assert.throws(() => manifestFiles(`<File Name="${name}" Version="cbp"/>`));
   assert.throws(() => manifestFiles(''));
+});
+test('Native level resources require the complete reviewed inventory and exact paths', () => {
+  const known = [{ name: 'LevelsBT.swf', path: '/p/cam/LevelsBT.swf' }];
+  assert.deepEqual(levelFiles(known, ['LevelsBT.swf']), [
+    { name: 'LevelsBT.swf', pathname: '/p/cam/LevelsBT.swf' },
+  ]);
+  for (const names of [
+    [],
+    ['LevelsUnknown.swf'],
+    ['LevelsBT.swf', 'LevelsBT.swf'],
+    ['../LevelsBT.swf'],
+  ])
+    assert.throws(() => levelFiles(known, names));
+  for (const pathname of [
+    '/p/cam/../LevelsBT.swf',
+    '/p/cam/LevelsHome.swf',
+    'https://other/LevelsBT.swf',
+  ])
+    assert.throws(() => levelFiles([{ ...known[0], path: pathname }], ['LevelsBT.swf']));
+  assert.throws(() => levelFiles([...known, ...known], ['LevelsBT.swf']));
+  const admission = require('../src/native-player-admission.json');
+  const levels = levelFiles(require('../src/gpu/assets.json').assets, admission.levels);
+  assert.equal(levels.length, 21);
 });

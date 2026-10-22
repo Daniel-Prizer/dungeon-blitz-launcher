@@ -83,6 +83,8 @@ async function prepare(root, address, signal, cacheDirectory) {
     .sort();
   if (JSON.stringify(artworkNames) !== JSON.stringify(admission.artwork))
     throw Error('The native artwork manifest changed. Original rendering is active.');
+  // Level libraries load on demand and are absent from masterFileList.xml.
+  const levels = levelFiles(known, admission.levels);
   const files = new Map([
     [sourceURL.pathname, { bytes: adapted.patched, type: 'application/x-shockwave-flash' }],
     [masterPath, { bytes: master, type: 'application/xml' }],
@@ -113,7 +115,7 @@ async function prepare(root, address, signal, cacheDirectory) {
     files.set(entry.pathname, { file: cached, type: 'application/x-shockwave-flash' });
     evidence.push({ name: entry.name, pathname: entry.pathname, sha256, bytes: bytes.length });
   }
-  const swfs = entries.filter((entry) => entry.name.endsWith('.swf'));
+  const swfs = [...entries.filter((entry) => entry.name.endsWith('.swf')), ...levels];
   // Two bounded downloads; no account endpoints, cookies or persisted sessions.
   for (let index = 0; index < swfs.length; index += 2)
     await Promise.all(swfs.slice(index, index + 2).map(admitted));
@@ -202,4 +204,27 @@ async function prepare(root, address, signal, cacheDirectory) {
   };
 }
 
-module.exports = { prepare, manifestFiles };
+function levelFiles(known, names) {
+  if (
+    !Array.isArray(names) ||
+    !names.length ||
+    names.length > 32 ||
+    names.some((name) => !/^Levels[A-Za-z0-9]+\.swf$/.test(name))
+  )
+    throw Error('Invalid native level inventory');
+  const levels = known
+    .filter((entry) => names.includes(entry.name))
+    .map((entry) => {
+      if (
+        !/^\/p\/[a-z0-9]+\/Levels[A-Za-z0-9]+\.swf$/.test(entry.path) ||
+        path.posix.basename(entry.path) !== entry.name
+      )
+        throw Error('Invalid native level resource');
+      return { name: entry.name, pathname: entry.path };
+    });
+  if (JSON.stringify(levels.map((entry) => entry.name).sort()) !== JSON.stringify(names))
+    throw Error('The native level inventory changed. Original rendering is active.');
+  return levels;
+}
+
+module.exports = { prepare, manifestFiles, levelFiles };
