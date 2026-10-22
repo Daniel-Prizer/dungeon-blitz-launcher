@@ -5,11 +5,11 @@
 | Component | Responsibility |
 | --- | --- |
 | Electron shell: main.cjs, preload.cjs, ui.js | Local Settings, window layout, preferences and update coordination |
-| LegacyRuntime / NativeGpuRuntime | Start the native game host and exchange validated control messages |
+| LegacyRuntime | Start the Original game host and exchange validated control messages |
 | NativePlayerRuntime / native-player-resources | Admit the reviewed multiplayer client and assets, broker public resources, and start the separate native GPU player |
 | legacy/main.cjs and NativeHost.cs | Flash window, client interception, attachment, input and process-scoped audio |
 | BlitzDisplay / BlitzAudio / BlitzInput | Revision-checked game presentation, audio and own-stage input helpers |
-| GPU session and workers | Retained artwork decoding, world composition and bounded presentation interpolation |
+| Retained GPU session and workers | Research fixtures only; no production renderer choice |
 | Singleplayer utility process | One owned local server/world per profile |
 | UpdateInstaller / InstallMaintenance | Verified file installation, previous-build retention and recorded-file cleanup |
 
@@ -23,9 +23,11 @@ Client reconstruction belongs in the legacy adapter modules. Game hashes, recipe
 
 GPU code separates collection, scene validation, interpolation, resource decoding and graphics submission. The worker queue is bounded. Native gameplay owns clocks, input, audio and networking. The local module bundler accepts a limited syntax; changes to its grammar need bundle tests on the legacy engine.
 
-The optional 120 FPS player uses a pinned Ruffle fork, not the retained world worker. A per-player presentation clock separates 120 frame callbacks from automatic timelines capped at the existing Flash host's effective 60/s. The client's elapsed-time simulation remains unchanged. Admission requires both the complete Original adapter contract and a separately qualified source hash, manifest inventory and artwork hashes. Unknown sources restore Original without changing the saved renderer choice.
+High FPS uses a pinned Ruffle fork. A configurable presentation clock is independent of automatic timelines capped at the existing Flash host's effective 60/s. The client's elapsed-time simulation remains unchanged. Admission requires the complete Original adapter contract and separately qualified source/output hashes, inventory and artwork hashes. Unknown sources restore Original without changing the saved renderer choice. Raster density changes the Stage viewport transform and inverse input mapping together. Completed-render statistics feed both counters.
 
 The shell brokers only listed public resources over a token-authenticated loopback HTTP server. The native player cannot fetch arbitrary origins or files, open a browser directly, or execute browser JavaScript. TCP is restricted to the reviewed game endpoint on port 8080, including when the other official asset origin is selected. Its settings pipe shares the existing bounded authentication and window bridge. Storage belongs to a separate native-player profile; existing Flash login state is never copied.
+
+Public MP3 downloads have an exact name allowlist, format validation, two concurrent fetches and a bounded memory cache. The refresh path carries only a bounded account ID and character name in memory for one reconnect. Native Play and revive handlers retain authentication, cooldowns and packet checks. Refresh cannot apply pending server or renderer drafts.
 
 ## Assessment
 

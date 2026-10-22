@@ -138,7 +138,8 @@ function render(next) {
     $('keep-awake').checked = s.keepGameAwake;
     $('render-resolution').value = s.renderResolution;
     $('game-renderer').value = s.gameRenderer;
-    if (document.activeElement !== $('gpu-frame-cap')) $('gpu-frame-cap').value = s.gpuFrameCap;
+    if (document.activeElement !== $('native-frame-cap'))
+      $('native-frame-cap').value = s.nativeFrameCap;
     $('show-fps').checked = s.showFPS;
     $('experimental-widescreen').checked = s.experimentalWidescreen;
     $('centered-hotbar').checked = s.centeredHotbar;
@@ -194,37 +195,24 @@ function render(next) {
       : 'Player includes abilities and menu sounds. Environment includes ambient and world sounds. Master volume scales every category.';
   for (const bus of audioBuses) $('audio-' + bus).disabled = state.audioIntegration === false;
   $('render-resolution').disabled =
-    nativeSelection || state.clientIntegration === false || state.audioIntegration === false;
-  $('resolution-hint').textContent = nativeSelection
-    ? 'The 120 FPS player uses full rendering resolution. Your saved preference is kept for Original.'
-    : 'Lower detail draws fewer pixels and looks softer.';
-  $('gpu-frame-cap').disabled =
-    s.ownedSingleplayer || s.gameRenderer !== 'gpu' || !s.hardwareAcceleration;
+    state.clientIntegration === false || state.audioIntegration === false;
+  $('resolution-hint').textContent = 'Lower detail draws fewer pixels and looks softer.';
+  $('native-frame-cap').disabled = !nativeSelection || !s.hardwareAcceleration;
   $('renderer-hint').textContent = s.ownedSingleplayer
     ? 'Singleplayer uses Original Flash. This renderer preference is kept for multiplayer.'
     : s.gameRenderer === 'native'
-      ? 'GPU rendering with a 120 FPS cap and a separate sign-in profile. Automatic animation timing is preserved. Reconnect after saving.'
-      : 'GPU world keeps the native game, dialogue and existing Flash profile. Reconnect after saving.';
-  $('gpu-status').textContent =
-    state.gpu?.completedFrames > 0
-      ? `${state.gpu.phase === 'gpu' ? 'Average' : 'Last average'}: ${Math.round(state.gpu.completedCanvasFPS || 0)} world renders/s · ${Math.round(state.gpu.sourceSnapshotsFPS || 0)} source snapshots/s. Native game FPS and monitor scanout are separate.`
-      : state.gpu?.reason ||
-        'World render cap: 15–1000. Game updates, animation poses and dialogue retain their native rate.';
-  $('gpu-cap-row').hidden = nativeSelection;
+      ? 'GPU rendering with a separate sign-in profile. Game and animation timing are preserved. Reconnect after changing renderer.'
+      : 'Original Flash rendering and sign-in profile. Reconnect after changing renderer.';
   $('native-performance').hidden = !nativeSelection;
   if (nativeSelection)
     $('native-status').textContent =
       state.native?.reason ||
       (state.native?.renderFPS
-        ? `${Math.round(state.native.renderFPS)} completed game renders/s · 120 FPS cap. Monitor scanout is separate.`
-        : '120 FPS cap. Performance depends on the scene and hardware; initial artwork loading can take longer.');
-  if (s.ownedSingleplayer)
-    $('gpu-status').textContent =
-      'Singleplayer uses Original Flash with launcher enhancements. Your GPU preference is kept for multiplayer.';
-  $('fps-hint').textContent =
-    ['gpu', 'native'].includes(s.gameRenderer) && !s.ownedSingleplayer
-      ? 'The in-game counter measures native game ticks. GPU rendering is measured above.'
-      : 'Current FPS and 30-second low / high averages, in the gray margin.';
+        ? `${Math.round(state.native.renderFPS)} FPS · average ${Math.round(state.native.averageFPS || state.native.renderFPS)} · ${Math.round(state.native.lowFPS || state.native.renderFPS)}–${Math.round(state.native.highFPS || state.native.renderFPS)} over ${Math.round(state.native.sampleSeconds || 1)}s · cap ${state.native.cap}. Completed game renders; monitor scanout is separate.`
+        : `Cap ${s.nativeFrameCap}. Performance depends on the scene and hardware; initial artwork loading can take longer.`);
+  $('fps-hint').textContent = nativeSelection
+    ? 'Completed game renders and a 30-second range, in the gray margin.'
+    : 'Current FPS and 30-second low / high averages, in the gray margin.';
   $('show-fps').disabled = state.clientIntegration === false || state.audioIntegration === false;
   $('experimental-widescreen').disabled =
     state.clientIntegration === false || state.audioIntegration === false;
@@ -379,13 +367,13 @@ $('cursor-lock').onchange = () => edit({ cursorLock: $('cursor-lock').checked })
 $('shift-mount').onchange = () => edit({ shiftMount: $('shift-mount').checked });
 $('autorun').onchange = () => edit({ autorun: $('autorun').checked });
 $('game-renderer').onchange = () => edit({ gameRenderer: $('game-renderer').value });
-$('gpu-frame-cap').onchange = () => {
-  const value = Number($('gpu-frame-cap').value);
-  if (!Number.isInteger(value) || value < 15 || value > 1000) {
-    feedback('Choose a whole GPU frame cap from 15 to 1000.', true);
+$('native-frame-cap').onchange = () => {
+  const value = Number($('native-frame-cap').value);
+  if (!Number.isInteger(value) || value < 30 || value > 1000) {
+    feedback('Choose a whole frame cap from 30 to 1000.', true);
     return;
   }
-  edit({ gpuFrameCap: value });
+  edit({ nativeFrameCap: value });
 };
 function keyHint(id) {
   return id === 'autorun-key' ? 'autorun-key-hint' : 'shortcut-hint';

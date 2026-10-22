@@ -80,6 +80,7 @@ package {
    if(!registered&&ExternalInterface.available){
     ExternalInterface.addCallback("BlitzSetPictureZoom",SetZoom);
     ExternalInterface.addCallback("BlitzShowFPS",BlitzFrameCounter.SetShown);
+    ExternalInterface.addCallback("BlitzRenderFPS",BlitzFrameCounter.SetRenderFPS);
     ExternalInterface.addCallback("BlitzRenderState",Snapshot);
     ExternalInterface.addCallback("BlitzSetWidescreen",SetWidescreen);
     ExternalInterface.addCallback("BlitzSetCenteredHotbar",SetCenteredHotbar);
@@ -383,7 +384,7 @@ package {
    for(var sky:Object in skyTransforms){var skySaved:Object=skyTransforms[sky];if(skySaved.image.parent)skySaved.image.parent.removeChild(skySaved.image);skySaved.image.bitmapData.dispose();}
    for(var roomName:String in roomArt)roomArt[roomName].pixels.dispose();roomArt={};
    if(roomWings&&roomWings.parent)roomWings.parent.removeChild(roomWings);roomWings=null;roomWingKey="";
-   for(var quest:Object in questFrames){var decoration:Sprite=questFrames[quest].frame;if(decoration.parent)decoration.parent.removeChild(decoration);}
+   for(var quest:Object in questFrames){var decoration:Sprite=questFrames[quest].frame;if(decoration.parent)decoration.parent.removeChild(decoration);questFrames[quest].pixels.dispose();}
    for(var companion:Object in companionFrames){decoration=companionFrames[companion];if(decoration.parent)decoration.parent.removeChild(decoration);}companionFrames=new Dictionary(true);
    for(var locked:Object in lockedSigils){decoration=lockedSigils[locked];if(decoration.parent)decoration.parent.removeChild(decoration);}lockedSigils=new Dictionary(true);
    for(var placeholder:Object in directionPlaceholders){decoration=directionPlaceholders[placeholder];if(decoration.parent)decoration.parent.removeChild(decoration);}directionPlaceholders=new Dictionary(true);
@@ -407,6 +408,8 @@ package {
     // Once play has begun keep the same viewport through every travel phase.
     if(!game&&hasPlayed){if(wideGame&&main.var_523.indexOf(wideGame)>=0)game=wideGame;else if(main.var_523.length)game=main.var_523[main.var_523.length-1];}
    }
+   // Tutorial targets and its scripted camera use the authored 3:2 viewport.
+   if(game&&game.level&&game.level.levelFileName=="LevelsTut.swf"){game=null;hasPlayed=false;}
    if(game!=wideGame)restore();
    var width:Number=game?WIDE_WIDTH:ORIGINAL_WIDTH;
    if(Camera.SCREEN_WIDTH!=width){
@@ -504,23 +507,28 @@ package {
   }
   private static function DrawQuestFrame(quest:MovieClip,width:Number):void {
    var base:DisplayObject=quest.getChildByName("am_CacheIcon");if(!base||!ApplicationDomain.currentDomain.hasDefinition("a_QuestTracker"))return;
-   var cuts:Array=[0,12,228,240];var rows:Array=[0,8,59,67];
+   var scale:Number=Math.min(3,Math.max(0.5,main.overallScale));
+   var pixelWidth:int=Math.ceil(width*scale);var pixelHeight:int=Math.ceil(103*scale);
+   if(pixelWidth<24||pixelWidth>4096||pixelWidth*pixelHeight>4194304)return;
    var saved:Object=questFrames[quest];
-   if(!saved){
+   if(!saved||saved.width!=pixelWidth||saved.height!=pixelHeight){
     var type:Class=ApplicationDomain.currentDomain.getDefinition("a_QuestTracker") as Class;
-    var plate:Sprite=new Sprite();plate.name="blitz-wide-quest-frame";plate.mouseEnabled=false;plate.mouseChildren=false;
+    var asset:MovieClip=new type() as MovieClip;StopArtwork(asset);
+    var drawing:DisplayObject=asset.getChildByName("am_CacheIcon");if(!drawing)return;drawing.x=0;drawing.y=0;
+    var pixels:BitmapData=new BitmapData(pixelWidth,pixelHeight,true,0);
+    var cuts:Array=[0,12,228,240];var rows:Array=[0,8,59,67];
+    var columns:Array=[0,Math.round(12*scale),pixelWidth-Math.round(12*scale),pixelWidth];
+    var heights:Array=[0,Math.round(8*scale),pixelHeight-Math.round(8*scale),pixelHeight];
+    // Adjacent integer clips share a single raster grid; corners keep their size.
     for(var row:int=0;row<3;row++)for(var i:int=0;i<3;i++){
-     var asset:MovieClip=new type() as MovieClip;StopArtwork(asset);
-     var drawing:DisplayObject=asset.getChildByName("am_CacheIcon");drawing.x=0;drawing.y=0;
-     var slice:Sprite=new Sprite();slice.addChild(drawing);slice.scrollRect=new Rectangle(cuts[i],rows[row],cuts[i+1]-cuts[i],rows[row+1]-rows[row]);plate.addChild(slice);
+     var clip:Rectangle=new Rectangle(columns[i],heights[row],columns[i+1]-columns[i],heights[row+1]-heights[row]);
+     var sx:Number=clip.width/(cuts[i+1]-cuts[i]);var sy:Number=clip.height/(rows[row+1]-rows[row]);
+     pixels.drawWithQuality(drawing,new Matrix(sx,0,0,sy,clip.x-cuts[i]*sx,clip.y-rows[row]*sy),null,null,clip,true,StageQuality.HIGH);
     }
-    saved={frame:plate};questFrames[quest]=saved;
-   }
-   // One native nine-slice box beneath quest, direction and all utility
-   // controls. Fixed-size corners remain intact; only neutral center spans.
-   var columns:Array=[0,12,width-12,width];var heights:Array=[0,8,95,103];
-   for(row=0;row<3;row++)for(i=0;i<3;i++){
-    slice=saved.frame.getChildAt(row*3+i) as Sprite;slice.x=columns[i];slice.y=heights[row];slice.scaleX=(columns[i+1]-columns[i])/(cuts[i+1]-cuts[i]);slice.scaleY=(heights[row+1]-heights[row])/(rows[row+1]-rows[row]);
+    if(saved){if(saved.frame.parent)saved.frame.parent.removeChild(saved.frame);saved.pixels.dispose();}
+    var plate:Sprite=new Sprite();plate.name="blitz-wide-quest-frame";plate.mouseEnabled=false;plate.mouseChildren=false;
+    var image:Bitmap=new Bitmap(pixels);image.scaleX=width/pixelWidth;image.scaleY=103/pixelHeight;plate.addChild(image);
+    saved={frame:plate,pixels:pixels,width:pixelWidth,height:pixelHeight};questFrames[quest]=saved;
    }
    if(saved.frame.parent!=quest.parent&&quest.parent)quest.parent.addChildAt(saved.frame,0);
    saved.frame.x=quest.x+base.x;saved.frame.y=quest.y+base.y;saved.frame.visible=quest.visible;
@@ -778,7 +786,7 @@ package {
   public static function SetZoom(value:Number,magnification:Number=1):Boolean {
    if(!isFinite(value)||value<0.5||value>3||!isFinite(magnification)||magnification<0.1||magnification>16||!main||!main.stage)return false;
    zoom=value;main.method_561(main.stage.stageWidth,main.stage.stageHeight);
-   BlitzFrameCounter.SetMagnification(magnification);if(wideRequested)UpdateWidescreen();PositionCounter();return true;
+   BlitzFrameCounter.SetMagnification(magnification);BlitzInput.SetMagnification(magnification);if(wideRequested)UpdateWidescreen();PositionCounter();return true;
   }
   private static function boundedZoom():Number {
    if(!main||!main.stage)return 1;

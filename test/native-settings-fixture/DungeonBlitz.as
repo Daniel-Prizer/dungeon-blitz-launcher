@@ -24,9 +24,14 @@ package {
    ExternalInterface.addCallback("BlitzSettingsFixtureReset",replaceSession);
    ExternalInterface.addCallback("BlitzSettingsFixtureCursor",cursor);
    ExternalInterface.addCallback("BlitzSettingsFixtureReady",ready);
+   ExternalInterface.addCallback("BlitzSettingsFixtureLevel",level);
   }
   private function ready():Boolean {return main!=null;}
   private function cursor(value:String):Boolean {Mouse.cursor=value;return true;}
+  private function level(name:String):Boolean {
+   var game:Game=main.var_523[0];game.level=new Level(game);game.level.levelFileName=name;
+   game.gameState=Game.STATE_PLAY;BlitzDisplay.SetWidescreen(true);return true;
+  }
   private function replaceSession():Boolean {
    // Offline constructor stub: no network, character or account is created.
    var game:Game=new Game(main);game.gameState="Login";

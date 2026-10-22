@@ -34,7 +34,16 @@ execFileSync(
   { windowsHide: true, stdio: 'inherit', timeout: 120000 }
 );
 require('./native-player-fixture.cjs').privateRun(
-  { root, out, assets: ['UI_0.swf'], hosted: true, production: true, frameRate: 120, runtime },
+  {
+    root,
+    out,
+    assets: ['UI_0.swf'],
+    hosted: true,
+    production: true,
+    frameRate: 120,
+    capture: true,
+    runtime,
+  },
   async ({ rpc, delay, host, config }) => {
     const assert = require('node:assert/strict'),
       fs = require('node:fs'),
@@ -130,10 +139,45 @@ require('./native-player-fixture.cjs').privateRun(
     host.send({ type: 'zoom', value: 0.75 });
     await wait(async () => (await view()).zoom === 0.75);
     checks.push('A later Save replaces the retained value immediately');
+    const animationRate = (await view()).animationRate;
+    const densities = [];
+    for (const value of [0.75, 0.5, 1]) {
+      host.send({ type: 'render-resolution', value });
+      await wait(async () => Math.abs((await view()).stageWidth - 1600 * value) < 1);
+      const v = await view();
+      assert.equal(v.zoom, 0.75);
+      assert.equal(v.stageHeight, 900 * value);
+      densities.push({
+        value,
+        width: v.stageWidth,
+        height: v.stageHeight,
+        bitmapWidth: v.bitmapWidth,
+      });
+    }
+    host.send({ type: 'frame-cap', value: 240 });
+    await wait(async () =>
+      host.events.some((e) => e.type === 'native-status' && e.value.cap === 240)
+    );
+    assert.equal((await view()).animationRate, animationRate);
+    await rpc('BlitzFixtureCapture', [1]);
+    checks.push(
+      'Live raster density preserves picture zoom, restores full geometry and a new cap leaves the requested animation clock unchanged'
+    );
+    for (const name of ['LevelsBT.swf', 'LevelsTut.swf', 'LevelsBT.swf']) {
+      await rpc('BlitzSettingsFixtureLevel', [name]);
+      await wait(async () => (await view()).widescreen.active === (name !== 'LevelsTut.swf'));
+      const state = await view();
+      assert.equal(state.widescreen.logicalWidth, name === 'LevelsTut.swf' ? 1152 : (768 * 16) / 9);
+      assert.equal(state.widescreen.requested, true);
+    }
+    checks.push(
+      'The tutorial retains its authored 3:2 width; leaving it restores the saved widescreen view'
+    );
     fs.writeFileSync(path.join(config.out, 'cursor-artwork.json'), JSON.stringify(cursorImages));
     return {
       checks,
       generations,
+      densities,
       final: await view(),
       scope:
         'Production host commands and real launcher helpers, synthetic account-free Game replacement. Cursor application is dry-run; no OS input, global cursor APIs or human session access.',

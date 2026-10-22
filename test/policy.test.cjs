@@ -59,6 +59,7 @@ test('launcher defaults and validation discard obsolete browser settings', () =>
       'gameZoom',
       'renderResolution',
       'gameRenderer',
+      'nativeFrameCap',
       'gpuFrameCap',
       'showFPS',
       'experimentalWidescreen',
@@ -166,7 +167,7 @@ test('migration and atomic persistence retain game preferences without browser d
     old.data.settings.audioMix = { player: 23, music: 0, environment: 44, creatures: 100 };
     old.save();
     old.data.settings.renderResolution = 0.75;
-    old.data.settings.gameRenderer = 'gpu';
+    old.data.settings.gameRenderer = 'native';
     old.data.settings.gpuFrameCap = 360;
     old.save();
     old.data.settings.showFPS = true;

@@ -54,7 +54,17 @@ test(
       patched = main(after).abc,
       edited = new Set(oct16.bodies.map((b) => b.id));
     assert.equal(edited.size, 31);
-    assert.equal(oct16.guards.length, 6);
+    assert.equal(oct16.guards.length, 18);
+    for (const name of [
+      'Game.method_47',
+      'ScreenCharacterSelection.method_1077',
+      'class_95.method_1865',
+      'class_33.method_637',
+    ])
+      assert(
+        oct16.guards.some((guard) => guard.name === name),
+        'Guard refresh/revive dependency ' + name
+      );
     assert(patched.interfaceContract.equals(abc.interfaceContract));
     for (const body of abc.bodies)
       if (!edited.has(body.id))

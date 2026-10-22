@@ -5,6 +5,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const { publicBytes, originalAddress } = require('./game-source.cjs');
 const { adaptClient } = require('./legacy/client-adapter.cjs');
+const { paths: audioPaths, createAudioCache } = require('./native-player-audio.cjs');
 
 const digest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const recipes = [
@@ -58,7 +59,7 @@ async function prepare(root, address, signal, cacheDirectory) {
   const admission = require('./native-player-admission.json');
   if (!admission.clients.includes(digest(source)))
     throw Error(
-      'This game revision has not been qualified for the 120 FPS player. Original rendering is active.'
+      'This game revision has not been qualified for High FPS. Original rendering is active.'
     );
   const multiplayer = recipes.map((name) =>
     JSON.parse(fs.readFileSync(path.join(root, 'game/resources', name)))
@@ -134,6 +135,10 @@ async function prepare(root, address, signal, cacheDirectory) {
 
   const token = crypto.randomBytes(32).toString('hex');
   const lifetime = new AbortController();
+  for (const pathname of audioPaths) files.set(pathname, { audio: true, type: 'audio/mpeg' });
+  const audio = createAudioCache((pathname) =>
+    publicBytes(origin + pathname, 8 * 1024 * 1024, lifetime.signal)
+  );
   let brokerURL;
   const server = http.createServer(async (request, response) => {
     if (request.headers['x-blitz-resource-token'] !== token) {
@@ -163,6 +168,7 @@ async function prepare(root, address, signal, cacheDirectory) {
     try {
       const bytes =
         resource.bytes ||
+        (resource.audio ? await audio.load(url.pathname) : null) ||
         (resource.file
           ? fs.readFileSync(resource.file)
           : await publicBytes(resource.publicURL, 8 * 1024 * 1024, lifetime.signal));
@@ -197,6 +203,7 @@ async function prepare(root, address, signal, cacheDirectory) {
     close: () => {
       if (closed) return;
       closed = true;
+      audio.close();
       lifetime.abort();
       server.closeAllConnections();
       server.close();

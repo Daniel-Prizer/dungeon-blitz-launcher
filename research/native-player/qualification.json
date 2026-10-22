@@ -1,33 +1,109 @@
 {
-  "version": "0.31.3",
-  "checkedAtUtc": "2026-10-22T19:33:51.248Z",
-  "nativeSha256": "25fdc06f19bb2f352a30903097353a06bcd4c0ccb785d9ec181523588d92ebb3",
-  "patchSha256": "c50434b15f6fc469cd67738426f7ffc2feec3c6bcca3a7644e852b822d8871f4",
+  "version": "0.32.0",
+  "checkedAtUtc": "2026-10-22T21:13:58.448Z",
+  "nativeSha256": "3420716217673cac4e402c4da15c81df9ed6086825c41c6d4805bf96da6fbbc0",
+  "patchSha256": "30dd88b411ab8dc1d8996b901ce04bf2a2eefdbda28db5b3b68caf838340f976",
   "clientSha256": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
+  "adaptedClients": [
+    {
+      "source": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
+      "enhanced": "26ae017041903f1f60f079a1163f9ab6933383419db40b56ca9203955870f2d9",
+      "mode": "contract"
+    },
+    {
+      "source": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
+      "enhanced": "60ff4fe815c841b5efe9807680f09c0241bfbb375f902b36363efcb7f5ca5492",
+      "mode": "contract"
+    },
+    {
+      "source": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
+      "enhanced": "b68dad012dc9565dd17eeaf6c2f91d395ca111ae241e22afb7d315e183094f96",
+      "mode": "contract"
+    }
+  ],
+  "unitGroups": 111,
   "dungeon": {
-    "viewport": [
-      2560,
-      1440
-    ],
-    "room": "a_Room_BT12",
-    "level": "LevelsBT.swf",
-    "elapsedMs": 20003,
-    "gameUpdates": 2399,
-    "completedGpuPerSecond": 120.02211061702316,
-    "nativeSteps": 480.0960000000116,
-    "nativeElapsedMs": 20004,
-    "timerEvents": 200,
-    "markerPixels": 256,
-    "normalExit": true
+    "full": {
+      "viewport": [
+        2560,
+        1440
+      ],
+      "density": 1,
+      "widescreen": true,
+      "cap": 1000,
+      "wallMs": 39330,
+      "nativeSteps": 480.0960000000151,
+      "elapsedMs": 20002,
+      "error": "",
+      "level": "LevelsBT.swf",
+      "time": 38260,
+      "width": 2364,
+      "timerTicks": 200,
+      "nativeTarget": 24,
+      "room": "a_Room_BT12",
+      "nativeElapsed": 20004,
+      "frames": 2913,
+      "drawMs": 7074,
+      "distinctTimes": 2913,
+      "target": 1000,
+      "fps": 145.63543645635437,
+      "height": 1157,
+      "completedGpuPerSecond": 145.81390568473344,
+      "rolling": {
+        "phase": "running",
+        "cap": 1000,
+        "renderFPS": 141.4591169205426,
+        "averageFPS": 144.5957523533191,
+        "lowFPS": 130.67262587040688,
+        "highFPS": 163.48756457758802,
+        "sampleSeconds": 30.1115346
+      }
+    },
+    "reduced": {
+      "viewport": [
+        2560,
+        1440
+      ],
+      "density": 0.75,
+      "widescreen": true,
+      "cap": 240,
+      "wallMs": 38981,
+      "nativeSteps": 480.02400000001506,
+      "elapsedMs": 20001,
+      "error": "",
+      "level": "LevelsBT.swf",
+      "time": 37867,
+      "width": 1776,
+      "timerTicks": 200,
+      "nativeTarget": 24,
+      "room": "a_Room_BT12",
+      "nativeElapsed": 20001,
+      "frames": 3306,
+      "drawMs": 4572,
+      "distinctTimes": 3306,
+      "target": 240,
+      "fps": 165.29173541322933,
+      "height": 869,
+      "completedGpuPerSecond": 166.46030939373875,
+      "rolling": {
+        "phase": "running",
+        "cap": 240,
+        "renderFPS": 147.12870381600163,
+        "averageFPS": 165.83883951003116,
+        "lowFPS": 145.03930316760872,
+        "highFPS": 182.8098594651703,
+        "sampleSeconds": 30.1015131
+      }
+    }
   },
   "automaticTimeline": {
     "automaticFrames": 151,
-    "elapsed": 2512,
-    "frames": 302,
+    "elapsed": 2510,
+    "frames": 603,
     "stageRate": 100,
     "timerTicks": 25,
     "totalFrames": 1000,
-    "hostElapsed": 2512,
+    "hostElapsed": 2511,
     "production": true
   },
   "publicStartup": {
@@ -36,88 +112,565 @@
       "https://dungeonblitz.theminesa.studio/"
     ],
     "verifiedSwfAssets": 73,
-    "viewport": [
-      1600,
-      900
-    ],
-    "secondaryGpuMean": 120.1331241519514,
-    "audioLevels": {
-      "creatures": 1,
-      "environment": 0.75,
-      "music": 0.5,
-      "player": 0.25
-    },
     "levelLibraries": 21,
     "runs": [
       {
-        "gpuMean": 119.89719302817136,
-        "allSwfAssets": 73
+        "completedRenderSamples": [
+          42.85886401469773,
+          84.01833813901753,
+          77.83517623081363,
+          86.52522938034956,
+          29.7938918152008,
+          82.02586087623385,
+          82.48860365279414,
+          84.36593097258933,
+          86.15146834285076,
+          76.37924297854052,
+          39.28887914524687,
+          81.65595120869992,
+          111.60529099943821,
+          120.02944193253353,
+          119.95504085068917,
+          120.10788666103649,
+          120.94316880497855,
+          119.96381891221607,
+          119.97719233573697,
+          119.06910582375927,
+          120.92285122092106,
+          119.95678383371175,
+          119.03804168136868,
+          121.02854021624626,
+          119.06257273979053,
+          119.92952940851956,
+          120.997930935381,
+          119.01393121998032,
+          120.06240863846052,
+          120.00940635710654,
+          120.95096647818974,
+          119.98952491447498,
+          119.08774027440197,
+          119.91246390135203,
+          120.08733624454148,
+          119.89615793761023,
+          120.99429541649806,
+          119.1461455483406,
+          119.94551103429312,
+          120.02944193253353,
+          120.93810387843503,
+          119.97702439982744,
+          119.93552424808851,
+          119.91541166860897,
+          106.20620899198803
+        ],
+        "emptyMemoryStorage": true,
+        "tcpDenied": true
       },
       {
-        "gpuMean": 120.1331241519514,
-        "allSwfAssets": 73
+        "completedRenderSamples": [
+          42.100634178534015,
+          85.60318642930694,
+          72.17157853577709,
+          84.49458532169889,
+          85.99558842631373,
+          82.886200108798,
+          81.9133847869263,
+          88.73435595856684,
+          43.38900907280553,
+          74.91129910780643,
+          79.34166401214927,
+          101.33869408401593,
+          119.83744051194554,
+          121.04443888610145,
+          119.06124967084527,
+          120.02991820109872,
+          120.79636149379377,
+          120.10249805255289,
+          120.02917998643373,
+          119.00182459547561,
+          120.04167132530866,
+          120.96655274816513,
+          119.98422207479717,
+          119.97897968275959,
+          119.07595865325487,
+          120.99222020024112,
+          119.85001968536575,
+          120.1472787187494,
+          119.03754573149712,
+          120.02864419115426,
+          120.9507730353746,
+          119.97438546870242,
+          119.0569853362472,
+          119.9797354226871,
+          119.92218734898229,
+          120.12608274800824,
+          120.88878232026535,
+          119.98093502942383,
+          119.98069203276643,
+          119.0771520714463,
+          120.01034667716145,
+          120.89843322624662,
+          119.09888591924638,
+          120.78552115009377,
+          108.95677684662495
+        ],
+        "emptyMemoryStorage": true,
+        "tcpDenied": true
       }
     ]
   },
-  "controls": [
-    "typed Ö",
-    "physical rebind",
-    "repeat suppression",
-    "modifier chords",
-    "hide release",
-    "disable release",
-    "four viewports and 96 own-window hit tests",
-    "normal close and synthetic storage reopen",
-    "all cursor styles and exact generated RGBA/hotspot parity",
-    "native text cursor retained",
-    "live Save without runtime replacement",
-    "settings restored after three synthetic Game replacements"
-  ],
-  "unitGroups": 107,
-  "scope": "Original game artwork/HUD and anonymous public startup; no authenticated gameplay, physical desktop input or monitor scanout. Broader combat and long-session performance are unmeasured.",
-  "resourceFix": {
-    "brokeredDungeonFixture": true,
-    "review": "level-resources.json",
-    "packagedModule": true,
-    "timingUnchangedFrom": "0.31.0"
-  },
-  "deploymentReview": "deployments/2026-10-22.json",
-  "upstreamRepaint": {
-    "visibleScreenChanges": 2,
-    "coverCallbacksEach": 12,
-    "unchangedScreenAddsNothing": true,
-    "malformedUiCaught": true
-  },
-  "retainedControlsQualification": "Native window bridge, four sizes and 96 HTCLIENT samples rechecked; existing camera/map and transition suites pass.",
   "settings": {
-    "sessionPollMs": 500,
-    "profileValuesUnchanged": true,
-    "actionsNotReplayed": true,
-    "cursorTestsDryRun": true
+    "checks": [
+      "Every pointer style applies through the production pipe without restart; generated pixels match Original, with retained alpha and hotspot",
+      "Text fields keep their native cursor; returning to the game restores the crosshair",
+      "Saved zoom, counter, layout, camera and audio restored after three new Game sessions without reconnect or settings edits",
+      "A later Save replaces the retained value immediately",
+      "Live raster density preserves picture zoom, restores full geometry and a new cap leaves the requested animation clock unchanged",
+      "The tutorial retains its authored 3:2 width; leaving it restores the saved widescreen view"
+    ],
+    "generations": [
+      2,
+      3,
+      4
+    ],
+    "densities": [
+      {
+        "value": 0.75,
+        "width": 1200,
+        "height": 675,
+        "bitmapWidth": 702
+      },
+      {
+        "value": 0.5,
+        "width": 800,
+        "height": 450,
+        "bitmapWidth": 462
+      },
+      {
+        "value": 1,
+        "width": 1600,
+        "height": 900,
+        "bitmapWidth": 936
+      }
+    ],
+    "final": {
+      "animationRate": 30,
+      "bitmapHeight": 544,
+      "bitmapWidth": 1110,
+      "centeredCamera": true,
+      "frameCounter": {
+        "fps": 239.22057153382846,
+        "height": 64,
+        "highFPS": 239.22057153382846,
+        "lowFPS": 239.22057153382846,
+        "mouseEnabled": false,
+        "rangeSamples": 3,
+        "rangeSeconds": 30,
+        "sampleFrames": 200,
+        "sampleMs": 1001,
+        "selectable": false,
+        "shown": true,
+        "source": "completed-game-renders",
+        "text": "120 FPS\nLow 120\nHigh 122",
+        "totalFrames": 541,
+        "updates": 3,
+        "visible": true,
+        "width": 76,
+        "x": 14,
+        "y": 14
+      },
+      "margins": {
+        "left": 245,
+        "right": 245
+      },
+      "nativeScale": 0.81298828125,
+      "presentation": {
+        "canvas": {
+          "height": 544,
+          "name": "instance4",
+          "scaleX": 1,
+          "scaleY": 1,
+          "type": "flash.display::Bitmap",
+          "visible": true,
+          "width": 1110,
+          "x": 0,
+          "y": 0
+        },
+        "display": {
+          "children": [
+            {
+              "height": 544,
+              "name": "instance4",
+              "scaleX": 1,
+              "scaleY": 1,
+              "type": "flash.display::Bitmap",
+              "visible": true,
+              "width": 1110,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 900,
+          "name": "instance3",
+          "scaleX": 1,
+          "scaleY": 1,
+          "type": "Main",
+          "visible": true,
+          "width": 1600,
+          "x": -245,
+          "y": -137
+        },
+        "games": [
+          {
+            "parallax": [],
+            "screens": [],
+            "state": "Play",
+            "world": null
+          }
+        ]
+      },
+      "quality": "HIGH",
+      "stageHeight": 900,
+      "stageWidth": 1600,
+      "widescreen": {
+        "active": true,
+        "centeredHotbar": true,
+        "decorationAnimating": false,
+        "frameAttached": false,
+        "frameInteractive": false,
+        "frameStyle": "",
+        "hudRaster": {
+          "builds": 0,
+          "height": 0,
+          "inspection": false,
+          "scale": 0,
+          "width": 0
+        },
+        "interiorLimited": false,
+        "interiorSceneWidth": null,
+        "logicalHeight": 768,
+        "logicalWidth": 1365.3333333333333,
+        "requested": true,
+        "roomWings": null,
+        "uiOffset": 0
+      },
+      "zoom": 0.75
+    },
+    "scope": "Production host commands and real launcher helpers, synthetic account-free Game replacement. Cursor application is dry-run; no OS input, global cursor APIs or human session access."
   },
-  "adaptedClients": [
-    {
-      "source": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
-      "enhanced": "c925db5f76eaa33ef351a3b19fc4f373b4fd2729abea362228927ad1a3038595",
-      "mode": "contract"
+  "controls": {
+    "checks": [
+      {
+        "mode": "cached",
+        "entries": 1
+      },
+      {
+        "mode": "list",
+        "entries": 1
+      },
+      {
+        "mode": "missing",
+        "entries": 0
+      },
+      {
+        "mode": "account",
+        "entries": 0
+      },
+      {
+        "mode": "duplicate",
+        "entries": 0
+      },
+      "Manual input cancels a pending resume",
+      {
+        "mode": "dead",
+        "presses": 1,
+        "keys": 0
+      },
+      {
+        "mode": "cooldown",
+        "presses": 0,
+        "keys": 0
+      },
+      {
+        "mode": "typing",
+        "presses": 0,
+        "keys": 2
+      },
+      {
+        "mode": "alive",
+        "presses": 0,
+        "keys": 2
+      },
+      {
+        "mode": "hidden",
+        "presses": 0,
+        "keys": 2
+      },
+      {
+        "mode": "modal",
+        "presses": 0,
+        "keys": 2
+      }
+    ],
+    "scope": "Synthetic character selection and native stage key events on an inactive desktop. Selection authentication and packet callbacks are stubbed only in the fixture. No account, OS input or human game accessed."
+  },
+  "window": {
+    "checks": [
+      {
+        "width": 800,
+        "height": 600,
+        "full": false,
+        "hitTests": 24,
+        "dpi": 96,
+        "stageWidth": 800,
+        "stageHeight": 600
+      },
+      {
+        "width": 1440,
+        "height": 900,
+        "full": false,
+        "hitTests": 24,
+        "dpi": 96,
+        "stageWidth": 1440,
+        "stageHeight": 900
+      },
+      {
+        "width": 2560,
+        "height": 1440,
+        "full": true,
+        "hitTests": 24,
+        "dpi": 96,
+        "stageWidth": 2560,
+        "stageHeight": 1440
+      },
+      {
+        "width": 1280,
+        "height": 720,
+        "full": false,
+        "hitTests": 24,
+        "dpi": 96,
+        "stageWidth": 1280,
+        "stageHeight": 720
+      }
+    ],
+    "scope": "Own private desktop windows, bridge positioning, logical viewport and HTCLIENT. No OS input, cursor operations, desktop capture or physical monitor change."
+  },
+  "media": {
+    "icons": [
+      "a_PowerIcon_MaceSmash",
+      "a_PowerIcon_DivineBolt",
+      "a_PowerIcon_DoubleStrike",
+      "a_PowerIcon_DaggerFlurry",
+      "a_PowerIcon_FireBall",
+      "a_PowerIcon_DeathBlow",
+      "a_PowerIcon_ShadowStep"
+    ],
+    "pixelChecks": [
+      {
+        "actual": 4278190335,
+        "expected": 4278190335,
+        "name": "Child filter survives offscreen draw, root filter excluded"
+      },
+      {
+        "actual": 4294901760,
+        "expected": 4294901760,
+        "name": "Direct source filter remains excluded"
+      },
+      {
+        "actual": 4278190335,
+        "expected": 4278190335,
+        "name": "Cached child retains filter at another density"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Mask keeps outside transparent"
+      },
+      {
+        "actual": 4278190335,
+        "expected": 4278190335,
+        "name": "Mask retains filtered inside"
+      }
+    ],
+    "flashReference": "Seven real ability icons match the direct-vector Flash reference; source-root filters remain excluded"
+  },
+  "audio": {
+    "publicMp3": {
+      "atUtc": "2026-10-22T20:48:50.044Z",
+      "publicPath": "/p/mp3/D01_DramaLoop_DreamDragonLair.mp3",
+      "bytes": 415997,
+      "sha256": "001fc8276d38e960b43931d4c31b02cab78f550f21f7372bb7bdc90756e99589",
+      "authenticatedBroker": 200,
+      "unauthenticated": 403,
+      "unlistedAndTraversal": 404,
+      "noAccounts": true
     },
-    {
-      "source": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
-      "enhanced": "a5ce6a03f3c56777a6a5b56784f386ac1bb6f2e3a23baef1401e73abccbca928",
-      "mode": "contract"
+    "playback": {
+      "reports": [
+        {
+          "name": "snd_pwr_melee_rogue_01",
+          "copies": 1,
+          "booted": true,
+          "error": "",
+          "loaded": true,
+          "peak": 0.24763186275959015,
+          "playing": [
+            {
+              "done": 231,
+              "elapsed": 246,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            }
+          ],
+          "rms": 0.04128634388264132,
+          "windows": 11,
+          "zeroWindows": 1
+        },
+        {
+          "name": "snd_pwr_rogue_fwdscissorattack",
+          "copies": 1,
+          "booted": true,
+          "error": "",
+          "loaded": true,
+          "peak": 0.23469240963459015,
+          "playing": [
+            {
+              "done": 1575,
+              "elapsed": 1617,
+              "lastPosition": 1570.0680272108843,
+              "length": 1578.3219954648525,
+              "name": "snd_pwr_rogue_fwdscissorattack"
+            }
+          ],
+          "rms": 0.04189258604851389,
+          "windows": 71,
+          "zeroWindows": 19
+        },
+        {
+          "name": "CHR_Executioner_FlurryOfDaggers_Throw",
+          "copies": 1,
+          "booted": true,
+          "error": "",
+          "loaded": true,
+          "peak": 0.5664795637130737,
+          "playing": [
+            {
+              "done": 540,
+              "elapsed": 549,
+              "lastPosition": 530.0226757369614,
+              "length": 532.1088435374149,
+              "name": "CHR_Executioner_FlurryOfDaggers_Throw"
+            }
+          ],
+          "rms": 0.10178463666165508,
+          "windows": 24,
+          "zeroWindows": 1
+        },
+        {
+          "name": "snd_pwr_melee_rogue_01",
+          "copies": 8,
+          "booted": true,
+          "error": "",
+          "loaded": true,
+          "peak": 1,
+          "playing": [
+            {
+              "done": 233,
+              "elapsed": 242,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            },
+            {
+              "done": 232,
+              "elapsed": 241,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            },
+            {
+              "done": 232,
+              "elapsed": 241,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            },
+            {
+              "done": 232,
+              "elapsed": 241,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            },
+            {
+              "done": 232,
+              "elapsed": 241,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            },
+            {
+              "done": 232,
+              "elapsed": 241,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            },
+            {
+              "done": 232,
+              "elapsed": 241,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            },
+            {
+              "done": 232,
+              "elapsed": 241,
+              "lastPosition": 210.06802721088437,
+              "length": 227.0748299319728,
+              "name": "snd_pwr_melee_rogue_01"
+            }
+          ],
+          "rms": 0.288671313499294,
+          "windows": 11,
+          "zeroWindows": 0
+        }
+      ],
+      "scope": "Public embedded sound classes, real CPAL playback and own SoundMixer sample history. Only this owned process audio session is muted; no endpoint, global mixer, user account or other process volume touched."
     },
-    {
-      "source": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
-      "enhanced": "45def6a6cd08d01d5ab7a256b60cd5495c17bb6e0ffbf8e512dc88ad16649350",
-      "mode": "contract"
-    }
-  ],
+    "reference": "Flash durations and bounded overlap checked using owned sessions; listening quality unmeasured"
+  },
+  "regression": {
+    "cameraSamples": 121,
+    "transitionSamples": 134,
+    "originalMultiplayer": true,
+    "originalSingleplayer": true,
+    "visualEvidenceInspected": true
+  },
+  "sessionControlsReview": "session-controls.json",
+  "deploymentReview": "deployments/2026-10-22.json",
+  "resourceReview": "level-resources.json",
+  "evidence": {
+    "full": "ruffle-world-rate-3x4Afa",
+    "reduced": "ruffle-world-rate-sXLfvm",
+    "animation": "native-animation-DtoYgs",
+    "settings": "native-settings-jPlCH0",
+    "controls": "refresh-controls-JhprmQ",
+    "media": "native-media-qTCdle",
+    "audio": "native-audio-playback-Jy4uny",
+    "window": "native-window-NKUbEg",
+    "primary": "native-anonymous-ZpdIFj",
+    "secondary": "native-anonymous-vVOdfU"
+  },
+  "scope": "Anonymous public startup and synthetic original-artwork fixtures on inactive desktops. No account, physical OS input, human session or monitor scanout. Live combat, long sessions, NVIDIA overlay compatibility and listening quality are unmeasured.",
   "packaging": {
+    "status": "passed",
     "signedFiles": 442,
-    "packagedResources": true,
+    "packagedNativeResources": true,
     "packagedSingleplayer": true,
+    "productionFusesAndIntegrity": true,
     "packagedUpdater": true,
-    "previousUpdater": "0.31.2",
+    "previousUpdater": "0.31.3",
     "installer": true
   }
 }

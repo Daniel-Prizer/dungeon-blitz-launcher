@@ -87,7 +87,7 @@ class LegacyRuntime extends EventEmitter {
         '--height',
         '720',
         '--frame-rate',
-        '120',
+        String(validSettings({ nativeFrameCap: options.nativeFrameCap }).nativeFrameCap),
         '--volume',
         '1',
         '--storage',
@@ -284,6 +284,11 @@ class LegacyRuntime extends EventEmitter {
       this.send({ type: 'zoom', value: this.settings.gameZoom });
     if (!previous || previous.renderResolution !== this.settings.renderResolution)
       this.send({ type: 'render-resolution', value: this.settings.renderResolution });
+    if (
+      this.nativePlayer &&
+      (!previous || previous.nativeFrameCap !== this.settings.nativeFrameCap)
+    )
+      this.send({ type: 'frame-cap', value: this.settings.nativeFrameCap });
     if (!previous || previous.showFPS !== this.settings.showFPS)
       this.send({ type: 'show-fps', value: this.settings.showFPS });
     if (!previous || previous.experimentalWidescreen !== this.settings.experimentalWidescreen)

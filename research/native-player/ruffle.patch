@@ -515,31 +515,182 @@ index 0000000000000000000000000000000000000000..e8a5b0acb0582e2b2903053f3636184a
 +    Ok(VectorObject::from_vector(VectorStorage::from_values(output, false, Some(kind)), a).into())
 +}
 diff --git a/core/src/avm2/globals/flash/display/stage.rs b/core/src/avm2/globals/flash/display/stage.rs
-index cb471eabd8cc2232c4bf370834a6b2eaadfc4334..c321a4b72a5521d954dc91ef0549053cdc4f1d52 100644
+index cb471eabd8cc2232c4bf370834a6b2eaadfc4334..39973a2c6a9b8aa677c81da2fd80f746db85cf3f 100644
 --- a/core/src/avm2/globals/flash/display/stage.rs
 +++ b/core/src/avm2/globals/flash/display/stage.rs
-@@ -216,7 +216,7 @@ pub fn get_frame_rate<'gc>(
+@@ -216,7 +216,12 @@ pub fn get_frame_rate<'gc>(
      _this: Value<'gc>,
      _args: FunctionArgs<'_, 'gc>,
  ) -> Result<Value<'gc>, Error<'gc>> {
 -    let mut frame_rate = *activation.context.frame_rate;
-+    let mut frame_rate = activation.context.presentation_clock.as_ref().map(|clock|clock.requested_rate).unwrap_or(*activation.context.frame_rate);
++    let mut frame_rate = activation
++        .context
++        .presentation_clock
++        .as_ref()
++        .map(|clock| clock.requested_rate)
++        .unwrap_or(*activation.context.frame_rate);
      if frame_rate < 0.0 {
          // Uncommon frame rate from the SWF header.
          frame_rate = frame_rate.rem_euclid(256.0);
-@@ -230,7 +230,9 @@ pub fn set_frame_rate<'gc>(
+@@ -230,7 +235,9 @@ pub fn set_frame_rate<'gc>(
      _this: Value<'gc>,
      args: FunctionArgs<'_, 'gc>,
  ) -> Result<Value<'gc>, Error<'gc>> {
 -    if !activation.context.forced_frame_rate {
 +    if let Some(clock) = &mut activation.context.presentation_clock {
-+        clock.requested_rate = args.get_f64(0).clamp(0.01,1000.0);
++        clock.requested_rate = args.get_f64(0).clamp(0.01, 1000.0);
 +    } else if !activation.context.forced_frame_rate {
          let new_frame_rate = args.get_f64(0).clamp(0.01, 1000.0);
          *activation.context.frame_rate = new_frame_rate;
      }
+diff --git a/core/src/backend/audio/mixer.rs b/core/src/backend/audio/mixer.rs
+index 67eac5725e5a850fdde1df4d90fe027a430c203b..714a89bbb269be4a3c59ac52058149ccdba06ea2 100644
+--- a/core/src/backend/audio/mixer.rs
++++ b/core/src/backend/audio/mixer.rs
+@@ -271,7 +271,8 @@ impl AudioMixer {
+             + Default
+             + dasp::Sample<Signed = T>
+             + dasp::sample::ToSample<f32>
+-            + dasp::sample::FromSample<i16>,
++            + dasp::sample::FromSample<i16>
++            + dasp::sample::FromSample<f32>,
+     {
+         let mut sound_instances = self
+             .sound_instances
+@@ -443,33 +444,31 @@ impl AudioMixer {
+             + Default
+             + dasp::Sample<Signed = T>
+             + dasp::sample::ToSample<f32>
+-            + dasp::sample::FromSample<i16>,
++            + dasp::sample::FromSample<i16>
++            + dasp::sample::FromSample<f32>,
+     {
+-        use dasp::{
+-            Sample,
+-            frame::{Frame, Stereo},
+-        };
++        use dasp::Sample;
+         use std::ops::DerefMut;
+ 
+         // Adapt the volume for logarithmic hearing.
+-        let volume = ((10_f32.powf(81_f32.log10() * volume) - 1.0) / 80.0).to_sample();
++        let volume = (10_f32.powf(81_f32.log10() * volume) - 1.0) / 80.0;
+ 
+         // For each sample, mix the samples from all active sound instances.
+         for buf_frame in output_buffer
+             .deref_mut()
+             .chunks_exact_mut(num_channels.into())
+         {
+-            let mut output_frame = Stereo::<T::Signed>::EQUILIBRIUM;
++            let mut output_frame = [0.0f32; 2];
+             for (_, sound) in sound_instances.iter_mut() {
+                 if sound.active && !sound.stream.is_exhausted() {
+-                    let sound_frame = sound.stream.next();
+-                    let [left_0, left_1] = sound_frame.mul_amp(sound.left_transform);
+-                    let [right_0, right_1] = sound_frame.mul_amp(sound.right_transform);
+-                    let mut sound_frame: Stereo<T> = [
+-                        Sample::add_amp(left_0, left_1).to_sample(),
+-                        Sample::add_amp(right_0, right_1).to_sample(),
++                    let decoded = sound.stream.next();
++                    let input = [decoded[0].to_sample::<f32>(), decoded[1].to_sample::<f32>()];
++                    let sound_frame = [
++                        (input[0] * sound.left_transform[0] + input[1] * sound.left_transform[1])
++                            * volume,
++                        (input[0] * sound.right_transform[0] + input[1] * sound.right_transform[1])
++                            * volume,
+                     ];
+-                    sound_frame = sound_frame.scale_amp(volume);
+ 
+                     sound.range.0[0] = sound.range.0[0].min(sound_frame[0].to_sample());
+                     sound.range.0[1] = sound.range.0[1].min(sound_frame[1].to_sample());
+@@ -477,13 +476,17 @@ impl AudioMixer {
+                     sound.range.1[0] = sound.range.1[0].max(sound_frame[0].to_sample());
+                     sound.range.1[1] = sound.range.1[1].max(sound_frame[1].to_sample());
+ 
+-                    output_frame = output_frame.add_amp(sound_frame);
++                    output_frame[0] += sound_frame[0];
++                    output_frame[1] += sound_frame[1];
+                 } else {
+                     sound.active = false;
+                 }
+             }
+ 
+-            output_memory.push([output_frame[0].to_sample(), output_frame[1].to_sample()]);
++            // Accumulate in float, then clamp once. Integer devices must not wrap
++            // when several otherwise valid game sounds overlap. Flash exposes a bounded mix.
++            output_frame = output_frame.map(|value| value.clamp(-1.0, 1.0));
++            output_memory.push(output_frame);
+ 
+             if output_memory.pos == 0 || output_memory.pos == 1024 {
+                 for (_, sound) in sound_instances.iter_mut() {
+@@ -492,7 +495,7 @@ impl AudioMixer {
+             }
+ 
+             for (buf_sample, output_sample) in buf_frame.iter_mut().zip(output_frame.iter()) {
+-                *buf_sample = *output_sample;
++                *buf_sample = output_sample.to_sample::<T>();
+             }
+         }
+ 
+@@ -744,7 +747,8 @@ impl AudioMixerProxy {
+             + Default
+             + dasp::Sample<Signed = T>
+             + dasp::sample::ToSample<f32>
+-            + dasp::sample::FromSample<i16>,
++            + dasp::sample::FromSample<i16>
++            + dasp::sample::FromSample<f32>,
+     {
+         let mut sound_instances = self
+             .sound_instances
+diff --git a/core/src/bitmap/operations.rs b/core/src/bitmap/operations.rs
+index 4db9211aa12c0789e911e1e7d1b04282899ec402..6ddc04aa1d3d08caf4d8b24c1deddabf458d7aaf 100644
+--- a/core/src/bitmap/operations.rs
++++ b/core/src/bitmap/operations.rs
+@@ -1383,7 +1383,12 @@ pub fn draw<'gc>(
+     quality: StageQuality,
+ ) -> Result<(), BitmapDataDrawError> {
+     // Calculate the maximum potential area that this draw call will affect
+-    let bounds = transform.matrix * source.bounds();
++    let use_bitmap_cache = context.renderer.is_offscreen_cache_supported();
++    let bounds = match &source {
++        IBitmapDrawable::DisplayObject(object) if use_bitmap_cache => object
++            .render_bounds_with_transform(&transform.matrix, false, &context.stage.view_matrix()),
++        _ => transform.matrix * source.bounds(),
++    };
+     let mut dirty_region = PixelRegion::from(bounds);
+     dirty_region.clamp(target.width(), target.height());
+     if dirty_region.width() == 0 || dirty_region.height() == 0 {
+@@ -1478,7 +1483,7 @@ pub fn draw<'gc>(
+         ui: context.ui,
+         transform_stack: &mut transform_stack,
+         is_offscreen: true,
+-        use_bitmap_cache: false,
++        use_bitmap_cache,
+         stage: context.stage,
+     };
+ 
+@@ -1549,13 +1554,13 @@ pub fn draw<'gc>(
+         dirty_region.union(old);
+     }
+ 
+-    assert!(
+-        cache_draws.is_empty(),
+-        "BitmapData.draw() should not use cacheAsBitmap"
++    let image = context.renderer.render_offscreen_with_caches(
++        handle,
++        commands,
++        quality,
++        dirty_region,
++        cache_draws,
+     );
+-    let image = context
+-        .renderer
+-        .render_offscreen(handle, commands, quality, dirty_region);
+ 
+     match image {
+         Some(sync_handle) => {
 diff --git a/core/src/context.rs b/core/src/context.rs
-index 7c36d00a9ea119020a03e2156e3401243c5975e9..45581fed32240c05fa4eef6000fbed47a315ab75 100644
+index 7c36d00a9ea119020a03e2156e3401243c5975e9..5e65c8675449a9d3efe7b61d66019de474e1574f 100644
 --- a/core/src/context.rs
 +++ b/core/src/context.rs
 @@ -206,6 +206,7 @@ pub struct UpdateContext<'gc> {
@@ -550,26 +701,47 @@ index 7c36d00a9ea119020a03e2156e3401243c5975e9..45581fed32240c05fa4eef6000fbed47
  
      /// Amount of actions performed since the last timeout check
      pub actions_since_timeout_check: &'gc mut u32,
-@@ -357,6 +358,7 @@ impl<'gc> UpdateContext<'gc> {
+@@ -357,6 +358,9 @@ impl<'gc> UpdateContext<'gc> {
      /// of previous stage contents. If you need to load a new root movie, you
      /// should use `replace_root_movie`.
      pub fn set_root_movie(&mut self, movie: SwfMovie) {
-+        if let Some(clock) = &mut self.presentation_clock { clock.requested_rate = movie.frame_rate().into(); }
++        if let Some(clock) = &mut self.presentation_clock {
++            clock.requested_rate = movie.frame_rate().into();
++        }
          if !self.forced_frame_rate {
              *self.frame_rate = movie.frame_rate().into();
          }
+diff --git a/core/src/display_object.rs b/core/src/display_object.rs
+index 64e3a3258f251ee7fe5b5806691b4db9e40718a6..b74e2020fb5f217891a4cc5fae136faa50cdb533 100644
+--- a/core/src/display_object.rs
++++ b/core/src/display_object.rs
+@@ -980,7 +980,10 @@ pub fn render_base<'gc>(
+         None
+     };
+ 
+-    let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
++    let cache_info = if context.use_bitmap_cache
++        && this.is_bitmap_cached()
++        && (!context.is_offscreen || options.apply_transform)
++    {
+         let mut cache_info: Option<DrawCacheInfo> = None;
+         let base_transform = context.transform_stack.transform();
+         let bounds: Rectangle<Twips> = this.render_bounds_with_transform(
 diff --git a/core/src/display_object/graphic.rs b/core/src/display_object/graphic.rs
-index 8b139136b7e08646f39a2dd11689e375073872be..a02a4d4753ba5384617abd703803fb7a0b62060f 100644
+index 8b139136b7e08646f39a2dd11689e375073872be..34c7fa12fade5923618ff485ecc28703b0bee9cd 100644
 --- a/core/src/display_object/graphic.rs
 +++ b/core/src/display_object/graphic.rs
-@@ -123,6 +123,13 @@ impl<'gc> Graphic<'gc> {
+@@ -123,6 +123,16 @@ impl<'gc> Graphic<'gc> {
          self.0.drawing.get_or_init(Default::default).borrow_mut()
      }
  
 +    /// Read authored vectors without activating the replacement drawing. A read
 +    /// must not hide the original SWF shape or affect subsequent rendering.
 +    pub fn drawing_snapshot(&self) -> Drawing {
-+        self.0.drawing.get().map(|drawing| drawing.borrow().clone())
++        self.0
++            .drawing
++            .get()
++            .map(|drawing| drawing.borrow().clone())
 +            .unwrap_or_else(|| Drawing::from_swf_shape(&self.0.shared.get().shape))
 +    }
 +
@@ -577,7 +749,7 @@ index 8b139136b7e08646f39a2dd11689e375073872be..a02a4d4753ba5384617abd703803fb7a
          unlock!(Gc::write(mc, self.0), GraphicData, class).set(Some(class));
      }
 diff --git a/core/src/display_object/movie_clip.rs b/core/src/display_object/movie_clip.rs
-index 63b3eae7e946c02123ec3d6eb484bc3d2db97f5e..f38d798d7a0ffa56318003e4fecec3f6ce025b97 100644
+index 63b3eae7e946c02123ec3d6eb484bc3d2db97f5e..45d1af2502f75dbeae6ab81c5284e9a28348af9d 100644
 --- a/core/src/display_object/movie_clip.rs
 +++ b/core/src/display_object/movie_clip.rs
 @@ -169,6 +169,7 @@ pub struct MovieClipData<'gc> {
@@ -596,69 +768,112 @@ index 63b3eae7e946c02123ec3d6eb484bc3d2db97f5e..f38d798d7a0ffa56318003e4fecec3f6
              tag_stream_pos: Cell::new(0),
              current_frame: Cell::new(0),
              audio_stream: Cell::new(None),
-@@ -1211,7 +1213,11 @@ impl<'gc> MovieClip<'gc> {
+@@ -1211,7 +1213,14 @@ impl<'gc> MovieClip<'gc> {
      }
  
      pub fn avm2_class(self) -> Option<Avm2ClassObject<'gc>> {
 -        self.0.shared.get().avm2_class.get()
-+        self.0.avm2_instance_class.get().or_else(||self.0.shared.get().avm2_class.get())
++        self.0
++            .avm2_instance_class
++            .get()
++            .or_else(|| self.0.shared.get().avm2_class.get())
 +    }
 +
-+    fn set_instance_avm2_class(self, mc:&Mutation<'gc>, class:Avm2ClassObject<'gc>){
-+        unlock!(Gc::write(mc,self.0),MovieClipData,avm2_instance_class).set(Some(class));
++    fn set_instance_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
++        unlock!(Gc::write(mc, self.0), MovieClipData, avm2_instance_class).set(Some(class));
      }
  
      pub fn set_avm2_class(self, mc: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
-@@ -1510,9 +1516,46 @@ impl<'gc> MovieClip<'gc> {
+@@ -1510,9 +1519,86 @@ impl<'gc> MovieClip<'gc> {
          }
  
          let movie = self.movie();
 -        let library = context.library.library_for_movie_mut(movie.clone());
 -        match library.instantiate_by_id(id, context.gc_context) {
-+        let mut placed_class=None;
++        let mut placed_class = None;
 +        let symbol = if id == 0 && place_object.class_name.is_some() && movie.is_action_script_3() {
-+            let domain = context.library.library_for_movie_mut(movie.clone()).avm2_domain();
++            let domain = context
++                .library
++                .library_for_movie_mut(movie.clone())
++                .avm2_domain();
 +            let mut activation = Avm2Activation::from_nothing(context);
-+            let name = AvmString::new(activation.gc(),
-+                ruffle_wstr::from_utf8_bytes(place_object.class_name.expect("checked class name").as_bytes()));
++            let name = AvmString::new(
++                activation.gc(),
++                ruffle_wstr::from_utf8_bytes(
++                    place_object
++                        .class_name
++                        .expect("checked class name")
++                        .as_bytes(),
++                ),
++            );
 +            let value = domain.get_defined_value_handling_vector(&mut activation, name);
 +            match value {
 +                Ok(Avm2Value::Object(object)) => object.as_class_object().and_then(|class| {
-+                    placed_class=Some(class);
-+                    let mut current=Some(class.inner_class_definition());
-+                    while let Some(definition)=current {
-+                        if let Some(symbol)=activation.context.library.avm2_class_registry().class_symbol(definition) {return Some(symbol);}
-+                        current=definition.super_class();
++                    placed_class = Some(class);
++                    let mut current = Some(class.inner_class_definition());
++                    while let Some(definition) = current {
++                        if let Some(symbol) = activation
++                            .context
++                            .library
++                            .avm2_class_registry()
++                            .class_symbol(definition)
++                        {
++                            return Some(symbol);
++                        }
++                        current = definition.super_class();
 +                    }
-+                    tracing::warn!("BLITZ_CLASS no symbol {}",name.to_utf8_lossy());
++                    tracing::warn!("BLITZ_CLASS no symbol {}", name.to_utf8_lossy());
 +                    None
 +                }),
-+                Err(error) => {tracing::warn!("BLITZ_CLASS lookup failed {} {:?}",name.to_utf8_lossy(),error);None},
-+                _ => {tracing::warn!("BLITZ_CLASS not a class {}",name.to_utf8_lossy());None},
++                Err(error) => {
++                    tracing::warn!(
++                        "BLITZ_CLASS lookup failed {} {:?}",
++                        name.to_utf8_lossy(),
++                        error
++                    );
++                    None
++                }
++                _ => {
++                    tracing::warn!("BLITZ_CLASS not a class {}", name.to_utf8_lossy());
++                    None
++                }
 +            }
-+        } else { Some((movie.clone(), id)) };
++        } else {
++            Some((movie.clone(), id))
++        };
 +        let child = symbol.and_then(|(source, symbol_id)| {
-+            context.library.library_for_movie_mut(source).instantiate_by_id(symbol_id, context.gc_context)
++            context
++                .library
++                .library_for_movie_mut(source)
++                .instantiate_by_id(symbol_id, context.gc_context)
 +        });
 +        match child {
              Some(child) => {
-+                if let Some(class)=placed_class {
++                if let Some(class) = placed_class {
 +                    match child {
-+                        DisplayObject::MovieClip(clip)=>clip.set_instance_avm2_class(context.gc(),class),
-+                        DisplayObject::Graphic(graphic)=>graphic.set_avm2_class(context.gc(),class),
-+                        DisplayObject::EditText(text)=>text.set_avm2_class(context.gc(),class),
-+                        DisplayObject::Avm2Button(button)=>button.set_avm2_class(context.gc(),class),
-+                        DisplayObject::Bitmap(bitmap)=>{
-+                            let Some(class)=BitmapClass::from_class_object(class,context) else {return None;};
-+                            bitmap.set_avm2_bitmapdata_class(context.gc(),class);
++                        DisplayObject::MovieClip(clip) => {
++                            clip.set_instance_avm2_class(context.gc(), class)
 +                        }
-+                        _=>return None,
++                        DisplayObject::Graphic(graphic) => {
++                            graphic.set_avm2_class(context.gc(), class)
++                        }
++                        DisplayObject::EditText(text) => text.set_avm2_class(context.gc(), class),
++                        DisplayObject::Avm2Button(button) => {
++                            button.set_avm2_class(context.gc(), class)
++                        }
++                        DisplayObject::Bitmap(bitmap) => {
++                            let Some(class) = BitmapClass::from_class_object(class, context) else {
++                                return None;
++                            };
++                            bitmap.set_avm2_bitmapdata_class(context.gc(), class);
++                        }
++                        _ => return None,
 +                    }
 +                }
                  // Remove previous child from children list,
                  // and add new child onto front of the list.
                  let prev_child = self.replace_at_depth(context, child, depth);
-@@ -2093,7 +2136,7 @@ impl<'gc> MovieClip<'gc> {
+@@ -2093,7 +2179,7 @@ impl<'gc> MovieClip<'gc> {
          context: &mut UpdateContext<'gc>,
          display_object: DisplayObject<'gc>,
      ) {
@@ -667,7 +882,7 @@ index 63b3eae7e946c02123ec3d6eb484bc3d2db97f5e..f38d798d7a0ffa56318003e4fecec3f6
          let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
  
          let object =
-@@ -2109,7 +2152,7 @@ impl<'gc> MovieClip<'gc> {
+@@ -2109,7 +2195,7 @@ impl<'gc> MovieClip<'gc> {
      /// intended to be called from `post_instantiate`.
      #[inline(never)]
      fn construct_as_avm2_object(self, context: &mut UpdateContext<'gc>) {
@@ -676,16 +891,22 @@ index 63b3eae7e946c02123ec3d6eb484bc3d2db97f5e..f38d798d7a0ffa56318003e4fecec3f6
          let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
  
          if let Some(object) = self.0.object2.get() {
-@@ -2558,7 +2601,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
+@@ -2558,7 +2644,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
          if self.movie().is_action_script_3() {
              let is_playing = self.playing();
  
 -            if is_playing {
-+            if is_playing && (self.current_frame() == 0 || context.presentation_clock.as_ref().is_none_or(|clock|clock.advance)) {
++            if is_playing
++                && (self.current_frame() == 0
++                    || context
++                        .presentation_clock
++                        .as_ref()
++                        .is_none_or(|clock| clock.advance))
++            {
                  self.run_frame_internal(context, true, true, true);
              }
  
-@@ -3249,8 +3292,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
+@@ -3249,8 +3341,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
              }
  
              // Check drawing, because this selects the current clip, it must have mouse enabled
@@ -697,10 +918,10 @@ index 63b3eae7e946c02123ec3d6eb484bc3d2db97f5e..f38d798d7a0ffa56318003e4fecec3f6
              {
                  return if self.mouse_enabled() {
 diff --git a/core/src/drawing.rs b/core/src/drawing.rs
-index f3dc5bd0febd60b0ebaa5299ce1e0ab6dd773134..ef49550c0f1a78e012691d50f05e357f7aff6316 100644
+index f3dc5bd0febd60b0ebaa5299ce1e0ab6dd773134..42d7f846b68b9ec85350461fabe9750b84679151 100644
 --- a/core/src/drawing.rs
 +++ b/core/src/drawing.rs
-@@ -239,6 +239,72 @@ impl Drawing {
+@@ -239,6 +239,74 @@ impl Drawing {
          id
      }
  
@@ -768,12 +989,14 @@ index f3dc5bd0febd60b0ebaa5299ce1e0ab6dd773134..ef49550c0f1a78e012691d50f05e357f
 +        paths
 +    }
 +
-+    pub fn bitmap_infos(&self) -> &[BitmapInfo] { &self.bitmaps }
++    pub fn bitmap_infos(&self) -> &[BitmapInfo] {
++        &self.bitmaps
++    }
 +
      /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
      pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
          if self.is_empty {
-@@ -246,64 +312,7 @@ impl Drawing {
+@@ -246,64 +314,7 @@ impl Drawing {
          }
  
          let handle = self.render_handle.get_or_init(|| {
@@ -841,35 +1064,58 @@ index f3dc5bd0febd60b0ebaa5299ce1e0ab6dd773134..ef49550c0f1a78e012691d50f05e357f
                  paths,
 diff --git a/core/src/fps_research.rs b/core/src/fps_research.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..b3aa27e313ac60e0fe1bba097d60bd4d1a409f1f
+index 0000000000000000000000000000000000000000..236256688b4014cddaa0aa3a3beb06503b8ce39d
 --- /dev/null
 +++ b/core/src/fps_research.rs
-@@ -0,0 +1,16 @@
-+use std::sync::{LazyLock,Mutex};
+@@ -0,0 +1,39 @@
++use std::sync::{LazyLock, Mutex};
 +use web_time::Instant;
-+static ENABLED:LazyLock<bool>=LazyLock::new(||std::env::var_os("BLITZ_FPS_PROOF_DIR").is_some());
-+static RETAIN_BACKLOG:LazyLock<bool>=LazyLock::new(||std::env::var_os("BLITZ_FPS_RETAIN_BACKLOG").is_some());
-+static SEQUENTIAL:LazyLock<bool>=LazyLock::new(||std::env::var_os("BLITZ_FPS_SEQUENTIAL").is_some());
-+pub fn retain_backlog()->bool{*ENABLED&&*RETAIN_BACKLOG}
-+pub fn sequential()->bool{*ENABLED&&*SEQUENTIAL}
-+static CLOCK:LazyLock<Instant>=LazyLock::new(Instant::now);
-+static COUNTS:LazyLock<Mutex<std::collections::BTreeMap<&'static str,(u64,u128,u128,u128)>>>=LazyLock::new(||Mutex::new(Default::default()));
-+pub fn cost(name:&'static str,started:Instant){
-+ if !*ENABLED{return;}
-+ let elapsed=started.elapsed().as_micros();let now=CLOCK.elapsed().as_micros();
-+ let mut all=COUNTS.lock().expect("owned core probe");let counter=all.entry(name).or_insert((0,0,0,now));
-+ counter.0+=1;counter.1+=elapsed;counter.2=counter.2.max(elapsed);
-+ if now-counter.3>=1_000_000 {tracing::info!("BLITZ_CORE_COST stage={} calls={} meanUs={} maxUs={}",name,counter.0,counter.1/counter.0 as u128,counter.2);*counter=(0,0,0,now);}
++static ENABLED: LazyLock<bool> =
++    LazyLock::new(|| std::env::var_os("BLITZ_FPS_PROOF_DIR").is_some());
++static RETAIN_BACKLOG: LazyLock<bool> =
++    LazyLock::new(|| std::env::var_os("BLITZ_FPS_RETAIN_BACKLOG").is_some());
++static SEQUENTIAL: LazyLock<bool> =
++    LazyLock::new(|| std::env::var_os("BLITZ_FPS_SEQUENTIAL").is_some());
++pub fn retain_backlog() -> bool {
++    *ENABLED && *RETAIN_BACKLOG
++}
++pub fn sequential() -> bool {
++    *ENABLED && *SEQUENTIAL
++}
++static CLOCK: LazyLock<Instant> = LazyLock::new(Instant::now);
++static COUNTS: LazyLock<Mutex<std::collections::BTreeMap<&'static str, (u64, u128, u128, u128)>>> =
++    LazyLock::new(|| Mutex::new(Default::default()));
++pub fn cost(name: &'static str, started: Instant) {
++    if !*ENABLED {
++        return;
++    }
++    let elapsed = started.elapsed().as_micros();
++    let now = CLOCK.elapsed().as_micros();
++    let mut all = COUNTS.lock().expect("owned core probe");
++    let counter = all.entry(name).or_insert((0, 0, 0, now));
++    counter.0 += 1;
++    counter.1 += elapsed;
++    counter.2 = counter.2.max(elapsed);
++    if now - counter.3 >= 1_000_000 {
++        tracing::info!(
++            "BLITZ_CORE_COST stage={} calls={} meanUs={} maxUs={}",
++            name,
++            counter.0,
++            counter.1 / counter.0 as u128,
++            counter.2
++        );
++        *counter = (0, 0, 0, now);
++    }
 +}
 diff --git a/core/src/frame_lifecycle.rs b/core/src/frame_lifecycle.rs
-index 91bdb52df526dbb0dbbcad9d1c179667ff629fce..653f810260c27e5d2aa9a62ceb991a9dc28f4b5a 100644
+index 91bdb52df526dbb0dbbcad9d1c179667ff629fce..d62c740a7ac7d99c68ec82e1738c79935289db7e 100644
 --- a/core/src/frame_lifecycle.rs
 +++ b/core/src/frame_lifecycle.rs
 @@ -71,6 +71,7 @@ pub enum FramePhase {
  /// output exactly for two complex test cases (see `avm2/orphan_movie*`)
  #[instrument(level = "debug", skip_all)]
  pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
-+    let probe_enter=web_time::Instant::now();
++    let probe_enter = web_time::Instant::now();
      let stage = context.stage;
  
      if !stage.movie().is_action_script_3() {
@@ -877,27 +1123,27 @@ index 91bdb52df526dbb0dbbcad9d1c179667ff629fce..653f810260c27e5d2aa9a62ceb991a9d
          orphan.enter_frame(context);
      });
      stage.enter_frame(context);
-+    crate::fps_research::cost("enter",probe_enter);
++    crate::fps_research::cost("enter", probe_enter);
  
-+    let probe_construct=web_time::Instant::now();
++    let probe_construct = web_time::Instant::now();
      *context.frame_phase = FramePhase::Construct;
      OrphanManager::each_orphan_obj(context, |orphan, context| {
          orphan.construct_frame(context);
      });
      stage.construct_frame(context);
      broadcast_frame_constructed(context);
-+    crate::fps_research::cost("construct",probe_construct);
++    crate::fps_research::cost("construct", probe_construct);
  
-+    let probe_scripts=web_time::Instant::now();
++    let probe_scripts = web_time::Instant::now();
      *context.frame_phase = FramePhase::FrameScripts;
      OrphanManager::each_orphan_obj(context, |orphan, context| {
          orphan.run_frame_scripts(context);
      });
      stage.run_frame_scripts(context);
      run_frame_script_cleanup(context);
-+    crate::fps_research::cost("scripts",probe_scripts);
++    crate::fps_research::cost("scripts", probe_scripts);
  
-+    let probe_exit=web_time::Instant::now();
++    let probe_exit = web_time::Instant::now();
      *context.frame_phase = FramePhase::Exit;
      broadcast_frame_exited(context);
  
@@ -905,28 +1151,35 @@ index 91bdb52df526dbb0dbbcad9d1c179667ff629fce..653f810260c27e5d2aa9a62ceb991a9d
      // This performs special handling of clips which became orphaned as
      // a result of a RemoveObject tag - see `cleanup_dead_orphans` for details.
      context.orphan_manager.cleanup_dead_orphans(context.gc());
-+    crate::fps_research::cost("exit",probe_exit);
++    crate::fps_research::cost("exit", probe_exit);
  
      *context.frame_phase = FramePhase::Idle;
  }
 diff --git a/core/src/lib.rs b/core/src/lib.rs
-index d76c1cba70d37735277fcffae9fff6c8bdaddc36..6573e30af49bccb5e7634b2cde40786fcf2bfb70 100644
+index d76c1cba70d37735277fcffae9fff6c8bdaddc36..afa00d6cd7e04aa14ecdae95739e2ea50076f4c3 100644
 --- a/core/src/lib.rs
 +++ b/core/src/lib.rs
-@@ -27,6 +27,8 @@ pub mod events;
+@@ -26,6 +26,7 @@ mod ecma_conversions;
+ pub mod events;
  pub mod focus_tracker;
  pub mod font;
- mod frame_lifecycle;
 +mod fps_research;
-+mod presentation_clock;
+ mod frame_lifecycle;
  pub mod fte;
  mod html;
- mod input;
+@@ -39,6 +40,7 @@ mod orphan_manager;
+ pub mod pixel_bender;
+ mod player;
+ mod prelude;
++mod presentation_clock;
+ pub mod socket;
+ mod streams;
+ pub mod string;
 diff --git a/core/src/loader.rs b/core/src/loader.rs
-index 5d69fb97bc08c2c216199c9f5efa01b73c7023ea..dfe1325cd46ec54d83aa635b9840d26de6d49250 100644
+index 5d69fb97bc08c2c216199c9f5efa01b73c7023ea..091f6c6d7e2ea0b823508c6b08448b51f11b08de 100644
 --- a/core/src/loader.rs
 +++ b/core/src/loader.rs
-@@ -458,8 +458,21 @@ impl<'gc> LoadManager<'gc> {
+@@ -458,8 +458,36 @@ impl<'gc> LoadManager<'gc> {
              };
  
              if matches!(status, Some(LoaderStatus::Parsing)) {
@@ -935,22 +1188,37 @@ index 5d69fb97bc08c2c216199c9f5efa01b73c7023ea..dfe1325cd46ec54d83aa635b9840d26d
 -                    Ok(f) => did_finish = did_finish && f,
 +                    Ok(f) => {
 +                        did_finish = did_finish && f;
-+                        static SAMPLES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-+                        if std::env::var_os("BLITZ_FPS_PROOF_DIR").is_some() && context.start_time.elapsed().as_secs() >= 3 && probe.elapsed().as_micros() >= 1000
-+                            && SAMPLES.fetch_add(1,std::sync::atomic::Ordering::Relaxed) < 32 {
-+                            if let Some(MovieLoader { target_clip, .. }) = context.load_manager.get_loader(handle) {
++                        static SAMPLES: std::sync::atomic::AtomicUsize =
++                            std::sync::atomic::AtomicUsize::new(0);
++                        if std::env::var_os("BLITZ_FPS_PROOF_DIR").is_some()
++                            && context.start_time.elapsed().as_secs() >= 3
++                            && probe.elapsed().as_micros() >= 1000
++                            && SAMPLES.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 32
++                        {
++                            if let Some(MovieLoader { target_clip, .. }) =
++                                context.load_manager.get_loader(handle)
++                            {
 +                                let movie = target_clip.movie();
-+                                let file = movie.url().rsplit('/').next().unwrap_or("").split('?').next().unwrap_or("");
-+                                let counts = target_clip.as_movie_clip().map(|clip|(clip.loaded_bytes(),clip.total_bytes()));
++                                let file = movie
++                                    .url()
++                                    .rsplit('/')
++                                    .next()
++                                    .unwrap_or("")
++                                    .split('?')
++                                    .next()
++                                    .unwrap_or("");
++                                let counts = target_clip
++                                    .as_movie_clip()
++                                    .map(|clip| (clip.loaded_bytes(), clip.total_bytes()));
 +                                tracing::info!(target:"blitz_loader_probe","BLITZ_LOADER_COST file={} costUs={} complete={} counts={:?}",file,probe.elapsed().as_micros(),f,counts);
 +                            }
 +                        }
-+                    },
++                    }
                      Err(e) => tracing::error!("Error encountered while preloading movie: {}", e),
                  }
              }
 diff --git a/core/src/player.rs b/core/src/player.rs
-index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d9e5033c7 100644
+index 675ef3a78e7a92652e8076b99921771d91818094..24261e7ba86bd5d53ba12360ef9a315502469354 100644
 --- a/core/src/player.rs
 +++ b/core/src/player.rs
 @@ -351,6 +351,7 @@ pub struct Player {
@@ -961,45 +1229,57 @@ index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d
      actions_since_timeout_check: u32,
  
      frame_phase: FramePhase,
-@@ -553,12 +554,13 @@ impl Player {
+@@ -553,12 +554,18 @@ impl Player {
          self.frame_accumulator += dt;
          let frame_duration = self.frame_duration();
  
 -        let max_frames_per_tick = self.max_frames_per_tick();
-+        let max_frames_per_tick = if self.presentation_clock.is_some() || crate::fps_research::sequential(){1}else{self.max_frames_per_tick()};
++        let max_frames_per_tick =
++            if self.presentation_clock.is_some() || crate::fps_research::sequential() {
++                1
++            } else {
++                self.max_frames_per_tick()
++            };
          let mut frame = 0;
  
          while frame < max_frames_per_tick && self.frame_accumulator >= frame_duration {
              let timer = Instant::now();
              self.run_frame();
-+            crate::fps_research::cost("frame",timer);
++            crate::fps_research::cost("frame", timer);
              let elapsed = timer.elapsed().as_millis() as f64;
  
              self.add_frame_timing(elapsed);
-@@ -587,12 +589,13 @@ impl Player {
+@@ -587,12 +594,20 @@ impl Player {
          // Also note that in Flash, a blocking busy loop would delay setTimeout
          // and cancel some setInterval callbacks, but here busy loops don't block
          // so timer callbacks won't get cancelled/delayed.
-+        let probe_housekeeping=Instant::now();
++        let probe_housekeeping = Instant::now();
          self.time_offset = 0;
  
          // Sanity: If we had too many frames to tick, just reset the accumulator
          // to prevent running at turbo speed.
          if self.frame_accumulator >= frame_duration {
 -            self.frame_accumulator = FloatDuration::ZERO;
-+            self.frame_accumulator = if self.presentation_clock.is_some() || crate::fps_research::sequential() {self.frame_accumulator.min(frame_duration+frame_duration)} else if crate::fps_research::retain_backlog() {frame_duration} else {FloatDuration::ZERO};
++            self.frame_accumulator =
++                if self.presentation_clock.is_some() || crate::fps_research::sequential() {
++                    self.frame_accumulator.min(frame_duration + frame_duration)
++                } else if crate::fps_research::retain_backlog() {
++                    frame_duration
++                } else {
++                    FloatDuration::ZERO
++                };
          }
  
          // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
-@@ -611,6 +614,7 @@ impl Player {
+@@ -611,6 +626,7 @@ impl Player {
              StreamManager::tick(context, dt);
          });
          self.audio.tick();
-+        crate::fps_research::cost("housekeeping",probe_housekeeping);
++        crate::fps_research::cost("housekeeping", probe_housekeeping);
      }
  
      pub fn time_til_next_timer(&self) -> Option<f64> {
-@@ -2021,10 +2025,13 @@ impl Player {
+@@ -2021,10 +2037,13 @@ impl Player {
                  .root_clip()
                  .and_then(|root| root.as_movie_clip())
              {
@@ -1013,7 +1293,7 @@ index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d
                      let mut activation = Avm2Activation::from_nothing(context);
  
                      let progress_evt = Avm2EventObject::progress_event(
-@@ -2035,14 +2042,19 @@ impl Player {
+@@ -2035,14 +2054,19 @@ impl Player {
                      );
  
                      Avm2::dispatch_event(context, progress_evt, loader_info.into());
@@ -1033,15 +1313,17 @@ index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d
  
              did_finish
          })
-@@ -2050,6 +2062,7 @@ impl Player {
+@@ -2050,6 +2074,9 @@ impl Player {
  
      #[instrument(level = "debug", skip_all)]
      pub fn run_frame(&mut self) {
-+        if let Some(clock) = &mut self.presentation_clock { clock.tick(self.start_time.elapsed()); }
++        if let Some(clock) = &mut self.presentation_clock {
++            clock.tick(self.start_time.elapsed());
++        }
          let frame_time = self.frame_time(750_000_000.0);
          let frame_time = Duration::from_nanos(frame_time as u64);
          let (mut execution_limit, may_execute_while_streaming) = match self.load_behavior {
-@@ -2063,7 +2076,9 @@ impl Player {
+@@ -2063,7 +2090,9 @@ impl Player {
              ),
              LoadBehavior::Blocking => (ExecutionLimit::none(), false),
          };
@@ -1051,7 +1333,7 @@ index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d
  
          if !preload_finished && !may_execute_while_streaming {
              return;
-@@ -2072,9 +2087,15 @@ impl Player {
+@@ -2072,9 +2101,15 @@ impl Player {
          self.update(|context| {
              // TODO: Is this order correct?
              run_all_phases_avm2(context);
@@ -1067,7 +1349,25 @@ index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d
  
              // Only run the current list of callbacks - any callbacks added during callback execution
              // will be run at the end of the *next* frame.
-@@ -2362,6 +2383,7 @@ impl Player {
+@@ -2168,6 +2203,17 @@ impl Player {
+     }
+ 
+     // The frame rate of the current movie in FPS.
++    /// Change presentation pacing while retaining the movie-requested timeline clock.
++    pub fn set_presentation_rate(&mut self, cap: f64) -> bool {
++        if self.presentation_clock.is_none() || !cap.is_finite() || !(30.0..=1000.0).contains(&cap)
++        {
++            return false;
++        }
++        self.frame_rate = cap;
++        self.frame_accumulator = self.frame_accumulator.min(self.frame_duration());
++        true
++    }
++
+     pub fn frame_rate(&self) -> f64 {
+         self.frame_rate
+     }
+@@ -2362,6 +2408,7 @@ impl Player {
                  audio_manager,
                  frame_rate: &mut this.frame_rate,
                  forced_frame_rate: this.forced_frame_rate,
@@ -1075,22 +1375,22 @@ index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d
                  actions_since_timeout_check: &mut this.actions_since_timeout_check,
                  frame_phase: &mut this.frame_phase,
                  stub_tracker: &mut this.stub_tracker,
-@@ -2437,10 +2459,14 @@ impl Player {
+@@ -2437,10 +2484,14 @@ impl Player {
          self.mutate_with_update_context(|context| {
              Self::update_drag(context);
          });
-+        let probe_mouse=Instant::now();
++        let probe_mouse = Instant::now();
          self.update_mouse_state(EnumSet::empty(), false, &mut false);
-+        crate::fps_research::cost("mouse",probe_mouse);
++        crate::fps_research::cost("mouse", probe_mouse);
  
          // GC
-+        let probe_gc=Instant::now();
++        let probe_gc = Instant::now();
          self.gc_arena.borrow_mut().collect_debt();
-+        crate::fps_research::cost("gc",probe_gc);
++        crate::fps_research::cost("gc", probe_gc);
  
          rval
      }
-@@ -2660,6 +2686,7 @@ pub struct PlayerBuilder {
+@@ -2660,6 +2711,7 @@ pub struct PlayerBuilder {
      quality: StageQuality,
      page_url: Option<String>,
      frame_rate: Option<f64>,
@@ -1098,29 +1398,36 @@ index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d
      external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
      fs_command_provider: Box<dyn FsCommandProvider>,
      #[cfg(feature = "known_stubs")]
-@@ -2717,6 +2744,7 @@ impl PlayerBuilder {
+@@ -2717,6 +2769,7 @@ impl PlayerBuilder {
              quality: StageQuality::High,
              page_url: None,
              frame_rate: None,
-+            preserve_timelines:false,
++            preserve_timelines: false,
              external_interface_provider: None,
              fs_command_provider: Box::new(NullFsCommandProvider),
              #[cfg(feature = "known_stubs")]
-@@ -2917,6 +2945,9 @@ impl PlayerBuilder {
+@@ -2917,6 +2970,12 @@ impl PlayerBuilder {
      }
  
      /// Sets and locks the player's frame rate. If None is provided, this has no effect.
 +    /// Separate the presentation cadence from automatic movie timelines.
-+    pub fn with_preserved_timelines(mut self, enabled:bool) -> Self { self.preserve_timelines=enabled;self }
++    pub fn with_preserved_timelines(mut self, enabled: bool) -> Self {
++        self.preserve_timelines = enabled;
++        self
++    }
 +
      pub fn with_frame_rate(mut self, frame_rate: Option<f64>) -> Self {
          self.frame_rate = frame_rate;
          self
-@@ -3082,6 +3113,7 @@ impl PlayerBuilder {
+@@ -3082,6 +3141,11 @@ impl PlayerBuilder {
                  // Timing
                  frame_rate,
                  forced_frame_rate,
-+                presentation_clock: if self.preserve_timelines {Some(crate::presentation_clock::PresentationClock::new())} else {crate::presentation_clock::PresentationClock::private_fixture()},
++                presentation_clock: if self.preserve_timelines {
++                    Some(crate::presentation_clock::PresentationClock::new())
++                } else {
++                    crate::presentation_clock::PresentationClock::private_fixture()
++                },
                  frame_phase: Default::default(),
                  frame_accumulator: FloatDuration::ZERO,
                  recent_run_frame_timings: VecDeque::with_capacity(10),
@@ -1202,7 +1509,7 @@ index be36e8a8e1847d8c5a74e7d91508420f0d7d6e0a..0c1e9d889c33bdb1f638be42c452516b
      }
  
 diff --git a/desktop/src/app.rs b/desktop/src/app.rs
-index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a04d3fde1d 100644
+index a3410740e5aaee3a0d5db0bd7cbba9f205449207..c23c476201544eab4d9c6d32ee712b7a91d68cf8 100644
 --- a/desktop/src/app.rs
 +++ b/desktop/src/app.rs
 @@ -24,6 +24,8 @@ use winit::keyboard::{Key, NamedKey};
@@ -1210,20 +1517,24 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a0
  
  struct MainWindow {
 +    launcher: Option<Arc<crate::launcher_host::Channel>>,
-+    controls:crate::launcher_controls::Controls,
++    controls: crate::launcher_controls::Controls,
      preferences: GlobalPreferences,
      gui: GuiController,
      player: PlayerController,
-@@ -46,19 +48,22 @@ struct MainWindow {
+@@ -46,19 +48,32 @@ struct MainWindow {
  }
  
  impl MainWindow {
 +    fn render_movie(&mut self) {
-+        let mut player=self.player.get();
-+        if let Some(ref mut player)=player {
-+            let started=Instant::now();player.render();crate::fps_probe::timing("raster",started);
++        let mut player = self.player.get();
++        if let Some(ref mut player) = player {
++            let started = Instant::now();
++            player.render();
++            crate::fps_probe::timing("raster", started);
 +        }
-+        let started=Instant::now();self.gui.render(player);crate::fps_probe::timing("gui",started);
++        let started = Instant::now();
++        self.gui.render(player);
++        crate::fps_probe::timing("gui", started);
 +    }
      pub fn window_event(&mut self, event_loop: &ActiveEventLoop, event: WindowEvent) {
          if matches!(event, WindowEvent::RedrawRequested) {
@@ -1235,7 +1546,13 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a0
 -                if let Some(ref mut player) = player {
 -                    // Even if the movie is paused, user interaction with debug tools can change the render output
 -                    player.render();
-+                if !crate::fps_probe::direct_loop() || self.player.get().is_some_and(|player|player.needs_render()) || (!self.no_gui&&self.gui.needs_render()) {
++                if !crate::fps_probe::direct_loop()
++                    || self
++                        .player
++                        .get()
++                        .is_some_and(|player| player.needs_render())
++                    || (!self.no_gui && self.gui.needs_render())
++                {
 +                    self.render_movie();
                  }
 -
@@ -1243,20 +1560,24 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a0
              }
  
              // Important that we return here, or we'll get a feedback loop with egui
-@@ -66,15 +71,19 @@ impl MainWindow {
+@@ -66,15 +81,23 @@ impl MainWindow {
              return;
          }
  
 -        if self.gui.handle_event(&event) {
 +        if crate::launcher_host::configured() {
-+            if let WindowEvent::Resized(size)=&event {self.gui.resize(*size);}
++            if let WindowEvent::Resized(size) = &event {
++                self.gui.resize(*size);
++            }
 +        } else if self.gui.handle_event(&event) {
              // Event consumed by GUI.
              return;
          }
          match event {
              WindowEvent::CloseRequested => {
-+                if let Some(channel)=&self.launcher {channel.send(serde_json::json!({"type":"close"}));}
++                if let Some(channel) = &self.launcher {
++                    channel.send(serde_json::json!({"type":"close"}));
++                }
                  event_loop.exit();
              }
              WindowEvent::Resized(size) => {
@@ -1264,131 +1585,184 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a0
                  // How minimizing shows up on Windows; winit still has no
                  // `WindowEvent::Minimize`. (`Window::is_minimized` does exist by
                  // now, but it has to be polled, and it wouldn't tell us anything
-@@ -102,6 +111,7 @@ impl MainWindow {
+@@ -102,6 +125,10 @@ impl MainWindow {
                      self.gui.window().request_redraw();
                  }
              }
-+            WindowEvent::ScaleFactorChanged {..}=>{self.controls.invalidate();crate::launcher_cursor::refresh(event_loop,self.gui.window());}
++            WindowEvent::ScaleFactorChanged { .. } => {
++                self.controls.invalidate();
++                crate::launcher_cursor::refresh(event_loop, self.gui.window());
++            }
              WindowEvent::CursorMoved { position, .. } => {
                  if self.gui.is_context_menu_visible() {
                      return;
-@@ -121,6 +131,7 @@ impl MainWindow {
+@@ -121,6 +148,9 @@ impl MainWindow {
                  self.check_redraw();
              }
              WindowEvent::DroppedFile(file) => {
-+                if crate::launcher_host::configured(){return;}
++                if crate::launcher_host::configured() {
++                    return;
++                }
                  if let Some(content_descriptor) = ContentDescriptor::new_local(&file, None) {
                      self.gui.create_movie(
                          &mut self.player,
-@@ -131,11 +142,14 @@ impl MainWindow {
+@@ -131,11 +161,18 @@ impl MainWindow {
              }
              WindowEvent::Focused(true) => {
                  self.player.handle_event(PlayerEvent::FocusGained);
-+                if let Some(channel)=&self.launcher {channel.send(serde_json::json!({"type":"focused"}));}
++                if let Some(channel) = &self.launcher {
++                    channel.send(serde_json::json!({"type":"focused"}));
++                }
              }
              WindowEvent::Focused(false) => {
                  self.player.handle_event(PlayerEvent::FocusLost);
 +                self.controls.blur();
              }
              WindowEvent::MouseInput { button, state, .. } => {
-+                if state==ElementState::Pressed {crate::launcher_host::gesture();}
++                if state == ElementState::Pressed {
++                    crate::launcher_host::gesture();
++                }
                  if self.gui.is_context_menu_visible() {
                      return;
                  }
-@@ -161,7 +175,7 @@ impl MainWindow {
+@@ -161,7 +198,10 @@ impl MainWindow {
                      ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                  };
                  let handled = self.player.handle_event(event);
 -                if !handled && state == ElementState::Pressed && button == RuffleMouseButton::Right
-+                if !crate::launcher_host::configured() && !handled && state == ElementState::Pressed && button == RuffleMouseButton::Right
++                if !crate::launcher_host::configured()
++                    && !handled
++                    && state == ElementState::Pressed
++                    && button == RuffleMouseButton::Right
                  {
                      // Show context menu.
                      if let Some(mut player) = self.player.get() {
-@@ -217,6 +231,13 @@ impl MainWindow {
+@@ -217,18 +257,26 @@ impl MainWindow {
                      return;
                  }
  
+-                // Handle escaping from fullscreen.
+-                if let KeyEvent {
+-                    state: ElementState::Pressed,
+-                    logical_key: Key::Named(NamedKey::Escape),
+-                    ..
+-                } = event
+-                {
+-                    let _ = self
+-                        .event_loop_proxy
+-                        .send_event(RuffleEvent::ExitFullScreen);
 +                if crate::launcher_host::configured() {
-+                    if let Some(mut player)=self.player.get() {
-+                        self.controls.key(&event,self.modifiers.state(),&mut player);
++                    if let Some(mut player) = self.player.get() {
++                        self.controls
++                            .key(&event, self.modifiers.state(), &mut player);
 +                    }
 +                }
 +                // Escape belongs to the game when embedded.
 +                if !crate::launcher_host::configured() {
-                 // Handle escaping from fullscreen.
-                 if let KeyEvent {
-                     state: ElementState::Pressed,
-@@ -229,6 +250,7 @@ impl MainWindow {
-                         .send_event(RuffleEvent::ExitFullScreen);
++                    // Handle escaping from fullscreen.
++                    if let KeyEvent {
++                        state: ElementState::Pressed,
++                        logical_key: Key::Named(NamedKey::Escape),
++                        ..
++                    } = event
++                    {
++                        let _ = self
++                            .event_loop_proxy
++                            .send_event(RuffleEvent::ExitFullScreen);
++                    }
                  }
- 
-+                }
+-
                  let key = winit_input_to_ruffle_key_descriptor(&event);
                  match event.state {
                      ElementState::Pressed => {
-@@ -276,7 +298,7 @@ impl MainWindow {
+@@ -276,7 +324,8 @@ impl MainWindow {
  
          // To prevent issues like waiting on resize indefinitely (#11364) or desyncing the window state on Windows,
          // do not resize while window is maximized.
 -        let should_resize = !self.gui.window().is_maximized();
-+        let should_resize = !crate::launcher_host::configured() && !self.gui.window().is_maximized();
++        let should_resize =
++            !crate::launcher_host::configured() && !self.gui.window().is_maximized();
  
          let (viewport_size, state) = if should_resize {
              let movie_width = swf_header.stage_size().width().to_pixels();
-@@ -351,7 +373,7 @@ impl MainWindow {
+@@ -351,7 +400,9 @@ impl MainWindow {
          } else {
              None
          });
 -        self.gui.window().set_visible(true);
-+        if !crate::launcher_host::configured() {self.gui.window().set_visible(true);}
++        if !crate::launcher_host::configured() {
++            self.gui.window().set_visible(true);
++        }
  
          let viewport_scale_factor = self.gui.window().scale_factor();
          if let Some(mut player) = self.player.get() {
-@@ -364,6 +386,9 @@ impl MainWindow {
+@@ -364,6 +415,12 @@ impl MainWindow {
      }
  
      fn about_to_wait(&mut self, gilrs: Option<&mut Gilrs>) {
 +        if crate::launcher_host::configured() {
-+            if let Some(mut player)=self.player.get(){self.controls.apply(&mut player,self.gui.window().scale_factor());}
++            if let Some(mut player) = self.player.get() {
++                self.controls
++                    .apply(&mut player, self.gui.window().scale_factor());
++            }
 +        }
          if let Some(Event { event, .. }) = gilrs.and_then(|gilrs| gilrs.next_event()) {
              match event {
                  EventType::ButtonPressed(button, _) => {
-@@ -393,10 +418,14 @@ impl MainWindow {
+@@ -393,10 +450,23 @@ impl MainWindow {
              if dt.as_millis() > 0.0 {
                  self.time = new_time;
                  self.next_frame_time = self.player.get().map(|mut player| {
-+                    let probe_started=Instant::now();
++                    let probe_started = Instant::now();
                      player.tick(dt);
-+                    crate::fps_probe::timing("tick",probe_started);
++                    crate::fps_probe::timing("tick", probe_started);
                      new_time + player.time_til_next_frame()
                  });
 -                self.check_redraw();
-+                if crate::fps_probe::direct_loop() && !self.minimized && !self.occluded && self.player.get().is_some_and(|player|player.needs_render()) {
++                if crate::fps_probe::direct_loop()
++                    && !self.minimized
++                    && !self.occluded
++                    && self
++                        .player
++                        .get()
++                        .is_some_and(|player| player.needs_render())
++                {
 +                    self.render_movie();
-+                } else {self.check_redraw();}
++                } else {
++                    self.check_redraw();
++                }
              }
          }
      }
-@@ -433,13 +462,15 @@ impl App {
+@@ -433,13 +503,22 @@ impl App {
          let mut font_database = fontdb::Database::default();
          font_database.load_system_fonts();
  
 -        let gilrs = Gilrs::new()
-+        let gilrs = if crate::launcher_host::configured() || std::env::var("BLITZ_PRIVATE_DESKTOP").is_ok_and(|name|name.starts_with("BlitzTest-")) {None} else {Gilrs::new()
-             .inspect_err(|err| {
-                 tracing::warn!("Gamepad support could not be initialized: {err}");
-             })
+-            .inspect_err(|err| {
+-                tracing::warn!("Gamepad support could not be initialized: {err}");
+-            })
 -            .ok();
-+            .ok()};
++        let gilrs = if crate::launcher_host::configured()
++            || std::env::var("BLITZ_PRIVATE_DESKTOP")
++                .is_ok_and(|name| name.starts_with("BlitzTest-"))
++        {
++            None
++        } else {
++            Gilrs::new()
++                .inspect_err(|err| {
++                    tracing::warn!("Gamepad support could not be initialized: {err}");
++                })
++                .ok()
++        };
          let event_loop_proxy = event_loop.create_proxy();
 +        crate::fixture_control::start(event_loop_proxy.clone());
          let runtime = tokio::runtime::Runtime::new()?;
-+        crate::launcher_host::start(event_loop_proxy.clone(),runtime.handle());
++        crate::launcher_host::start(event_loop_proxy.clone(), runtime.handle());
  
          Ok((
              Self {
-@@ -479,9 +510,12 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -479,9 +558,17 @@ impl ApplicationHandler<RuffleEvent> for App {
              #[cfg_attr(not(target_os = "linux"), allow(unused_mut))]
              let mut window_attributes = WindowAttributes::default()
                  .with_visible(false)
@@ -1397,82 +1771,141 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a0
                  .with_title("Ruffle")
                  .with_window_icon(Some(icon))
                  .with_min_inner_size(min_window_size);
-+            if crate::launcher_host::configured(){window_attributes=window_attributes.with_inner_size(PhysicalSize::new(preferred_width.unwrap_or(1280.0),preferred_height.unwrap_or(720.0)));}
++            if crate::launcher_host::configured() {
++                window_attributes = window_attributes.with_inner_size(PhysicalSize::new(
++                    preferred_width.unwrap_or(1280.0),
++                    preferred_height.unwrap_or(720.0),
++                ));
++            }
  
              #[cfg(target_os = "linux")]
              {
-@@ -501,7 +535,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -501,7 +588,11 @@ impl ApplicationHandler<RuffleEvent> for App {
              let window = event_loop
                  .create_window(window_attributes)
                  .expect("Window should be created");
 -            let max_window_size = get_screen_size(&window);
-+            let max_window_size = if crate::launcher_host::configured(){PhysicalSize::new(8192,8192)} else {get_screen_size(&window)};
++            let max_window_size = if crate::launcher_host::configured() {
++                PhysicalSize::new(8192, 8192)
++            } else {
++                get_screen_size(&window)
++            };
              window.set_max_inner_size(Some(max_window_size));
              let window = Arc::new(window);
              let font_database = self.font_database.clone();
-@@ -547,6 +581,8 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -547,6 +638,8 @@ impl ApplicationHandler<RuffleEvent> for App {
              }
  
              self.main_window = Some(MainWindow {
 +                launcher: None,
-+                controls:Default::default(),
++                controls: Default::default(),
                  preferences,
                  gui,
                  player,
-@@ -574,6 +610,52 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -574,6 +667,102 @@ impl ApplicationHandler<RuffleEvent> for App {
          enter_runtime!(self);
  
          match (&mut self.main_window, event) {
-+            (Some(window),RuffleEvent::LauncherConnected(channel)) => {
-+                use winit::raw_window_handle::{HasWindowHandle,RawWindowHandle};
-+                if let Ok(handle)=window.gui.window().window_handle() {
-+                    if let RawWindowHandle::Win32(handle)=handle.as_raw() {
++            (Some(window), RuffleEvent::LauncherConnected(channel)) => {
++                use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
++                if let Ok(handle) = window.gui.window().window_handle() {
++                    if let RawWindowHandle::Win32(handle) = handle.as_raw() {
 +                        channel.send(serde_json::json!({"type":"ready","hwnd":handle.hwnd.get().to_string(),"native":"ruffle-0.7.1-blitz120"}));
 +                    }
 +                }
 +                crate::launcher_host::set_channel(channel.clone());
-+                window.launcher=Some(channel);
++                window.launcher = Some(channel);
 +            }
-+            (Some(window),RuffleEvent::LauncherCommand(command)) => {
-+                let kind=command["type"].as_str().expect("validated command");
++            (Some(window), RuffleEvent::LauncherCommand(command)) => {
++                let kind = command["type"].as_str().expect("validated command");
 +                match kind {
-+                    "quit"=>event_loop.exit(),
-+                    "crosshair"=>crate::launcher_cursor::command(&command["value"],event_loop,window.gui.window()),
-+                    "visibility"=>{let visible=command["value"].as_bool().unwrap();if !visible {if let Some(mut player)=window.player.get(){window.controls.stop(&mut player);}} window.gui.window().set_visible(visible);},
-+                    "viewport"=>{let _=window.gui.window().request_inner_size(LogicalSize::new(command["width"].as_u64().unwrap()as u32,command["height"].as_u64().unwrap()as u32));window.controls.invalidate();},
-+                    "focus"=>{if !crate::launcher_host::fixture(){window.gui.window().focus_window();}},
-+                    _=>{if let Some(mut player)=window.player.get(){window.controls.command(&command,&mut player);}}
++                    "quit" => event_loop.exit(),
++                    "crosshair" => crate::launcher_cursor::command(
++                        &command["value"],
++                        event_loop,
++                        window.gui.window(),
++                    ),
++                    "visibility" => {
++                        let visible = command["value"].as_bool().unwrap();
++                        crate::fps_probe::set_visible(visible);
++                        if !visible {
++                            if let Some(mut player) = window.player.get() {
++                                window.controls.stop(&mut player);
++                            }
++                        }
++                        window.gui.window().set_visible(visible);
++                    }
++                    "viewport" => {
++                        let _ = window.gui.window().request_inner_size(LogicalSize::new(
++                            command["width"].as_u64().unwrap() as u32,
++                            command["height"].as_u64().unwrap() as u32,
++                        ));
++                        window.controls.invalidate();
++                    }
++                    "focus" => {
++                        if !crate::launcher_host::fixture() {
++                            window.gui.window().focus_window();
++                        }
++                    }
++                    _ => {
++                        if let Some(mut player) = window.player.get() {
++                            window.controls.command(&command, &mut player);
++                        }
++                    }
 +                }
 +            }
 +            (window, RuffleEvent::FixtureControl(request)) => {
-+                let result=window.as_mut().and_then(|window|{
-+                    if request.name=="BlitzFixtureCursor" {return Some(ruffle_core::external::Value::String(crate::launcher_cursor::snapshot().to_string()));}
-+                    if request.name=="BlitzFixtureShortcut" {
-+                        return window.player.get().map(|mut player|ruffle_core::external::Value::Bool(window.controls.fixture_key(&request.arguments,&mut player)));
++                let result = window.as_mut().and_then(|window| {
++                    if request.name == "BlitzFixtureCursor" {
++                        return Some(ruffle_core::external::Value::String(
++                            crate::launcher_cursor::snapshot().to_string(),
++                        ));
 +                    }
-+                    if request.name=="BlitzFixtureCapture" {
-+                        let [ruffle_core::external::Value::Number(id)]=request.arguments.as_slice() else{return None;};
-+                        if !id.is_finite() || *id<1.0 || *id>1000.0 || id.fract()!=0.0 {return None;}
-+                        crate::fps_probe::request_capture(*id as u64);window.render_movie();
++                    if request.name == "BlitzFixtureShortcut" {
++                        return window.player.get().map(|mut player| {
++                            ruffle_core::external::Value::Bool(
++                                window.controls.fixture_key(&request.arguments, &mut player),
++                            )
++                        });
++                    }
++                    if request.name == "BlitzFixtureCapture" {
++                        let [ruffle_core::external::Value::Number(id)] =
++                            request.arguments.as_slice()
++                        else {
++                            return None;
++                        };
++                        if !id.is_finite() || *id < 1.0 || *id > 1000.0 || id.fract() != 0.0 {
++                            return None;
++                        }
++                        crate::fps_probe::request_capture(*id as u64);
++                        window.render_movie();
 +                        return Some(ruffle_core::external::Value::Bool(true));
 +                    }
-+                    if request.name=="BlitzFixtureResize" {
-+                        let size=crate::fixture_control::size(&request.arguments)?;
-+                        let _=window.gui.window().request_inner_size(size);
++                    if request.name == "BlitzFixtureResize" {
++                        let size = crate::fixture_control::size(&request.arguments)?;
++                        let _ = window.gui.window().request_inner_size(size);
 +                        return Some(ruffle_core::external::Value::Bool(true));
 +                    }
-+                    if let Some(event)=crate::fixture_control::input(&request.name,&request.arguments){
-+                        window.player.handle_event(event);window.check_redraw();
++                    if let Some(event) =
++                        crate::fixture_control::input(&request.name, &request.arguments)
++                    {
++                        window.player.handle_event(event);
++                        window.check_redraw();
 +                        return Some(ruffle_core::external::Value::Bool(true));
 +                    }
-+                    window.player.get().map(|mut player|player.call_internal_interface(&request.name,request.arguments.iter().cloned()))
++                    window.player.get().map(|mut player| {
++                        player.call_internal_interface(
++                            &request.name,
++                            request.arguments.iter().cloned(),
++                        )
++                    })
 +                });
-+                crate::fixture_control::respond(request,result);
++                crate::fixture_control::respond(request, result);
 +            }
              (Some(main_window), RuffleEvent::TaskPoll(task)) => main_window.player.poll(task),
  
              (Some(main_window), RuffleEvent::OnMetadata(swf_header)) => {
-@@ -671,6 +753,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -671,6 +860,7 @@ impl ApplicationHandler<RuffleEvent> for App {
              }
  
              (_, RuffleEvent::ExitRequested) => {
@@ -1480,17 +1913,25 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a0
                  event_loop.exit();
              }
  
-@@ -703,17 +786,24 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -703,17 +893,32 @@ impl ApplicationHandler<RuffleEvent> for App {
              // Note: the control flow might be set to `ControlFlow::WaitUntil` with a
              // timestamp in the past! Take that into consideration when changing this code.
              if let Some(next_frame_time) = main_window.next_frame_time {
 -                event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
 +                if crate::fps_probe::precise() {
-+                    let now=Instant::now();
-+                    let early=next_frame_time.checked_sub(std::time::Duration::from_micros(500)).unwrap_or(next_frame_time);
-+                    if early>now {event_loop.set_control_flow(ControlFlow::WaitUntil(early));}
-+                    else {std::thread::yield_now();event_loop.set_control_flow(ControlFlow::Poll);}
-+                } else {event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));}
++                    let now = Instant::now();
++                    let early = next_frame_time
++                        .checked_sub(std::time::Duration::from_micros(500))
++                        .unwrap_or(next_frame_time);
++                    if early > now {
++                        event_loop.set_control_flow(ControlFlow::WaitUntil(early));
++                    } else {
++                        std::thread::yield_now();
++                        event_loop.set_control_flow(ControlFlow::Poll);
++                    }
++                } else {
++                    event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
++                }
              }
          }
      }
@@ -1506,7 +1947,7 @@ index a3410740e5aaee3a0d5db0bd7cbba9f205449207..f7582bc035e4ee58029f49308302b3a0
  
          // Manually stop the tokio runtime: this makes sure that any pending Player-bound futures
          // are properly cancelled and put back on the winit event loop before it closes, preventing
-@@ -721,6 +811,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+@@ -721,6 +926,7 @@ impl ApplicationHandler<RuffleEvent> for App {
          if let Some(runtime) = self.runtime.take() {
              runtime.shutdown_timeout(std::time::Duration::from_secs(1));
          }
@@ -1533,14 +1974,17 @@ index 8cd7aa9572ccd102a7fadebb82ee785ff1b12f21..81fdd30e72ff68bcd5250aa5ef3fcf09
      }
  
 diff --git a/desktop/src/backends/navigator.rs b/desktop/src/backends/navigator.rs
-index 9f4dd8d0bf7a86d682e2f87a2da14fc3951b07a4..9f61de066b1d23cb39a0f9f9980ef514d906469c 100644
+index 9f4dd8d0bf7a86d682e2f87a2da14fc3951b07a4..c344161adb727a650f62be75d2068fc08a5a849c 100644
 --- a/desktop/src/backends/navigator.rs
 +++ b/desktop/src/backends/navigator.rs
-@@ -126,6 +126,7 @@ impl DesktopNavigatorInterface {
+@@ -126,6 +126,10 @@ impl DesktopNavigatorInterface {
  
  impl NavigatorInterface for DesktopNavigatorInterface {
      fn navigate_to_website(&self, url: Url) {
-+        if crate::launcher_host::configured() {crate::launcher_host::navigate(url);return;}
++        if crate::launcher_host::configured() {
++            crate::launcher_host::navigate(url);
++            return;
++        }
          let open_url_mode = self.preferences.open_url_mode();
          if open_url_mode == OpenUrlMode::Deny {
              tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
@@ -1896,10 +2340,10 @@ index 0000000000000000000000000000000000000000..f2454ffa077d600f002db3ad39c8ab8c
 +}
 diff --git a/desktop/src/fps_probe.rs b/desktop/src/fps_probe.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..d8a3dd28aa318123e742822890956ee0c1707bac
+index 0000000000000000000000000000000000000000..1d3fc390de132bc27bdc3a4a3cdc6ec1cffda065
 --- /dev/null
 +++ b/desktop/src/fps_probe.rs
-@@ -0,0 +1,285 @@
+@@ -0,0 +1,332 @@
 +use std::sync::atomic::{AtomicU64, Ordering};
 +use std::sync::{LazyLock, Mutex};
 +use std::time::Instant;
@@ -2001,7 +2445,7 @@ index 0000000000000000000000000000000000000000..d8a3dd28aa318123e742822890956ee0
 +pub struct ProbeLog;
 +impl ruffle_core::backend::log::LogBackend for ProbeLog {
 +    fn avm_trace(&self, message: &str) {
-+        if crate::launcher_host::production() {
++        if crate::launcher_host::production() && !crate::launcher_host::fixture() {
 +            return;
 +        }
 +        if let Some(value) = message.strip_prefix("BLITZ_SOURCE ") {
@@ -2013,7 +2457,7 @@ index 0000000000000000000000000000000000000000..d8a3dd28aa318123e742822890956ee0
 +        }
 +    }
 +    fn avm_warning(&self, message: &str) {
-+        if crate::launcher_host::production() {
++        if crate::launcher_host::production() && !crate::launcher_host::fixture() {
 +            return;
 +        }
 +        tracing::info!(target:"avm_warning","{}",message);
@@ -2062,19 +2506,66 @@ index 0000000000000000000000000000000000000000..d8a3dd28aa318123e742822890956ee0
 +    }
 +}
 +
-+static NATIVE_COMPLETIONS: Mutex<(u64, Option<Instant>)> = Mutex::new((0, None));
++static NATIVE_CAP: AtomicU64 = AtomicU64::new(120);
++#[derive(Default)]
++struct NativeCounts {
++    count: u64,
++    start: Option<Instant>,
++    samples: std::collections::VecDeque<(u64, f64)>,
++    serial: u64,
++    last: Option<(u64, f64, f64, f64)>,
++}
++static NATIVE_COMPLETIONS: LazyLock<Mutex<NativeCounts>> =
++    LazyLock::new(|| Mutex::new(NativeCounts::default()));
++pub fn set_cap(cap: u32) {
++    NATIVE_CAP.store(cap as u64, Ordering::Release);
++    *NATIVE_COMPLETIONS.lock().unwrap() = NativeCounts::default();
++}
++pub fn set_visible(_visible: bool) {
++    let mut s = NATIVE_COMPLETIONS.lock().unwrap();
++    s.start = None;
++    s.count = 0;
++}
++pub fn render_sample() -> Option<(u64, f64, f64, f64)> {
++    NATIVE_COMPLETIONS.lock().unwrap().last
++}
 +fn native_complete() {
-+    let mut state = NATIVE_COMPLETIONS.lock().unwrap();
++    let mut s = NATIVE_COMPLETIONS.lock().unwrap();
 +    let now = Instant::now();
-+    let since = *state.1.get_or_insert(now);
-+    state.0 += 1;
++    let since = *s.start.get_or_insert(now);
++    s.count += 1;
 +    let elapsed = now.duration_since(since).as_secs_f64();
-+    if elapsed >= 1.0 {
-+        crate::launcher_host::emit(
-+            serde_json::json!({"type":"native-status","value":{"phase":"running","cap":120,"renderFPS":(state.0-1)as f64/elapsed}}),
-+        );
-+        *state = (1, Some(now));
++    if elapsed < 1.0 {
++        return;
 +    }
++    let frames = s.count - 1;
++    let fps = frames as f64 / elapsed;
++    s.samples.push_back((frames, elapsed));
++    while s.samples.len() > 30 {
++        s.samples.pop_front();
++    }
++    let (frames, seconds) = s
++        .samples
++        .iter()
++        .fold((0, 0.0), |(n, t), (a, b)| (n + a, t + b));
++    let average = frames as f64 / seconds;
++    let low = s
++        .samples
++        .iter()
++        .map(|(n, t)| *n as f64 / t)
++        .fold(f64::INFINITY, f64::min);
++    let high = s
++        .samples
++        .iter()
++        .map(|(n, t)| *n as f64 / t)
++        .fold(0.0, f64::max);
++    s.serial += 1;
++    s.last = Some((s.serial, fps, low, high));
++    crate::launcher_host::emit(
++        serde_json::json!({"type":"native-status","value":{"phase":"running","cap":NATIVE_CAP.load(Ordering::Acquire),"renderFPS":fps,"averageFPS":average,"lowFPS":low,"highFPS":high,"sampleSeconds":seconds}}),
++    );
++    s.count = 1;
++    s.start = Some(now);
 +}
 +
 +pub fn capture(
@@ -2186,21 +2677,24 @@ index 0000000000000000000000000000000000000000..d8a3dd28aa318123e742822890956ee0
 +    buffer.unmap();
 +}
 diff --git a/desktop/src/gui/controller.rs b/desktop/src/gui/controller.rs
-index 2383b2ddee49f69b0707af35025bbcc245260833..db7bf1775496d7292fd6516e31614efdc0c77645 100644
+index 2383b2ddee49f69b0707af35025bbcc245260833..a3fbaa439a8c13176437bf7191d2163f9cc2e732 100644
 --- a/desktop/src/gui/controller.rs
 +++ b/desktop/src/gui/controller.rs
-@@ -83,7 +83,9 @@ impl GuiController {
+@@ -83,7 +83,12 @@ impl GuiController {
              wgpu::TextureFormat::Rgba8Unorm,
              wgpu::TextureFormat::Bgra8Unorm,
          ];
 -        let supported_formats = surface.get_capabilities(&adapter).formats;
 +        let capabilities = surface.get_capabilities(&adapter);
-+        tracing::info!("BLITZ_PRESENT supported={:?} selected=AutoNoVsync", capabilities.present_modes);
++        tracing::info!(
++            "BLITZ_PRESENT supported={:?} selected=AutoNoVsync",
++            capabilities.present_modes
++        );
 +        let supported_formats = capabilities.formats;
          let surface_format = preferred_formats
              .iter()
              .find(|format| supported_formats.contains(format))
-@@ -104,7 +106,7 @@ impl GuiController {
+@@ -104,7 +109,7 @@ impl GuiController {
                  color_space: wgpu::SurfaceColorSpace::Auto,
                  width: size.width,
                  height: size.height,
@@ -2209,7 +2703,7 @@ index 2383b2ddee49f69b0707af35025bbcc245260833..db7bf1775496d7292fd6516e31614efd
                  desired_maximum_frame_latency: 2,
                  alpha_mode: Default::default(),
                  view_formats: Default::default(),
-@@ -215,7 +217,7 @@ impl GuiController {
+@@ -215,7 +220,7 @@ impl GuiController {
                  color_space: wgpu::SurfaceColorSpace::Auto,
                  width: self.size.width,
                  height: self.size.height,
@@ -2218,83 +2712,199 @@ index 2383b2ddee49f69b0707af35025bbcc245260833..db7bf1775496d7292fd6516e31614efd
                  desired_maximum_frame_latency: 2,
                  alpha_mode: Default::default(),
                  view_formats: Default::default(),
-@@ -312,6 +314,8 @@ impl GuiController {
+@@ -312,6 +317,8 @@ impl GuiController {
      }
  
      pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
-+        let probe_source=crate::fps_probe::SOURCE.load(std::sync::atomic::Ordering::Acquire);
-+        let probe_acquire=Instant::now();
++        let probe_source = crate::fps_probe::SOURCE.load(std::sync::atomic::Ordering::Acquire);
++        let probe_acquire = Instant::now();
          let surface_texture = match self.surface.get_current_texture() {
              wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
              wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
-@@ -358,6 +362,7 @@ impl GuiController {
+@@ -358,35 +365,41 @@ impl GuiController {
              }
          };
  
-+        crate::fps_probe::timing("acquire",probe_acquire);
++        crate::fps_probe::timing("acquire", probe_acquire);
          #[cfg(feature = "tracy_images")]
          if player.is_none() {
              self.tracy_frame_captures
-@@ -394,8 +399,9 @@ impl GuiController {
+                 .set_target(&self.descriptors.device, None);
+         }
+ 
++        let hosted = crate::launcher_host::configured();
+         let raw_input = self.egui_winit.take_egui_input(&self.window);
+         let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
+-        let mut full_output = self.egui_winit.egui_ctx().run_ui(raw_input, |ui| {
+-            self.gui.update(
+-                self.egui_winit.egui_ctx(),
+-                ui,
+-                show_menu,
+-                player.as_deref_mut(),
+-                if show_menu {
+-                    MENU_HEIGHT as f64 * self.window.scale_factor()
+-                } else {
+-                    0.0
+-                },
+-            );
+-        });
++        let mut full_output = if hosted {
++            egui::FullOutput::default()
++        } else {
++            self.egui_winit.egui_ctx().run_ui(raw_input, |ui| {
++                self.gui.update(
++                    self.egui_winit.egui_ctx(),
++                    ui,
++                    show_menu,
++                    player.as_deref_mut(),
++                    if show_menu {
++                        MENU_HEIGHT as f64 * self.window.scale_factor()
++                    } else {
++                        0.0
++                    },
++                );
++            })
++        };
+         self.repaint_after = full_output
+             .viewport_output
+             .get(&ViewportId::ROOT)
+-            .expect("Root viewport must exist")
+-            .repaint_delay;
++            .map(|output| output.repaint_delay)
++            .unwrap_or(Duration::MAX);
+ 
+         // If we're not in a UI, tell egui which cursor we prefer to use instead
+-        if !self.egui_winit.egui_ctx().egui_wants_pointer_input()
++        if (hosted || !self.egui_winit.egui_ctx().egui_wants_pointer_input())
+             && let Some(player) = player.as_deref()
+         {
+             full_output.platform_output.cursor_icon =
+@@ -394,13 +407,22 @@ impl GuiController {
                      .unwrap_or_else(|| panic!("UI Backend should be DesktopUiBackend"))
                      .cursor();
          }
 -        self.egui_winit
 -            .handle_platform_output(&self.window, full_output.platform_output);
-+        let cursor_icon=full_output.platform_output.cursor_icon;
-+        if !crate::launcher_host::fixture(){self.egui_winit.handle_platform_output(&self.window,full_output.platform_output);}
-+        if crate::launcher_host::configured(){crate::launcher_cursor::apply(&self.window,cursor_icon);}
++        let cursor_icon = full_output.platform_output.cursor_icon;
++        if !hosted && !crate::launcher_host::fixture() {
++            self.egui_winit
++                .handle_platform_output(&self.window, full_output.platform_output);
++        }
++        if crate::launcher_host::configured() {
++            crate::launcher_cursor::apply(&self.window, cursor_icon);
++        }
  
-         let clipped_primitives = self
-             .egui_winit
-@@ -438,6 +444,7 @@ impl GuiController {
+-        let clipped_primitives = self
+-            .egui_winit
+-            .egui_ctx()
+-            .tessellate(full_output.shapes, full_output.pixels_per_point);
++        let clipped_primitives = if hosted {
++            Vec::new()
++        } else {
++            self.egui_winit
++                .egui_ctx()
++                .tessellate(full_output.shapes, full_output.pixels_per_point)
++        };
+ 
+         let scale_factor = self.window.scale_factor() as f32;
+         let screen_descriptor = egui_wgpu::ScreenDescriptor {
+@@ -426,18 +448,27 @@ impl GuiController {
+             }
+         }
+ 
+-        let mut command_buffers = self.egui_renderer.update_buffers(
+-            &self.descriptors.device,
+-            &self.descriptors.queue,
+-            &mut encoder,
+-            &clipped_primitives,
+-            &screen_descriptor,
+-        );
++        let mut command_buffers = if hosted {
++            Vec::new()
++        } else {
++            self.egui_renderer.update_buffers(
++                &self.descriptors.device,
++                &self.descriptors.queue,
++                &mut encoder,
++                &clipped_primitives,
++                &screen_descriptor,
++            )
++        };
+ 
+         let movie_view = if let Some(player) = player.as_deref_mut() {
              let renderer =
                  <dyn Any>::downcast_ref::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
                      .expect("Renderer must be correct type");
-+            crate::fps_probe::capture(probe_source, renderer.target().probe_texture(), &self.descriptors);
++            crate::fps_probe::capture(
++                probe_source,
++                renderer.target().probe_texture(),
++                &self.descriptors,
++            );
              Some(renderer.target())
          } else {
              None
-@@ -488,7 +495,11 @@ impl GuiController {
+@@ -466,8 +497,13 @@ impl GuiController {
+                 movie_view.render(&self.movie_view_renderer, &mut render_pass);
+             }
+ 
+-            self.egui_renderer
+-                .render(&mut render_pass, &clipped_primitives, &screen_descriptor);
++            if !hosted {
++                self.egui_renderer.render(
++                    &mut render_pass,
++                    &clipped_primitives,
++                    &screen_descriptor,
++                );
++            }
+ 
+             #[cfg(feature = "tracy_images")]
+             {
+@@ -488,7 +524,13 @@ impl GuiController {
          }
  
          self.window.pre_present_notify();
-+        let probe_present=Instant::now();
++        let probe_present = Instant::now();
          self.descriptors.queue.present(surface_texture);
-+        crate::fps_probe::timing("present",probe_present);
-+        self.descriptors.queue.on_submitted_work_done(move || crate::fps_probe::complete(probe_source));
++        crate::fps_probe::timing("present", probe_present);
++        self.descriptors
++            .queue
++            .on_submitted_work_done(move || crate::fps_probe::complete(probe_source));
 +        let _ = self.descriptors.device.poll(wgpu::PollType::Poll);
          #[cfg(feature = "tracy")]
          tracing_tracy::client::frame_mark();
          #[cfg(feature = "tracy_images")]
 diff --git a/desktop/src/gui/movie.rs b/desktop/src/gui/movie.rs
-index 80faf01e58f629a77935d7bbe38a9418238fed43..79533962496f095ff3e5b4d8e589ee421b8ca80c 100644
+index 80faf01e58f629a77935d7bbe38a9418238fed43..91d87ba3805e76c1ea7528746abd1b0e8a8d0b66 100644
 --- a/desktop/src/gui/movie.rs
 +++ b/desktop/src/gui/movie.rs
-@@ -179,7 +179,7 @@ impl MovieView {
+@@ -179,7 +179,9 @@ impl MovieView {
              sample_count: 1,
              dimension: wgpu::TextureDimension::D2,
              format: wgpu::TextureFormat::Rgba8Unorm,
 -            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC,
++            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
++                | wgpu::TextureUsages::TEXTURE_BINDING
++                | wgpu::TextureUsages::COPY_SRC,
              view_formats: &[],
          });
          let view = texture.create_view(&Default::default());
-@@ -208,6 +208,8 @@ impl MovieView {
+@@ -208,6 +210,10 @@ impl MovieView {
          }
      }
  
-+    pub fn probe_texture(&self) -> &wgpu::Texture { &self.texture }
++    pub fn probe_texture(&self) -> &wgpu::Texture {
++        &self.texture
++    }
 +
      pub fn render(
          &self,
          renderer: &MovieViewRenderer,
 diff --git a/desktop/src/launcher_controls.rs b/desktop/src/launcher_controls.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a309bf5acbf
+index 0000000000000000000000000000000000000000..17a2c57a0c6716430d30832323c6f6e168229d03
 --- /dev/null
 +++ b/desktop/src/launcher_controls.rs
-@@ -0,0 +1,343 @@
+@@ -0,0 +1,384 @@
 +use ruffle_core::{Player, external::Value as External};
 +use serde_json::Value;
 +use std::{
@@ -2367,6 +2977,7 @@ index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a30
 +    desired: BTreeMap<String, Value>,
 +    session: Option<f64>,
 +    last_session_check: Option<Instant>,
++    last_render_sample: u64,
 +    zoom: f64,
 +    density: f64,
 +    key: String,
@@ -2385,6 +2996,7 @@ index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a30
 +            desired: BTreeMap::new(),
 +            session: None,
 +            last_session_check: None,
++            last_render_sample: 0,
 +            zoom: 1.0,
 +            density: 1.0,
 +            key: "ö".into(),
@@ -2457,6 +3069,13 @@ index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a30
 +                self.mount_held = false;
 +                self.pending.insert(kind.into(), value.clone());
 +            }
++            "frame-cap" => {
++                let cap = value["value"].as_f64().unwrap();
++                if player.set_presentation_rate(cap) {
++                    self.last_render_sample = 0;
++                    crate::fps_probe::set_cap(cap as u32);
++                }
++            }
 +            "background" => {}
 +            "crosshair" => {}
 +            _ => {
@@ -2473,6 +3092,15 @@ index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a30
 +            return;
 +        }
 +        self.last_apply = Some(Instant::now());
++        // Use the stage's native viewport transform for lower raster density.
++        // Physical presentation and inverse pointer mapping retain the full window.
++        let magnification = dpi / self.density;
++        let mut viewport = player.viewport_dimensions();
++        if (viewport.scale_factor - magnification).abs() > 0.00001 {
++            viewport.scale_factor = magnification;
++            player.set_viewport_dimensions(viewport);
++            self.invalidate();
++        }
 +        if self
 +            .last_session_check
 +            .is_none_or(|t| t.elapsed() >= Duration::from_millis(500))
@@ -2483,9 +3111,27 @@ index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a30
 +            {
 +                if self.session != Some(epoch) {
 +                    self.session = Some(epoch);
++                    let resume = self.pending.remove("resume-character");
 +                    self.pending = self.desired.clone();
++                    if let Some(resume) = resume {
++                        self.pending.insert("resume-character".into(), resume);
++                    }
 +                    self.invalidate();
 +                }
++            }
++        }
++        if let Some((serial, fps, low, high)) = crate::fps_probe::render_sample() {
++            if serial != self.last_render_sample {
++                self.last_render_sample = serial;
++                call(
++                    player,
++                    "BlitzRenderFPS",
++                    [
++                        External::Number(fps),
++                        External::Number(low),
++                        External::Number(high),
++                    ],
++                );
 +            }
 +        }
 +        let mut done = Vec::new();
@@ -2495,10 +3141,7 @@ index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a30
 +                "zoom" => call(
 +                    player,
 +                    "BlitzSetPictureZoom",
-+                    [
-+                        External::Number(self.zoom),
-+                        External::Number(dpi * self.density),
-+                    ],
++                    [External::Number(self.zoom), External::Number(magnification)],
 +                ),
 +                "show-fps" => call(
 +                    player,
@@ -2530,6 +3173,14 @@ index 0000000000000000000000000000000000000000..adff18ee1149cf75a2ffe0056abd1a30
 +                    "BlitzSetAudio",
 +                    ["player", "music", "environment", "creatures"]
 +                        .map(|k| External::Number(value[k].as_f64().unwrap())),
++                ),
++                "resume-character" => call(
++                    player,
++                    "BlitzResumeCharacter",
++                    [
++                        External::Number(value["userID"].as_f64().unwrap()),
++                        External::String(value["name"].as_str().unwrap().into()),
++                    ],
 +                ),
 +                _ => false,
 +            };
@@ -3093,10 +3744,10 @@ index 0000000000000000000000000000000000000000..faa34035632e57798e717053ec9b7965
 +}
 diff --git a/desktop/src/launcher_host.rs b/desktop/src/launcher_host.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..33dd260a53875885f4223258e7e0a95e3f3b9e1a
+index 0000000000000000000000000000000000000000..ee6cbb7a8c63c31a7430114ab0fd7f2c9d2c5577
 --- /dev/null
 +++ b/desktop/src/launcher_host.rs
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,221 @@
 +//! Authenticated, bounded transport for the dedicated launcher and private fixtures.
 +use crate::custom_event::RuffleEvent;
 +use serde_json::{Value, json};
@@ -3218,6 +3869,26 @@ index 0000000000000000000000000000000000000000..33dd260a53875885f4223258e7e0a95e
 +                })
 +        }
 +        "crosshair" => object.len() == 2 && crate::launcher_cursor::valid(&value["value"]),
++        "frame-cap" => {
++            object.len() == 2
++                && value["value"]
++                    .as_u64()
++                    .is_some_and(|v| (30..=1000).contains(&v))
++        }
++        "resume-character" => {
++            object.len() == 2
++                && value["value"].as_object().is_some_and(|o| {
++                    o.len() == 2
++                        && o.get("userID")
++                            .and_then(Value::as_u64)
++                            .is_some_and(|v| (1..=u32::MAX as u64).contains(&v))
++                        && o.get("name").and_then(Value::as_str).is_some_and(|v| {
++                            !v.is_empty()
++                                && v.encode_utf16().count() <= 64
++                                && !v.chars().any(|c| c <= '\u{1f}' || c == '\u{7f}')
++                        })
++                })
++        }
 +        "viewport" => {
 +            object.len() == 3
 +                && matches!((value.get("width").and_then(Value::as_u64),value.get("height").and_then(Value::as_u64)),(Some(w),Some(h))if(16..=8192).contains(&w)&&(16..=8192).contains(&h)&&w*h<=8_388_608)
@@ -3299,44 +3970,62 @@ index 0000000000000000000000000000000000000000..33dd260a53875885f4223258e7e0a95e
 +#[cfg(not(windows))]
 +pub fn start(_proxy: EventLoopProxy<RuffleEvent>, _runtime: &tokio::runtime::Handle) {}
 diff --git a/desktop/src/main.rs b/desktop/src/main.rs
-index 2265dc24c5f157677a510508ecad677f6a08e0d8..9162240fe7d8454eabf695de34dfc7cd03bc103d 100644
+index 2265dc24c5f157677a510508ecad677f6a08e0d8..f194b372cec6937b3e7878b7d5281894f7780ea9 100644
 --- a/desktop/src/main.rs
 +++ b/desktop/src/main.rs
-@@ -7,6 +7,11 @@
- #![windows_subsystem = "windows"]
- 
- mod app;
-+mod fps_probe;
-+mod fixture_control;
-+mod launcher_host;
-+mod launcher_controls;
-+mod launcher_cursor;
- mod backends;
+@@ -11,7 +11,12 @@ mod backends;
  mod cli;
  mod custom_event;
-@@ -144,6 +149,9 @@ fn panic_hook(info: &PanicHookInfo) {
+ mod dbus;
++mod fixture_control;
++mod fps_probe;
+ mod gui;
++mod launcher_controls;
++mod launcher_cursor;
++mod launcher_host;
+ mod log;
+ mod player;
+ mod preferences;
+@@ -144,6 +149,14 @@ fn panic_hook(info: &PanicHookInfo) {
  fn main() -> Result<(), Error> {
      let prev_hook = std::panic::take_hook();
      std::panic::set_hook(Box::new(move |info| {
 +        // The launcher owns errors. Do not expose game data through an
 +        // upstream crash dialog, browser report or default panic output.
-+        if launcher_host::configured() || std::env::var("BLITZ_PRIVATE_DESKTOP").is_ok_and(|name|name.starts_with("BlitzTest-")) {std::process::exit(1);}
++        if launcher_host::configured()
++            || std::env::var("BLITZ_PRIVATE_DESKTOP")
++                .is_ok_and(|name| name.starts_with("BlitzTest-"))
++        {
++            std::process::exit(1);
++        }
          prev_hook(info);
          panic_hook(info);
      }));
-@@ -194,6 +202,7 @@ fn main() -> Result<(), Error> {
+@@ -194,6 +207,7 @@ fn main() -> Result<(), Error> {
      };
  
      subscriber.init();
-+    let _own_timer=crate::fps_probe::init_timer();
++    let _own_timer = crate::fps_probe::init_timer();
  
      let result = App::new(preferences).and_then(|(mut app, event_loop)| {
          event_loop.run_app(&mut app).context("Event loop failure")
 diff --git a/desktop/src/player.rs b/desktop/src/player.rs
-index 52ebe8377d1c504780c64535f534c3db6dea60c7..f314aec4cee7cfef78e9e909e2139b00f55049bc 100644
+index 52ebe8377d1c504780c64535f534c3db6dea60c7..b493ff975f37140bfccf71a4eb761d18b3d0e8f1 100644
 --- a/desktop/src/player.rs
 +++ b/desktop/src/player.rs
-@@ -300,6 +300,7 @@ impl ActivePlayer {
+@@ -130,6 +130,11 @@ impl ActivePlayer {
+     ) -> Self {
+         let player_id = PlayerId::new();
+         let mut builder = PlayerBuilder::new();
++        if crate::launcher_host::production() {
++            crate::fps_probe::set_cap(
++                opt.player.frame_rate.unwrap_or(120.0).clamp(30.0, 1000.0) as u32
++            );
++        }
+ 
+         match CpalAudioBackend::new(preferences.output_device_name().as_deref()) {
+             Ok(audio) => {
+@@ -300,6 +305,7 @@ impl ActivePlayer {
          });
  
          builder = builder
@@ -3344,7 +4033,7 @@ index 52ebe8377d1c504780c64535f534c3db6dea60c7..f314aec4cee7cfef78e9e909e2139b00
              .with_navigator(navigator)
              .with_renderer(renderer)
              .with_storage(preferences.storage_backend().create_backend(&opt))
-@@ -336,10 +337,11 @@ impl ActivePlayer {
+@@ -336,10 +342,13 @@ impl ActivePlayer {
              .with_player_version(opt.player.player_version)
              .with_player_runtime(opt.player.player_runtime.unwrap_or_default())
              .with_frame_rate(opt.player.frame_rate)
@@ -3353,22 +4042,23 @@ index 52ebe8377d1c504780c64535f534c3db6dea60c7..f314aec4cee7cfef78e9e909e2139b00
          let player = builder.build();
  
 -        window.set_title(&format!("Ruffle - {readable_name}"));
-+        if !crate::launcher_host::configured() {window.set_title(&format!("Ruffle - {readable_name}"));}
++        if !crate::launcher_host::configured() {
++            window.set_title(&format!("Ruffle - {readable_name}"));
++        }
  
          SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
  
 diff --git a/frontend-utils/src/backends.rs b/frontend-utils/src/backends.rs
-index 20c7461d44838e607b88d0fd31e850794ef81ef0..7c3ef75200734bd6dc76521f2f9da10ee8073413 100644
+index 20c7461d44838e607b88d0fd31e850794ef81ef0..72a4e8a968ff2ab3dbb50b2a816a034563a49b48 100644
 --- a/frontend-utils/src/backends.rs
 +++ b/frontend-utils/src/backends.rs
-@@ -2,6 +2,7 @@
+@@ -1,5 +1,6 @@
+ #[cfg(feature = "cpal")]
  pub mod audio;
++pub mod native_resource;
  #[cfg(feature = "navigator")]
  pub mod navigator;
-+pub mod native_resource;
  #[cfg(feature = "fs")]
- pub mod storage;
- #[cfg(feature = "ui")]
 diff --git a/frontend-utils/src/backends/native_resource.rs b/frontend-utils/src/backends/native_resource.rs
 new file mode 100644
 index 0000000000000000000000000000000000000000..d7aec6f25a21dfc1a63430fa1f4395d0112def91
@@ -3467,51 +4157,306 @@ index 0000000000000000000000000000000000000000..d7aec6f25a21dfc1a63430fa1f4395d0
 +    Ok((url, Some(policy.token.clone())))
 +}
 diff --git a/frontend-utils/src/backends/navigator.rs b/frontend-utils/src/backends/navigator.rs
-index 798dfe58e1cd48c73bbfd60ffd16b51fa62d6c53..24188e346cea8a15c3237cdf6823752ee5b0affe 100644
+index 798dfe58e1cd48c73bbfd60ffd16b51fa62d6c53..79b4018710f31f939bbac69c323882e9afc439aa 100644
 --- a/frontend-utils/src/backends/navigator.rs
 +++ b/frontend-utils/src/backends/navigator.rs
-@@ -88,6 +88,7 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
+@@ -88,6 +88,9 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
                  env!("CARGO_PKG_VERSION"),
                  " (https://ruffle.rs)"
              ));
-+        if crate::backends::native_resource::enabled(){builder=builder.redirect(reqwest::redirect::Policy::none());}
++        if crate::backends::native_resource::enabled() {
++            builder = builder.redirect(reqwest::redirect::Policy::none());
++        }
  
          if let Some(referer) = referer {
              let mut headers = header::HeaderMap::new();
-@@ -194,6 +195,11 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
+@@ -194,6 +197,12 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
              }
          };
  
-+        let (rewritten,resource_token)=match crate::backends::native_resource::rewrite(processed_url){
-+            Ok(value)=>value,
-+            Err(error)=>return async_return(Err(create_fetch_error(request.url(),error))),
-+        };
-+        processed_url=rewritten;
++        let (rewritten, resource_token) =
++            match crate::backends::native_resource::rewrite(processed_url) {
++                Ok(value) => value,
++                Err(error) => return async_return(Err(create_fetch_error(request.url(), error))),
++            };
++        processed_url = rewritten;
          let client = self.client.clone();
  
          match processed_url.scheme() {
-@@ -232,6 +238,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
+@@ -232,6 +241,9 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                      NavigationMethod::Get => client.get(processed_url.clone()),
                      NavigationMethod::Post => client.post(processed_url.clone()),
                  };
-+                if let Some(token)=resource_token {request_builder=request_builder.header("X-Blitz-Resource-Token",token);}
++                if let Some(token) = resource_token {
++                    request_builder = request_builder.header("X-Blitz-Resource-Token", token);
++                }
                  let (body_data, mime) = request.body().clone().unwrap_or_default();
                  for (name, val) in request.headers().iter() {
                      request_builder = request_builder.header(name, val);
-@@ -322,8 +329,9 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
+@@ -322,8 +334,17 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
          }
  
          let addr = format!("{host}:{port}");
 -        let is_allowed = self.socket_allowed.contains(&addr);
 -        let socket_mode = self.socket_mode;
-+        let guarded=crate::backends::native_resource::enabled();
-+        let is_allowed = if guarded {crate::backends::native_resource::socket_allowed(&host,port)} else {self.socket_allowed.contains(&addr)};
-+        let socket_mode = if guarded {SocketMode::Deny} else {self.socket_mode};
++        let guarded = crate::backends::native_resource::enabled();
++        let is_allowed = if guarded {
++            crate::backends::native_resource::socket_allowed(&host, port)
++        } else {
++            self.socket_allowed.contains(&addr)
++        };
++        let socket_mode = if guarded {
++            SocketMode::Deny
++        } else {
++            self.socket_mode
++        };
          let interface = self.interface.clone();
  
          let future = Box::pin(async move {
+diff --git a/render/src/backend.rs b/render/src/backend.rs
+index 0200a4677b6dd95f0a6a38fb4143457ca2c02ad9..35d8e2d02e044329d4075de03c28e4032b46facd 100644
+--- a/render/src/backend.rs
++++ b/render/src/backend.rs
+@@ -54,6 +54,26 @@ pub trait RenderBackend: Any {
+         bounds: PixelRegion,
+     ) -> Option<Box<dyn SyncHandle>>;
+ 
++    /// Whether offscreen display-object draws can prepare filtered child caches.
++    fn is_offscreen_cache_supported(&self) -> bool {
++        false
++    }
++
++    fn render_offscreen_with_caches(
++        &mut self,
++        handle: BitmapHandle,
++        commands: CommandList,
++        quality: StageQuality,
++        bounds: PixelRegion,
++        caches: Vec<BitmapCacheEntry>,
++    ) -> Option<Box<dyn SyncHandle>> {
++        assert!(
++            caches.is_empty(),
++            "Backend did not advertise offscreen cache support"
++        );
++        self.render_offscreen(handle, commands, quality, bounds)
++    }
++
+     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
+     /// The `destination_rect` must be calculated by the caller and is assumed to be correct.
+     /// Both `source_rect` and `destination_rect` must be valid (`BoundingBox::valid`).
+diff --git a/render/wgpu/src/backend.rs b/render/wgpu/src/backend.rs
+index 5dcf43c0a7d97e02d34722bee428a5e5095e0828..f342a8dfffb75ec00b59019bf46ccfe4b8b07a02 100644
+--- a/render/wgpu/src/backend.rs
++++ b/render/wgpu/src/backend.rs
+@@ -217,6 +217,92 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
+ }
+ 
+ impl<T: RenderTarget> WgpuRenderBackend<T> {
++    fn draw_bitmap_caches(&mut self, cache_entries: Vec<BitmapCacheEntry>, quality: StageQuality) {
++        for entry in cache_entries {
++            let texture = as_texture(&entry.handle);
++            let surface = Surface::new(
++                &self.descriptors,
++                quality,
++                texture.texture.width(),
++                texture.texture.height(),
++                wgpu::TextureFormat::Rgba8Unorm,
++            );
++            if entry.filters.is_empty() {
++                surface.draw_commands(
++                    RenderTargetMode::ExistingWithColor(
++                        texture.texture.clone(),
++                        wgpu::Color {
++                            r: f64::from(entry.clear.r) / 255.0,
++                            g: f64::from(entry.clear.g) / 255.0,
++                            b: f64::from(entry.clear.b) / 255.0,
++                            a: f64::from(entry.clear.a) / 255.0,
++                        },
++                    ),
++                    &self.descriptors,
++                    &self.meshes,
++                    entry.commands,
++                    &mut self.active_frame.staging_belt,
++                    &self.dynamic_transforms,
++                    &mut self
++                        .profiler
++                        .scope("Draw to CAB", &mut self.active_frame.command_encoder),
++                    LayerRef::None,
++                    &mut self.offscreen_texture_pool,
++                );
++            } else {
++                let mut scope = self
++                    .profiler
++                    .scope("Filters", &mut self.active_frame.command_encoder);
++                // We're relying on there being no impotent filters here,
++                // so that we can safely start by using the actual CAB texture.
++                // It's guaranteed that at least one filter would have used it and moved the target to something else,
++                // letting us safely copy back to it later.
++                let mut target = surface.draw_commands(
++                    RenderTargetMode::ExistingWithColor(
++                        texture.texture.clone(),
++                        wgpu::Color {
++                            r: f64::from(entry.clear.r) / 255.0,
++                            g: f64::from(entry.clear.g) / 255.0,
++                            b: f64::from(entry.clear.b) / 255.0,
++                            a: f64::from(entry.clear.a) / 255.0,
++                        },
++                    ),
++                    &self.descriptors,
++                    &self.meshes,
++                    entry.commands,
++                    &mut self.active_frame.staging_belt,
++                    &self.dynamic_transforms,
++                    &mut scope.scope("Draw to CAB"),
++                    LayerRef::None,
++                    &mut self.offscreen_texture_pool,
++                );
++                for filter in entry.filters {
++                    target = self.descriptors.filters.apply(
++                        &self.descriptors,
++                        &mut scope.scope(filter.name()),
++                        &mut self.offscreen_texture_pool,
++                        &mut self.active_frame.staging_belt,
++                        FilterSource::for_entire_texture(target.color_texture()),
++                        filter,
++                    );
++                }
++                run_copy_pipeline(
++                    &self.descriptors,
++                    texture.texture.format(),
++                    &texture.texture.create_view(&Default::default()),
++                    target.color_view(),
++                    target.globals(),
++                    target.color_texture().sample_count(),
++                    &mut scope.scope("Copy filtered to CAB"),
++                );
++            }
++            // Periodically flush GPU work to prevent OOM when many cache entries
++            // accumulate (e.g. when a large container's cacheAsBitmap is skipped
++            // but its hundreds of children each have their own bitmap caches).
++            self.active_frame.maybe_flush(&self.descriptors);
++        }
++    }
++
+     pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
+         if target.width() > descriptors.limits.max_texture_dimension_2d
+             || target.height() > descriptors.limits.max_texture_dimension_2d
+@@ -559,89 +645,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
+             return;
+         };
+ 
+-        for entry in cache_entries {
+-            let texture = as_texture(&entry.handle);
+-            let surface = Surface::new(
+-                &self.descriptors,
+-                self.surface.quality(),
+-                texture.texture.width(),
+-                texture.texture.height(),
+-                wgpu::TextureFormat::Rgba8Unorm,
+-            );
+-            if entry.filters.is_empty() {
+-                surface.draw_commands(
+-                    RenderTargetMode::ExistingWithColor(
+-                        texture.texture.clone(),
+-                        wgpu::Color {
+-                            r: f64::from(entry.clear.r) / 255.0,
+-                            g: f64::from(entry.clear.g) / 255.0,
+-                            b: f64::from(entry.clear.b) / 255.0,
+-                            a: f64::from(entry.clear.a) / 255.0,
+-                        },
+-                    ),
+-                    &self.descriptors,
+-                    &self.meshes,
+-                    entry.commands,
+-                    &mut self.active_frame.staging_belt,
+-                    &self.dynamic_transforms,
+-                    &mut self
+-                        .profiler
+-                        .scope("Draw to CAB", &mut self.active_frame.command_encoder),
+-                    LayerRef::None,
+-                    &mut self.offscreen_texture_pool,
+-                );
+-            } else {
+-                let mut scope = self
+-                    .profiler
+-                    .scope("Filters", &mut self.active_frame.command_encoder);
+-                // We're relying on there being no impotent filters here,
+-                // so that we can safely start by using the actual CAB texture.
+-                // It's guaranteed that at least one filter would have used it and moved the target to something else,
+-                // letting us safely copy back to it later.
+-                let mut target = surface.draw_commands(
+-                    RenderTargetMode::ExistingWithColor(
+-                        texture.texture.clone(),
+-                        wgpu::Color {
+-                            r: f64::from(entry.clear.r) / 255.0,
+-                            g: f64::from(entry.clear.g) / 255.0,
+-                            b: f64::from(entry.clear.b) / 255.0,
+-                            a: f64::from(entry.clear.a) / 255.0,
+-                        },
+-                    ),
+-                    &self.descriptors,
+-                    &self.meshes,
+-                    entry.commands,
+-                    &mut self.active_frame.staging_belt,
+-                    &self.dynamic_transforms,
+-                    &mut scope.scope("Draw to CAB"),
+-                    LayerRef::None,
+-                    &mut self.offscreen_texture_pool,
+-                );
+-                for filter in entry.filters {
+-                    target = self.descriptors.filters.apply(
+-                        &self.descriptors,
+-                        &mut scope.scope(filter.name()),
+-                        &mut self.offscreen_texture_pool,
+-                        &mut self.active_frame.staging_belt,
+-                        FilterSource::for_entire_texture(target.color_texture()),
+-                        filter,
+-                    );
+-                }
+-                run_copy_pipeline(
+-                    &self.descriptors,
+-                    texture.texture.format(),
+-                    &texture.texture.create_view(&Default::default()),
+-                    target.color_view(),
+-                    target.globals(),
+-                    target.color_texture().sample_count(),
+-                    &mut scope.scope("Copy filtered to CAB"),
+-                );
+-            }
+-            // Periodically flush GPU work to prevent OOM when many cache entries
+-            // accumulate (e.g. when a large container's cacheAsBitmap is skipped
+-            // but its hundreds of children each have their own bitmap caches).
+-            self.active_frame.maybe_flush(&self.descriptors);
+-        }
++        self.draw_bitmap_caches(cache_entries, self.surface.quality());
+ 
+         self.surface.draw_commands_and_copy_to(
+             frame_output.view(),
+@@ -853,6 +857,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
+         )
+     }
+ 
++    fn is_offscreen_cache_supported(&self) -> bool {
++        true
++    }
++
++    fn render_offscreen_with_caches(
++        &mut self,
++        handle: BitmapHandle,
++        commands: CommandList,
++        quality: StageQuality,
++        bounds: PixelRegion,
++        caches: Vec<BitmapCacheEntry>,
++    ) -> Option<Box<dyn SyncHandle>> {
++        self.draw_bitmap_caches(caches, quality);
++        self.render_offscreen(handle, commands, quality, bounds)
++    }
++
+     fn is_offscreen_supported(&self) -> bool {
+         true
+     }
 diff --git a/swf/src/read.rs b/swf/src/read.rs
-index a08343375e1aba18b112a9bf9996384f83262dda..6ef8bf1be826d76dd65c2fc190288e12c0f11923 100644
+index a08343375e1aba18b112a9bf9996384f83262dda..0ce62f4b81a57450775b6dba542f43bd360ecf56 100644
 --- a/swf/src/read.rs
 +++ b/swf/src/read.rs
 @@ -1927,6 +1927,9 @@ impl<'a> Reader<'a> {
@@ -3524,7 +4469,7 @@ index a08343375e1aba18b112a9bf9996384f83262dda..6ef8bf1be826d76dd65c2fc190288e12
              (true, false) => PlaceObjectAction::Modify,
              (false, true) => {
                  let id = self.read_u16()?;
-@@ -3136,4 +3139,22 @@ pub mod tests {
+@@ -3136,4 +3139,27 @@ pub mod tests {
              place_object
          );
      }
@@ -3537,12 +4482,17 @@ index a08343375e1aba18b112a9bf9996384f83262dda..6ef8bf1be826d76dd65c2fc190288e12
 +        assert_eq!(tag.depth, 1);
 +        assert_eq!(tag.class_name.unwrap().as_bytes(), b"ImageDogAlpha");
 +        assert!(tag.matrix.is_some());
-+        let expected=[Tag::PlaceObject(Box::new(tag))];
-+        let mut output=Vec::new();
-+        crate::write::write_swf(&Header::default_with_swf_version(19),&expected,&mut output).unwrap();
-+        let buffer=decompress_swf(&output[..]).unwrap();
-+        let parsed=parse_swf(&buffer).unwrap();
-+        assert_eq!(parsed.tags[0],expected[0]);
++        let expected = [Tag::PlaceObject(Box::new(tag))];
++        let mut output = Vec::new();
++        crate::write::write_swf(
++            &Header::default_with_swf_version(19),
++            &expected,
++            &mut output,
++        )
++        .unwrap();
++        let buffer = decompress_swf(&output[..]).unwrap();
++        let parsed = parse_swf(&buffer).unwrap();
++        assert_eq!(parsed.tags[0], expected[0]);
 +        let mut invalid = Reader::new(&b"\x04\x00\x01\x00\x00"[..], 19);
 +        assert!(invalid.read_place_object_2_or_3(3).is_err());
 +    }
@@ -3560,24 +4510,30 @@ index 4a6d83ce790df1e5636b804575edf883ea338a9e..a79176bc847ff367e4f12ac90d23ff2c
      Modify,
      Replace(CharacterId),
 diff --git a/swf/src/write.rs b/swf/src/write.rs
-index b16213a1f0711901e4aa81e531cbcdecadfca312..0728bec883c6f363ccb9bcbd0f71d26682d18da6 100644
+index b16213a1f0711901e4aa81e531cbcdecadfca312..a3cc1d20650d05eae910cec381df2034fd8c6153 100644
 --- a/swf/src/write.rs
 +++ b/swf/src/write.rs
-@@ -1659,7 +1659,7 @@ impl<W: Write> Writer<W> {
+@@ -1659,7 +1659,9 @@ impl<W: Write> Writer<W> {
                  matches!(
                      place_object.action,
                      PlaceObjectAction::Place(_) | PlaceObjectAction::Replace(_)
 -                ),
-+                ) && !(place_object_version >= 3 && place_object.action == PlaceObjectAction::Place(0) && place_object.class_name.is_some()),
++                ) && !(place_object_version >= 3
++                    && place_object.action == PlaceObjectAction::Place(0)
++                    && place_object.class_name.is_some()),
              );
              flags.set(PlaceFlag::HAS_MATRIX, place_object.matrix.is_some());
              flags.set(
-@@ -1703,7 +1703,7 @@ impl<W: Write> Writer<W> {
+@@ -1703,7 +1705,11 @@ impl<W: Write> Writer<W> {
  
              match place_object.action {
                  PlaceObjectAction::Place(character_id)
 -                | PlaceObjectAction::Replace(character_id) => writer.write_u16(character_id)?,
-+                | PlaceObjectAction::Replace(character_id) => {if flags.contains(PlaceFlag::HAS_CHARACTER) {writer.write_u16(character_id)?;}},
++                | PlaceObjectAction::Replace(character_id) => {
++                    if flags.contains(PlaceFlag::HAS_CHARACTER) {
++                        writer.write_u16(character_id)?;
++                    }
++                }
                  PlaceObjectAction::Modify => (),
              }
              if let Some(ref matrix) = place_object.matrix {

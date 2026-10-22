@@ -12,8 +12,8 @@ Download **Dungeon Blitz Launcher Setup.exe** from the [latest release](https://
 - Independent game sound levels, cursor controls and configurable autorun.
 - Rankings and other game links open in your default browser.
 - Singleplayer worlds managed by the launcher, without a separate server setup.
-- Optional GPU world rendering. Gameplay and dialogue stay in native Flash.
-- An optional 120 FPS player for reviewed multiplayer clients.
+- Optional High FPS rendering for reviewed multiplayer clients.
+- Refresh to the same character and Enter to revive.
 
 Open **Settings** to change these options. Save applies settings; changing the server or renderer also requires **Reconnect**. **F11** toggles fullscreen and **Ctrl+,** opens Settings. Autorun defaults to **Ö** and can be rebound under Controls.
 
@@ -21,9 +21,11 @@ For singleplayer, choose **Settings → Connection → Use singleplayer**, Save,
 
 ## Rendering
 
-Original Flash is the default. GPU world mode renders artwork separately and interpolates between native snapshots. Its counter measures world renders, not whole-game FPS. Its 1000 cap is a ceiling.
+Original Flash is the default. **High FPS** runs the original game in a native GPU player, preserving game and animation timing. It uses a separate sign-in profile. The frame cap defaults to 240 and accepts 30–1000; actual performance depends on the scene and hardware.
 
-The **120 FPS player · Beta** runs the game in a native GPU player with separate animation timing. It uses its own sign-in profile. Performance depends on the scene and hardware; cold artwork loading can take longer. Custom pointers apply when you press Save. Reduced rendering resolution requires Original or GPU world mode. Singleplayer uses Original.
+Frame cap, rendering resolution, sound and custom pointers apply on Save. Try 75% rendering resolution for more FPS with softer artwork. Singleplayer uses Original.
+
+The refresh button at the top right reloads the game and resumes the same character through the normal remembered session. Expired sign-in or an unavailable character leaves the normal login/selection screen open. Enter activates the available revive button; chat typing and revive cooldowns are preserved.
 
 Client-dependent enhancements disable themselves when the downloaded game no longer matches a reviewed compatibility contract. The unmodified game remains available.
 

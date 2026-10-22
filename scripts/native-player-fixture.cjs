@@ -107,7 +107,7 @@ async function run(config, suite) {
   }
   const files = new Map([['/fixture.swf', path.join(config.out, 'fixture.swf')]]);
   for (const name of config.assets) {
-    if (!/^(UI_[A-Za-z0-9_]+|Levels[A-Za-z0-9]+|GlobalMap01)\.swf$/.test(name))
+    if (!/^(UI_[A-Za-z0-9_]+|Levels[A-Za-z0-9]+|GlobalMap01|sounds\/Sound)\.swf$/.test(name))
       throw Error('Unexpected fixture asset');
     files.set('/assets/' + name, path.join(config.root, '.test-tools/wide-live-assets', name));
   }
@@ -133,7 +133,7 @@ async function run(config, suite) {
     '--height',
     '900',
     '--volume',
-    '0',
+    String(config.volume === 1 ? 1 : 0),
     '--storage',
     config.storage === 'disk' ? 'disk' : 'memory',
     '--dummy-external-interface',
@@ -229,6 +229,7 @@ async function run(config, suite) {
   try {
     await hostReady;
     result = await suite({
+      processId: child.pid,
       rpc,
       until,
       delay,

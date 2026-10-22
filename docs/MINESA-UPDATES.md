@@ -2,15 +2,9 @@
 
 ## Deployment status
 
-The last fully reviewed GPU deployment is **swf-e20d49253050**, 978,778 bytes:
+On 22 October, both official origins served **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract and separate High FPS admission accept it.
 
-```text
-c0abc2eac96a102b3be0246e8d3b83342bfe29e45e2c0a62e1942a051b485294
-```
-
-On 22 October at 16:48 UTC, both official origins served **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract accepts it. Native 120 FPS admission is reviewed separately below; the retained GPU world adapter still rejects this source and restores Original.
-
-All 73 artwork assets matched at the preceding reviewed deployment. Exact layouts and reusable recipes live in src/legacy; GPU recipes and artwork hashes live in src/gpu. The separate local-client contract is restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes.
+All 73 SWF assets match the reviewed inventory: 52 master-list assets and 21 level libraries. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -46,12 +40,6 @@ The original reusable recipe derives from the reviewed October 11 source, SHA-25
 | HUD/menus | Keep shared world roots fixed. Anchor individual screens, mixed utility children and full-view passive mattes. Preserve twip rounding, native vector corners and bitmap budgets. |
 | Input/audio | Retain original keymaps, native handlers, fades, packets and gameplay methods. Helpers use only reviewed own-stage bindings and sound contexts. |
 
-## GPU admission
-
-GPU mode verifies exact source bytes or byte-identical recompression and all loaded SWF artwork. The reviewed writer inventory covers 395 sites in 99 methods; unrelated native envelopes and exception tables remain intact. The Flash page changes only its unique reviewed wmode parameter to transparent.
-
-Collection, decoding and interpolation are presentation work. Keep native clocks and animation poses unchanged. The worker allows two GPU fences in flight and bounded artwork memory. Unsupported/stale scenes restore Original. Native shutdown drains active work and lets the worker close itself; an unacknowledged close disables retries until reconnect. After warmup, sustained capture above 12 ms or synchronous bridge reads above 50 ms trigger a 30-second backoff.
-
 ## Verify and release
 
 Follow [the test matrix](TESTING.md). Exercise real native artwork, input, camera, map, transitions, fullscreen, density changes and unknown-client fallback. Review owned screenshots; report account-free or inactive-desktop limits accurately.
@@ -60,14 +48,16 @@ For a release, synchronize versions, package in staging, retain production integ
 
 Historical review notes remain in Git at the corresponding release tags.
 
-## Native 120 FPS admission
+## High FPS admission
 
-The native player is qualified separately for **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract produces enhanced SHA-256 `45def6a6cd08d01d5ab7a256b60cd5495c17bb6e0ffbf8e512dc88ad16649350`. Admission verifies the 52 master-list SWFs and 21 separately requested level libraries on both official origins.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `b68dad012dc9565dd17eeaf6c2f91d395ca111ae241e22afb7d315e183094f96`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. The latest deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
 The 0.31.1 resource fix includes the level libraries, which are absent from `masterFileList.xml`. Two current level files contain the same dialogue spelling correction; their other tags, constant pools, class contracts and all raw method bodies/exception tables are unchanged. [Level review](../research/native-player/level-resources.json) records the hashes and comparison. Unknown files and changed bytes still fail admission.
 
-Admission checks both hashes, the complete adapter contract, the exact SWF inventory and every artwork hash. A source or helper change needs fresh native qualification. Failure restores Original and preserves preferences. This does not approve the same deployment for the separate retained GPU world adapter.
+Source or helper changes need fresh native qualification. Failure restores Original and preserves preferences. No source guard was weakened for the configurable cap.
 
-The pinned native fork supports the current class-only placements and inherited symbols. Its vector extraction matches 18 Flash reference cases, including repeated reads of authored shapes without erasing them. Automatic timelines retain the effective 60/s ceiling while frame callbacks and rendering may run at 120/s. Original elapsed-time game methods, packet code, dungeon/session behavior and loot logic remain unchanged. See [native build and qualification](../research/native-player/README.md).
+The pinned fork supports class-only placements, inherited symbols and non-mutating vector extraction. Offscreen bitmap draws retain child filters while excluding the source root's own filter, matching the Flash reference. Mixing clips once after summing voices. Automatic timelines retain the effective 60/s ceiling while completed rendering uses its independent cap. Elapsed-time game methods, packet code, dungeon/session behavior and loot remain unchanged.
+
+Refresh and Enter-to-revive add guards for the original selection, respawn and button-handler dependencies. Twelve native method envelopes and their exception tables remain byte-identical; [the control review](../research/native-player/session-controls.json) records their hashes. The helper calls the original handlers and preserves their authentication, enabled-state and cooldown checks. See [native qualification](../research/native-player/README.md).

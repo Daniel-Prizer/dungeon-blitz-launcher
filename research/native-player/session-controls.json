@@ -1,0 +1,104 @@
+{
+  "clientSha256": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
+  "rawInstructionReviewSha256": "6f581c1ece6bc0cee21badc7fd65848646eb8853a9d4438a2db60621fb7c0dca",
+  "methods": [
+    {
+      "name": "Game.method_47",
+      "codeBytes": 80,
+      "exceptions": 0,
+      "codeSha256": "131d3574ab48f187986ca3a756f1c63931ed977d8ec8d3d9a55760e15260e0b5",
+      "envelopeSha256": "8e91383105e3d6431cc109d15fa7bfd0b1469d8d369821ad37c35fab62d42f76",
+      "preserved": true
+    },
+    {
+      "name": "ScreenCharacterSelection.method_40",
+      "codeBytes": 77,
+      "exceptions": 0,
+      "codeSha256": "a0accc4d50193347a4dab8c72e98a136dde2c2e9bfe7c9080dfb64fd38b24f7a",
+      "envelopeSha256": "3d279c902f5b6cd0c85eeb55c53ae26d5dae521d26e4cfccf90f078f572f5594",
+      "preserved": true
+    },
+    {
+      "name": "ScreenCharacterSelection.method_959",
+      "codeBytes": 445,
+      "exceptions": 0,
+      "codeSha256": "c7af5618d13189e9e210754604467fc46c1d782355d705998d1bbe3770868e43",
+      "envelopeSha256": "49e0e0d53115bdba580a2672ceb3140a409e81976c0c6b509adb200850158017",
+      "preserved": true
+    },
+    {
+      "name": "ScreenCharacterSelection.method_1077",
+      "codeBytes": 47,
+      "exceptions": 0,
+      "codeSha256": "45bfc5aeb99724975e8bcf1fa786364a2115be2559e07a47b4844afbc8ed91a7",
+      "envelopeSha256": "fb70d49e95edc975598bfc2e2bafcf26b925be07616be33aa9c03d2c5cf77f83",
+      "preserved": true
+    },
+    {
+      "name": "ScreenCharacterSelection.method_603",
+      "codeBytes": 161,
+      "exceptions": 0,
+      "codeSha256": "77a45c391147cb838d1419dd130b4ab4435cba1357eff552d0d6f3c21212fa6f",
+      "envelopeSha256": "8d0dc2047df8d27a73cde054a0b451a8271e49c3feac87c571a2e51bbc09ea43",
+      "preserved": true
+    },
+    {
+      "name": "ScreenCharacterSelection.method_405",
+      "codeBytes": 635,
+      "exceptions": 0,
+      "codeSha256": "cb77da5a963632d5c760a2869957a0a67a40839a1b4543175d8542d4bf411740",
+      "envelopeSha256": "7b6db0abdbae93bde5dd3d59847a01776e4f2dbdfa12e85ab6575b2a561a18a6",
+      "preserved": true
+    },
+    {
+      "name": "class_95.OnCreateScreen",
+      "codeBytes": 291,
+      "exceptions": 0,
+      "codeSha256": "5df4acd6988a3c83863e2f7b4921b7083e750cccd9535ccccfc65fbb0873ff7a",
+      "envelopeSha256": "96b1b2c33a0a4889ac9323fc961eacf206f17d3374ef1c74e34d9a9d55a825a0",
+      "preserved": true
+    },
+    {
+      "name": "class_95.method_1792",
+      "codeBytes": 423,
+      "exceptions": 0,
+      "codeSha256": "f39e4fa39c94b02875cd652056ca0dee03ae4ec32d3ce173c4e400085050afd3",
+      "envelopeSha256": "a8e84301d6ab1228160474d785b3e437a4047a11afc392a0ac55ab40265adedc",
+      "preserved": true
+    },
+    {
+      "name": "class_95.OnTickScreen",
+      "codeBytes": 442,
+      "exceptions": 0,
+      "codeSha256": "a270a02f75fd228612290da30289a2355704387edc177ace5c2d8de0b6994242",
+      "envelopeSha256": "16584af1c40d7132f408852996ac6ad011df54f4cc716f4cf720644493272d38",
+      "preserved": true
+    },
+    {
+      "name": "class_95.method_1865",
+      "codeBytes": 299,
+      "exceptions": 0,
+      "codeSha256": "dfedb61a42a6702f9f9c2b5b3d52aec8349a22e6fc26395379c3ef117a91db63",
+      "envelopeSha256": "4a0f2eb346c279a9a9e199d3458ecdc1fc1f62691e51741f78ea5fd275c475e7",
+      "preserved": true
+    },
+    {
+      "name": "class_33.method_637",
+      "codeBytes": 464,
+      "exceptions": 0,
+      "codeSha256": "555f9fcad4ce03923fd74f721e6e7f634b8c4e7bb33ae9a4654157cc9c7a5a3c",
+      "envelopeSha256": "0faa7c94460a96690aac89faf5a68218601fc6a33c9dda96657e6f59d264c0d2",
+      "preserved": true
+    },
+    {
+      "name": "class_33.method_286",
+      "codeBytes": 236,
+      "exceptions": 0,
+      "codeSha256": "6f977d040322a5ef4512390c1791b541e343d17bb1000100953bf68fc3ab4294",
+      "envelopeSha256": "472f6c9cc1e4c69769632e0d83c073fbf3c0be60fe6d7248d0204b677db399ce",
+      "preserved": true
+    }
+  ],
+  "resume": "One reconnect on the active origin; bounded character name and account ID held only in memory. The original Play handler retains authentication. Cancel on manual input, account mismatch, duplicate/missing character or 60-second expiry.",
+  "revive": "Own-stage Enter invokes the existing enabled respawn button, retaining native cooldown and server checks. Typing, living players, hidden dialogs and repeat input do not trigger it."
+}

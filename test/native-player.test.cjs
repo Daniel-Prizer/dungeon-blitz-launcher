@@ -15,7 +15,7 @@ test('Native Save applies the saved crosshair without replacing the runtime or p
   const before = structuredClone(saved);
   runtime.configure(saved);
   assert.deepEqual(saved, before);
-  assert.equal(runtime.settings.renderResolution, 1);
+  assert.equal(runtime.settings.renderResolution, 0.5);
   assert.deepEqual(runtime.settings.crosshair, saved.crosshair);
   assert.deepEqual(
     runtime.pending.map(JSON.parse).find((v) => v.type === 'crosshair').value,
@@ -30,12 +30,24 @@ test('Native Save applies the saved crosshair without replacing the runtime or p
     { type: 'crosshair', value: saved.crosshair },
   ]);
 });
-test('120 FPS is an opt-in renderer and does not change the existing cap or defaults', () => {
+test('High FPS is opt-in, migrates the retired mode and validates its live cap', () => {
   assert.equal(validSettings().gameRenderer, 'original');
   const saved = validSettings({ gameRenderer: 'native', gpuFrameCap: 480, renderResolution: 0.5 });
   assert.equal(saved.gameRenderer, 'native');
   assert.equal(saved.gpuFrameCap, 480);
   assert.equal(saved.renderResolution, 0.5);
+  assert.equal(saved.nativeFrameCap, 240);
+  assert.equal(validSettings({ gameRenderer: 'gpu' }).gameRenderer, 'native');
+  for (const nativeFrameCap of [30, 120, 240, 1000])
+    assert.equal(validSettings({ nativeFrameCap }).nativeFrameCap, nativeFrameCap);
+  for (const nativeFrameCap of [29, 1001, 120.5, '120', NaN, Infinity])
+    assert.equal(validSettings({ nativeFrameCap }).nativeFrameCap, 240);
+  const runtime = Object.create(NativePlayerRuntime.prototype);
+  Object.assign(runtime, { nativePlayer: true, pending: [] });
+  runtime.configure(saved);
+  runtime.pending = [];
+  runtime.configure({ ...saved, nativeFrameCap: 360 });
+  assert.deepEqual(runtime.pending.map(JSON.parse), [{ type: 'frame-cap', value: 360 }]);
 });
 test('Native resources reject custom servers before network or filesystem access', async () => {
   for (const address of [

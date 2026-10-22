@@ -25,7 +25,6 @@ const { valid: validAutorunKey } = require('./autorun-binding.js');
 const { loadStore } = require('./store.cjs');
 const { LegacyRuntime } = require('./legacy-runtime.cjs');
 const { modernAddress } = require('./game-source.cjs');
-const { NativeGpuRuntime } = require('./native-gpu-runtime.cjs');
 const { NativePlayerRuntime } = require('./native-player-runtime.cjs');
 const { Updater } = require('./updater.cjs');
 const { Singleplayer } = require('./singleplayer.cjs');
@@ -193,7 +192,7 @@ function keyboard(event, input) {
   else return;
   event.preventDefault();
 }
-async function startGame(settingsOverride = null) {
+async function startGame(settingsOverride = null, resume = null) {
   const revision = ++launchRevision,
     settings = { ...(settingsOverride || store.data.settings) };
   capturingShortcut = false;
@@ -216,12 +215,12 @@ async function startGame(settingsOverride = null) {
     gameAddress = local?.url || settings.gameURL;
     // Preserve the saved GPU choice when switching to the separately reviewed
     // local Flash client. Local GPU artwork has not been reviewed for parity.
-    let Runtime = settings.gameRenderer === 'gpu' && !local ? NativeGpuRuntime : LegacyRuntime;
+    let Runtime = LegacyRuntime;
     let prepared = null;
     if (settings.gameRenderer === 'native' && !local) {
       if (settings.hardwareAcceleration === false)
         nativeFallback =
-          'Enable graphics acceleration and restart to use the 120 FPS player. Original rendering is active.';
+          'Enable graphics acceleration and restart to use High FPS. Original rendering is active.';
       else {
         const controller = new AbortController();
         nativePreparation = controller;
@@ -232,6 +231,7 @@ async function startGame(settingsOverride = null) {
             path.join(app.getPath('userData'), 'native-player'),
             controller.signal
           );
+          prepared.frameCap = settings.nativeFrameCap;
           Runtime = NativePlayerRuntime;
         } catch (e) {
           nativeFallback = e.message;
@@ -263,6 +263,10 @@ async function startGame(settingsOverride = null) {
     instance.on('ready', () => {
       if (!current()) return;
       instance.configure(store.data.settings);
+      if (resume && require('./legacy/refresh.cjs').valid(resume)) {
+        instance.send({ type: 'resume-character', value: resume });
+        resume = null;
+      }
       layout();
       if (win.isFocused()) focusGame();
     });
@@ -336,6 +340,11 @@ async function startGame(settingsOverride = null) {
       if (event.type === 'close-window' || event.type === 'close') win.close();
       publish();
       if (event.type === 'external-link') {
+        const refresh = require('./legacy/refresh.cjs').fromLink(event.url, gameAddress);
+        if (refresh && event.userGesture === true && !modal && !loading) {
+          void startGame(activeSettings, refresh);
+          return;
+        }
         if (
           instance.nativePlayer &&
           event.userGesture === true &&
@@ -345,6 +354,13 @@ async function startGame(settingsOverride = null) {
           void startGame(activeSettings);
         else void openGameLink(event);
       }
+      if (
+        event.type === 'refresh-character' &&
+        !modal &&
+        !loading &&
+        require('./legacy/refresh.cjs').valid(event.value)
+      )
+        void startGame(activeSettings, event.value);
     });
     instance.on('key', (key) => {
       if (!current()) return;
@@ -445,8 +461,15 @@ async function action(name, value) {
         throw new Error('Volume must be a whole number from 0 to 100.');
       if ('renderResolution' in value && ![0.5, 0.75, 1].includes(value.renderResolution))
         throw new Error('Choose 100%, 75% or 50% rendering resolution.');
-      if ('gameRenderer' in value && !['original', 'gpu', 'native'].includes(value.gameRenderer))
-        throw new Error('Choose Original, GPU world or the 120 FPS player.');
+      if ('gameRenderer' in value && !['original', 'native'].includes(value.gameRenderer))
+        throw new Error('Choose Original or High FPS.');
+      if (
+        'nativeFrameCap' in value &&
+        (!Number.isInteger(value.nativeFrameCap) ||
+          value.nativeFrameCap < 30 ||
+          value.nativeFrameCap > 1000)
+      )
+        throw new Error('Frame cap must be a whole number from 30 to 1000.');
       if ('ownedSingleplayer' in value && typeof value.ownedSingleplayer !== 'boolean')
         throw new Error('Choose a valid singleplayer mode.');
       if (

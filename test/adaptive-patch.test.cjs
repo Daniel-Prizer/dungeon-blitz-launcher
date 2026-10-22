@@ -140,6 +140,10 @@ test(
       'SoundManager.Play',
       'Game.method_1880',
       'Game.method_1947',
+      'ScreenCharacterSelection.method_1077',
+      'ScreenCharacterSelection.method_405',
+      'class_95.method_1792',
+      'class_33.method_286',
     ])
       assert.equal(
         patchAdaptiveClient(changeBody(name), recipe),

@@ -598,6 +598,20 @@ app
       const link = classifyLink(url, LIVE);
       linkTrace({ url, source: wc.getURL(), userGesture, phase: 'route' });
       if (!link || !gameURL(wc.getURL()) || Date.now() - lastLink < 1000) return;
+      const refresh = require('./refresh.cjs').fromLink(url, LIVE);
+      if (refresh) {
+        const gesture =
+          userGesture === true ||
+          (await wc
+            .executeJavaScript(
+              'navigator.userActivation && navigator.userActivation.isActive === true'
+            )
+            .catch(() => false));
+        if (!gesture) return;
+        lastLink = Date.now();
+        emit({ type: 'refresh-character', value: refresh });
+        return;
+      }
       if (link.type === 'external') {
         // Flash navigateToURL and HTML links share Chromium's user activation.
         const gesture =
@@ -1128,6 +1142,20 @@ readMessages(pipe, async (cmd) => {
     if (cmd.type === 'background') win.webContents.setBackgroundThrottling(!cmd.value);
     if (cmd.type === 'test-original-client' && process.env.BLITZ_HOST_TEST === '1')
       testOriginalClient = cmd.value === true;
+    if (cmd.type === 'resume-character' && require('./refresh.cjs').valid(cmd.value)) {
+      const wc = win.webContents;
+      const expires = Date.now() + 60000;
+      const resume = async () => {
+        if (wc.isDestroyed() || Date.now() > expires) return;
+        const applied = await wc
+          .executeJavaScript(
+            `(() => {const e=document.getElementById('DungeonBlitz');return typeof e?.BlitzResumeCharacter==='function'&&e.BlitzResumeCharacter(${cmd.value.userID},${JSON.stringify(cmd.value.name)});})()`
+          )
+          .catch(() => false);
+        if (!applied) setTimeout(resume, 200);
+      };
+      void resume();
+    }
     if (cmd.type === 'reload') win.webContents.reload();
     if (cmd.type === 'stop') win.webContents.stop();
     if (cmd.type === 'focus' && win.isVisible()) {

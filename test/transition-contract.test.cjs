@@ -32,7 +32,7 @@ test(
     for (const key of Object.keys(base))
       if (!['sourceHash', 'guards'].includes(key))
         assert.deepEqual(reviewed[key], base[key], key + ' remains fully guarded');
-    assert.equal(base.guards.length, 6);
+    assert.equal(base.guards.length, 18);
     assert.equal(reviewed.bodies.length, 31);
     const changed = reviewed.guards.filter(
       (g, n) => JSON.stringify(g) !== JSON.stringify(base.guards[n])

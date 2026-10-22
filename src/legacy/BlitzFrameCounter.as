@@ -24,6 +24,14 @@ package {
   private static var low:Number=NaN;
   private static var high:Number=NaN;
   private static var shown:Boolean=false;
+  private static var renderAt:uint=0;
+  private static var renderFPS:Number=NaN;
+  private static var renderLow:Number=NaN;
+  private static var renderHigh:Number=NaN;
+  public static function SetRenderFPS(value:Number,minimum:Number,maximum:Number):Boolean {
+   if(!isFinite(value)||!isFinite(minimum)||!isFinite(maximum)||value<0||maximum>10000||minimum<0||maximum<minimum)return false;
+   renderFPS=value;renderLow=minimum;renderHigh=maximum;renderAt=uint(getTimer());return true;
+  }
   public static function Attach(stage:Stage,frameSource:DisplayObject,position:Function):void {
    if(!stage||!frameSource)return;
    placement=position;
@@ -80,7 +88,8 @@ package {
     if(history.length>=31)history.shift();
     history.push({at:now,fps:fps});low=fps;high=fps;
     for each(var sample:Object in history){low=Math.min(low,Number(sample.fps));high=Math.max(high,Number(sample.fps));}
-    label.text=Math.round(fps)+" FPS\nLow "+Math.round(low)+"\nHigh "+Math.round(high);
+    var gpu:Boolean=isFinite(renderFPS)&&uint(now-renderAt)<=2500;
+    label.text=Math.round(gpu?renderFPS:fps)+" FPS\nLow "+Math.round(gpu?renderLow:low)+"\nHigh "+Math.round(gpu?renderHigh:high);
     frames=0;started=now;++updates;
    }
    if(placement!=null)placement();
@@ -88,11 +97,12 @@ package {
   public static function Snapshot():Object {
    if(!surface||!label)return null;
    var fresh:Boolean=updates>0&&uint(uint(getTimer())-sampledAt)<=2500;
-   return {fps:fresh?fps:null,lowFPS:fresh?low:null,highFPS:fresh?high:null,rangeSeconds:30,rangeSamples:history.length,
+   var gpu:Boolean=isFinite(renderFPS)&&uint(uint(getTimer())-renderAt)<=2500;
+   return {fps:gpu?renderFPS:fresh?fps:null,lowFPS:gpu?renderLow:fresh?low:null,highFPS:gpu?renderHigh:fresh?high:null,rangeSeconds:30,rangeSamples:history.length,
     sampleFrames:sampledFrames,sampleMs:sampledMs,totalFrames:total,
     updates:updates,shown:shown,visible:label.visible,text:label.text,x:label.x,y:label.y,
     width:label.width,height:label.height,mouseEnabled:label.mouseEnabled,
-    selectable:label.selectable,source:"game-enter-frame"};
+    selectable:label.selectable,source:gpu?"completed-game-renders":"game-enter-frame"};
   }
  }
 }

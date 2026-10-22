@@ -94,40 +94,40 @@ const root = path.resolve(__dirname, '..'),
     ]) {
       await page.setViewportSize(size);
       await page.goto(origin + '/index.html');
-      await page.locator('#game-renderer').selectOption('gpu');
-      await page.locator('#gpu-frame-cap').fill('360');
-      await page.locator('#gpu-frame-cap').press('Tab');
+      await page.locator('#game-renderer').selectOption('native');
+      await page.locator('#native-frame-cap').fill('360');
+      await page.locator('#native-frame-cap').press('Tab');
       assert.equal(
         await page.evaluate(() => fixtureCalls.filter((c) => c.name === 'save-settings').length),
         0
       );
       await page.locator('#discard').click();
       assert.equal(await page.locator('#game-renderer').inputValue(), 'original');
-      assert.equal(await page.locator('#gpu-frame-cap').inputValue(), '1000');
-      await page.locator('#game-renderer').selectOption('gpu');
-      await page.locator('#gpu-frame-cap').fill('240');
-      await page.locator('#gpu-frame-cap').press('Tab');
+      assert.equal(await page.locator('#native-frame-cap').inputValue(), '240');
+      await page.locator('#game-renderer').selectOption('native');
+      await page.locator('#native-frame-cap').fill('360');
+      await page.locator('#native-frame-cap').press('Tab');
       await page.locator('#save-settings').click();
       await page.waitForFunction(() => document.querySelector('#save-settings').disabled);
       assert.equal(
         await page.evaluate(
-          () => fixtureCalls.findLast((c) => c.name === 'save-settings').value.gpuFrameCap
+          () => fixtureCalls.findLast((c) => c.name === 'save-settings').value.nativeFrameCap
         ),
-        240
+        360
       );
       await page.locator('.advanced-options summary').click();
       await page.locator('#hardware-acceleration').uncheck();
-      assert.equal(await page.locator('#gpu-frame-cap').isDisabled(), true);
-      assert.equal(await page.locator('#gpu-frame-cap').inputValue(), '240');
+      assert.equal(await page.locator('#native-frame-cap').isDisabled(), true);
+      assert.equal(await page.locator('#native-frame-cap').inputValue(), '360');
       await page.locator('#discard').click();
-      assert.equal(await page.locator('#gpu-frame-cap').isEnabled(), true);
+      assert.equal(await page.locator('#native-frame-cap').isEnabled(), true);
       const footer = await page.locator('footer').boundingBox();
       assert(footer.y >= 0 && footer.y + footer.height <= size.height + 1);
       await page.screenshot({ path: path.join(out, `settings-${size.width}.png`) });
       await page.locator('#game-renderer').selectOption('native');
-      assert.equal(await page.locator('#gpu-frame-cap').isDisabled(), true);
-      assert.equal(await page.locator('#gpu-frame-cap').inputValue(), '240');
-      assert.equal(await page.locator('#render-resolution').isDisabled(), true);
+      assert.equal(await page.locator('#native-frame-cap').isEnabled(), true);
+      assert.equal(await page.locator('#native-frame-cap').inputValue(), '360');
+      assert.equal(await page.locator('#render-resolution').isEnabled(), true);
       assert.match(await page.locator('#renderer-hint').textContent(), /separate sign-in profile/);
       await page.screenshot({ path: path.join(out, `native-settings-${size.width}.png`) });
       await page.locator('#tab-crosshair').click();
@@ -138,8 +138,8 @@ const root = path.resolve(__dirname, '..'),
       await page.locator('#discard').click();
       assert.equal(await page.locator('#crosshair-style').inputValue(), 'default');
       await page.locator('#tab-display').click();
-      assert.equal(await page.locator('#game-renderer').inputValue(), 'gpu');
-      assert.equal(await page.locator('#gpu-frame-cap').isEnabled(), true);
+      assert.equal(await page.locator('#game-renderer').inputValue(), 'native');
+      assert.equal(await page.locator('#native-frame-cap').isEnabled(), true);
       await page.locator('#game-renderer').selectOption('native');
       await page.locator('#tab-crosshair').click();
       await page.locator('#crosshair-style').selectOption('ring');
@@ -149,7 +149,9 @@ const root = path.resolve(__dirname, '..'),
       await page.waitForFunction(() => document.querySelector('#save-settings').disabled);
       assert.equal(
         await page.evaluate(
-          () => fixtureCalls.findLast((c) => c.name === 'save-settings').value.gameRenderer
+          () =>
+            fixtureCalls.findLast((c) => c.name === 'save-settings' && c.value.gameRenderer).value
+              .gameRenderer
         ),
         'native'
       );

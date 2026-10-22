@@ -26,7 +26,7 @@ Keep multiplayer and loopback singleplayer contracts independent. Native clocks,
 
 Follow [widescreen invariants](docs/WIDESCREEN.md) for camera rays, terrain reuse, original HUD vectors, authored map geometry, transitions, matte anchoring and backdrop limits. Do not invent playable terrain, widen vertically from overall room bounds, stretch panels or conceal missing world art. Frame/counter controls belong only in fixtures.
 
-GPU mode retains native gameplay and uses bounded retained-artwork workers. Count completed changing world renders separately from game updates, source snapshots and scanout. Do not promise whole-game 1000 FPS. Preserve collection budgets, stale-scene restoration and acknowledged worker shutdown. The limited local module grammar must pass bundle tests in the legacy engine.
+High FPS uses the qualified native player. Keep presentation, automatic timelines and elapsed-time simulation on separate clocks. Count completed changing game renders separately from callbacks and scanout; a 1000 cap is not a throughput promise. Retained-world workers are research only. Preserve their collection budgets and shutdown guards when running those fixtures. The limited local module grammar must pass legacy bundle tests.
 
 ## Singleplayer and updates
 

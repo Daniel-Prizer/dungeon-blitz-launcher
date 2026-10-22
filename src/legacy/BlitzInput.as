@@ -3,6 +3,12 @@ package {
  import flash.events.KeyboardEvent;
  import flash.events.Event;
  import flash.display.DisplayObjectContainer;
+ import flash.display.Sprite;
+ import flash.display.Graphics;
+ import flash.events.MouseEvent;
+ import flash.net.URLRequest;
+ import flash.net.navigateToURL;
+ import flash.utils.getTimer;
  import flash.text.TextFormat;
  import flash.utils.Dictionary;
  import flash.text.TextField;
@@ -18,14 +24,96 @@ package {
   private static var runningGame:Game;
   private static var runningCommand:int=0;
   private static var dispatching:Boolean=false;
+  private static var refreshButton:Sprite;
+  private static var refreshHint:TextField;
+  private static var units:Number=1;
+  private static var resumeName:String=null;
+  private static var resumeUser:uint=0;
+  private static var resumeStarted:uint=0;
+  private static var reviveHeld:Boolean=false;
   public static function Attach(value:Main):void {
    main=value;
-   if(!registered&&ExternalInterface.available){ExternalInterface.addCallback("BlitzMount",Mount);ExternalInterface.addCallback("BlitzSetMountShortcut",SetMountShortcut);ExternalInterface.addCallback("BlitzAutorun",Autorun);ExternalInterface.addCallback("BlitzStopAutorun",StopAutorun);registered=true;}
+   if(!registered&&ExternalInterface.available){ExternalInterface.addCallback("BlitzMount",Mount);ExternalInterface.addCallback("BlitzSetMountShortcut",SetMountShortcut);ExternalInterface.addCallback("BlitzAutorun",Autorun);ExternalInterface.addCallback("BlitzStopAutorun",StopAutorun);ExternalInterface.addCallback("BlitzResumeCharacter",ResumeCharacter);ExternalInterface.addCallback("BlitzRefreshState",RefreshState);registered=true;}
    main.addEventListener(Event.ENTER_FRAME,UpdateMountLabel,false,-102,true);
    main.addEventListener(Event.ENTER_FRAME,CheckAutorun,false,-103,true);
    main.stage.addEventListener(KeyboardEvent.KEY_DOWN,ManualInput,true,100,true);
    main.stage.addEventListener(KeyboardEvent.KEY_DOWN,ManualInput,false,100,true);
+   main.addEventListener(Event.ENTER_FRAME,UpdateRefresh,false,-104,true);
+   main.stage.addEventListener(KeyboardEvent.KEY_DOWN,CancelResume,true,101,true);
+   main.stage.addEventListener(KeyboardEvent.KEY_DOWN,CancelResume,false,101,true);
+   main.stage.addEventListener(MouseEvent.MOUSE_DOWN,CancelResume,true,101,true);
+   main.stage.addEventListener(MouseEvent.MOUSE_DOWN,CancelResume,false,101,true);
+   main.stage.addEventListener(KeyboardEvent.KEY_DOWN,ReviveKey,true,102,true);
+   main.stage.addEventListener(KeyboardEvent.KEY_DOWN,ReviveKey,false,102,true);
+   main.stage.addEventListener(KeyboardEvent.KEY_UP,ReleaseRevive,true,102,true);
+   main.stage.addEventListener(KeyboardEvent.KEY_UP,ReleaseRevive,false,102,true);
+   main.addEventListener(Event.DEACTIVATE,ReleaseRevive,false,102,true);
   }
+  private static function ReleaseRevive(event:Event):void {if(!(event is KeyboardEvent)||KeyboardEvent(event).keyCode==13)reviveHeld=false;}
+  private static function ReviveKey(event:KeyboardEvent):void {
+   if(event.keyCode!=13||event.ctrlKey||event.altKey||event.shiftKey)return;
+   var game:Game=SingleGame();var field:TextField=main.stage.focus as TextField;
+   if(!game||game.gameState!=Game.STATE_PLAY||!game.clientEnt||game.clientEnt.entState!=Entity.const_6||field&&field.type==TextFieldType.INPUT)return;
+   if(!game.var_936||!game.var_936.mbVisible||!game.var_936.var_2||game.method_47())return;
+   var button:DisplayObjectContainer=game.var_936.var_2.getChildByName("am_Respawn") as DisplayObjectContainer;
+   if(!button||!button.visible)return;
+   event.stopImmediatePropagation();event.preventDefault();
+   if(reviveHeld)return;reviveHeld=true;
+   // The existing button owns its disabled state, cooldown and server request.
+   try{button.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_DOWN,true,false));}
+   finally{button.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_UP,true,false));}
+  }
+  public static function SetMagnification(value:Number):void {if(isFinite(value)&&value>=0.1&&value<=16)units=1/value;}
+  private static function SingleGame():Game {return main&&main.var_523&&main.var_523.length==1?main.var_523[0]:null;}
+  private static function ValidName(value:String):Boolean {return value!=null&&value.length>0&&value.length<=64&&!/[\x00-\x1f\x7f]/.test(value);}
+  public static function ResumeCharacter(user:Number,name:String):Boolean {
+   if(!isFinite(user)||user<1||user>4294967295||user!=uint(user)||!ValidName(name))return false;
+   resumeName=name;resumeUser=uint(user);resumeStarted=uint(getTimer());return true;
+  }
+  private static function CancelResume(event:Event=null):void {resumeName=null;resumeUser=0;}
+  private static function TryResume(game:Game):void {
+   if(!resumeName)return;
+   if(uint(uint(getTimer())-resumeStarted)>60000){CancelResume();return;}
+   if(!game)return;
+   if(game.gameState==Game.STATE_PLAY||game.clientUserID&&game.clientUserID!=resumeUser){CancelResume();return;}
+   var screen:ScreenCharacterSelection=game.var_341;
+   if(!screen||!screen.method_40()||game.method_47())return;
+   if(game.var_355){
+    var selected:int=-1;
+    for(var i:int=0;i<game.var_355.length;i++)if(game.var_355[i].name===resumeName){if(selected>=0){CancelResume();return;}selected=i;}
+    if(selected<0){CancelResume();return;}
+    screen.method_959(selected);
+   }
+   // Before authentication, only the exact character already displayed by the
+   // game's own remembered session may enter. Its Play handler owns sign-in.
+   if(screen.var_400!==resumeName)return;
+   CancelResume();screen.method_1077(null);
+  }
+  private static function Refresh(event:MouseEvent):void {
+   event.stopImmediatePropagation();var game:Game=SingleGame();
+   if(!game||game.gameState!=Game.STATE_PLAY||!game.clientUserID||!ValidName(game.clientEntName))return;
+   StopAutorun();refreshButton.mouseEnabled=false;
+   var url:String=main.loaderInfo.url.split("#")[0]+"#blitz-refresh="+game.clientUserID+"/"+encodeURIComponent(game.clientEntName);
+   try{navigateToURL(new URLRequest(url),"_self");}catch(error:Error){refreshButton.mouseEnabled=true;}
+  }
+  private static function Hint(event:MouseEvent):void {if(refreshHint)refreshHint.visible=event.type==MouseEvent.ROLL_OVER;}
+  private static function UpdateRefresh(event:Event=null):void {
+   if(!main||!main.stage)return;var game:Game=SingleGame();TryResume(game);
+   if(!refreshButton){
+    refreshButton=new Sprite();refreshButton.name="blitz-refresh";refreshButton.buttonMode=true;refreshButton.mouseChildren=false;refreshButton.tabEnabled=true;
+    var g:Graphics=refreshButton.graphics;g.lineStyle(1.5,0xD8BC55);g.beginFill(0x484955);g.drawRoundRect(0,0,24,24,7,7);g.endFill();
+    g.lineStyle(2,0xF3E5AF);g.moveTo(17,8);g.curveTo(12,3,7,8);g.curveTo(3,13,8,17);g.curveTo(13,21,18,15);g.moveTo(17,4);g.lineTo(17,9);g.lineTo(12,9);
+    refreshButton.addEventListener(MouseEvent.CLICK,Refresh);refreshButton.addEventListener(MouseEvent.ROLL_OVER,Hint);refreshButton.addEventListener(MouseEvent.ROLL_OUT,Hint);
+    refreshHint=new TextField();refreshHint.name="blitz-refresh-tooltip";refreshHint.defaultTextFormat=new TextFormat("_sans",12,0xF3E5AF);refreshHint.text="Refresh game";refreshHint.width=92;refreshHint.height=20;refreshHint.background=true;refreshHint.backgroundColor=0x30333C;refreshHint.mouseEnabled=false;refreshHint.selectable=false;refreshHint.visible=false;
+   }
+   if(refreshButton.parent!=main.stage)main.stage.addChild(refreshButton);
+   if(refreshHint.parent!=main.stage)main.stage.addChild(refreshHint);
+   refreshButton.scaleX=refreshButton.scaleY=units;refreshButton.x=main.stage.stageWidth-28*units;refreshButton.y=4*units;
+   refreshHint.scaleX=refreshHint.scaleY=units;refreshHint.x=main.stage.stageWidth-98*units;refreshHint.y=31*units;
+   refreshButton.visible=Boolean(game&&game.gameState==Game.STATE_PLAY&&game.clientUserID&&ValidName(game.clientEntName));
+   if(!refreshButton.visible)refreshHint.visible=false;
+  }
+  public static function RefreshState():Object {return {visible:refreshButton&&refreshButton.visible,x:refreshButton?refreshButton.x:0,y:refreshButton?refreshButton.y:0,width:refreshButton?refreshButton.width:0,height:refreshButton?refreshButton.height:0,pending:resumeName!=null};}
   private static function CurrentGame():Game {
    if(!main||!main.stage||!main.var_523||main.var_523.length!=1)return null;
    var field:TextField=main.stage.focus as TextField;if(field&&field.type==TextFieldType.INPUT)return null;

@@ -139,6 +139,18 @@ for (const name of [
   'class_108.method_31',
   'class_108.method_907',
   'Game.method_1947',
+  'Game.method_47',
+  'ScreenCharacterSelection.method_40',
+  'ScreenCharacterSelection.method_959',
+  'ScreenCharacterSelection.method_1077',
+  'ScreenCharacterSelection.method_603',
+  'ScreenCharacterSelection.method_405',
+  'class_95.OnCreateScreen',
+  'class_95.method_1792',
+  'class_95.OnTickScreen',
+  'class_95.method_1865',
+  'class_33.method_637',
+  'class_33.method_286',
 ]) {
   const body = before.abc.bodies.find((body) => body.name === name);
   if (!body) throw Error('Missing dependency ' + name);

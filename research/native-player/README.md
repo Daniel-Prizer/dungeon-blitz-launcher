@@ -1,8 +1,10 @@
 # Native player
 
-The optional 120 FPS player uses Ruffle v0.7.1 at `89a7049965f3090e706265670df309a5128233ac`, with the accompanying patch. It keeps the original Flash player as the default and fallback.
+High FPS uses Ruffle v0.7.1 at `89a7049965f3090e706265670df309a5128233ac`, with the accompanying patch. Original Flash remains the default and fallback.
 
-The patch adds class-only placement and inherited-symbol handling, non-mutating `Graphics.readGraphicsData`, a separate automatic timeline clock, the restricted launcher bridge and resource policy. The 0.31.3 bridge applies bounded custom cursors on Save and restores acknowledged settings when the active Game changes. It does not replay input actions. Private fixture controls require an inactive test desktop and are absent from the launcher's production child environment. No game-account state belongs here.
+The patch adds class-only placement and inherited-symbol handling, non-mutating `Graphics.readGraphicsData`, separate presentation/timeline clocks, and the restricted launcher bridge/resource policy. The bridge applies custom cursors, density and caps on Save and restores settings when Game changes. It does not replay input actions. Private fixture controls require an inactive desktop and are absent from the production child environment. No game-account state belongs here.
+
+Version 0.32.0 skips unused desktop-editor UI work in hosted mode, preserves child-filter caches in offscreen draws, and clamps the final audio mix. Render density changes the native viewport transform rather than the requested movie clock. The rolling FPS average counts completed renders, not just callbacks. Internal bridge/runtime identifiers retain their earlier `120` spelling for compatibility.
 
 ## Build
 
@@ -24,6 +26,8 @@ The changing-artwork fixture must complete at least 118 GPU renders/s at the 120
 
 Use the guarded inactive desktop, synthetic storage and TCP-denied public startup. Check authored vectors against Flash references, input and rebinding, blur/hide, window sizing/hit tests, UI, audio helpers, normal shutdown and packaging. Account-free fixtures do not establish live combat, server behavior or monitor scanout.
 
-## 240 FPS investigation
+## Performance
 
-The 120 FPS timing code remains unchanged. At a 240 target, the original dungeon-artwork/HUD fixture completed 233.83 renders/s at 1600×900. Experimental removal of desktop UI work and unused AVM1 cleanup reached 230.02/s there and 179.19/s at 2560×1440. A 1000-target throughput run reached 225.50/s at 1600×900. Timers and elapsed-time integration remained correct, but the 240 gate was not met. The experimental runtime changes were removed; no 240 option is shipped. These results show the current scene-processing limit, not that a future renderer redesign is impossible.
+The cap is adjustable from 30 to 1000, defaulting to 240. It limits rendering without promising that throughput. At 2560×1440 with widescreen enabled, the original dungeon-artwork/HUD fixture completed 145.81 renders/s at full raster resolution. At 75% resolution and a 240 cap it completed 166.46/s, with a measured 30-second average of 165.84/s. Each run measured 20 seconds after warmup on the RTX 4080 SUPER test PC. A changing marker and GPU texture capture distinguish fresh renders from duplicate submissions.
+
+Elapsed-time integration retained 24 steps/s and 100-ms timers fired 200 times in 20 seconds. Automatic movie timelines remain about 60/s at a 240 presentation cap. This fixture has real artwork and HUD with synthetic activity; live combat and long sessions remain unmeasured. External PresentMon capture required unavailable ETW privileges, so monitor scanout and NVIDIA overlay compatibility are unverified. Sustained 240 FPS was not achieved in this widescreen scene.
