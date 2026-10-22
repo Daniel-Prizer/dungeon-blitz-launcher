@@ -1,0 +1,772 @@
+{
+  "code": 0,
+  "result": {
+    "afterRead": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 1,
+        "color": 11259375
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          0,
+          0,
+          12,
+          0,
+          12,
+          13,
+          0,
+          13,
+          0,
+          0,
+          40,
+          50,
+          0,
+          0
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "solid": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 0.4980392156862745,
+        "color": 1193046
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          3,
+          2
+        ],
+        "data": [
+          2,
+          3,
+          12,
+          3,
+          20,
+          5,
+          12,
+          13,
+          2,
+          3
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "alphaFill": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 0.24705882352941178,
+        "color": 11194095
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          0,
+          0,
+          10,
+          0,
+          10,
+          10,
+          0,
+          10,
+          0,
+          0
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "gradient": [
+      {
+        "alphas": [
+          0.4980392156862745,
+          1
+        ],
+        "focal": 0,
+        "kind": "linear",
+        "ratios": [
+          0,
+          255
+        ],
+        "spread": "reflect",
+        "interpolation": "linearRGB",
+        "type": "flash.display::GraphicsGradientFill",
+        "matrix": [
+          2,
+          0,
+          0,
+          3,
+          6,
+          7
+        ],
+        "colors": [
+          2147418112,
+          4278190335
+        ]
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          0,
+          0,
+          10,
+          0,
+          10,
+          10,
+          0,
+          10,
+          0,
+          0
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "transformed": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 0.4980392156862745,
+        "color": 1193046
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          3,
+          2
+        ],
+        "data": [
+          2,
+          3,
+          12,
+          3,
+          20,
+          5,
+          12,
+          13,
+          2,
+          3
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "scaledChild": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 0.24705882352941178,
+        "color": 1062229
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          10,
+          20,
+          30,
+          20,
+          30,
+          50,
+          10,
+          50,
+          10,
+          20
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      },
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": 10.2,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": {
+          "type": "flash.display::GraphicsSolidFill",
+          "alpha": 0.24705882352941178,
+          "color": 11194095
+        },
+        "miter": 3
+      },
+      {
+        "winding": "nonZero",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          30,
+          20,
+          30,
+          50,
+          10,
+          50,
+          10,
+          20,
+          30,
+          20
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": null,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": null,
+        "miter": 3
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "repeat": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 0.4980392156862745,
+        "color": 1193046
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          3,
+          2
+        ],
+        "data": [
+          2,
+          3,
+          12,
+          3,
+          20,
+          5,
+          12,
+          13,
+          2,
+          3
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "hidden": [],
+    "rootAlpha": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 1,
+        "color": 1193046
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          0,
+          0,
+          10,
+          0,
+          10,
+          10,
+          0,
+          10,
+          0,
+          0
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "bitmap": [
+      {
+        "matrix": [
+          1.99951171875,
+          0,
+          0,
+          2.999267578125,
+          4,
+          5
+        ],
+        "pixel": 4279383126,
+        "type": "flash.display::GraphicsBitmapFill",
+        "width": 2,
+        "repeat": true,
+        "smooth": false
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          0,
+          0,
+          20,
+          0,
+          20,
+          20,
+          0,
+          20,
+          0,
+          0
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "recurse": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 0.4980392156862745,
+        "color": 1193046
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          3,
+          2
+        ],
+        "data": [
+          2,
+          3,
+          12,
+          3,
+          20,
+          5,
+          12,
+          13,
+          2,
+          3
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      },
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 1,
+        "color": 16711680
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          4,
+          5,
+          9,
+          5,
+          9,
+          11,
+          4,
+          11,
+          4,
+          5
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "authoredFirst": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 1,
+        "color": 0
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          -46.45,
+          -21,
+          46.5,
+          -21,
+          46.5,
+          21,
+          -46.45,
+          21,
+          -46.45,
+          -21
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      },
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": 1,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": {
+          "type": "flash.display::GraphicsSolidFill",
+          "alpha": 1,
+          "color": 16711680
+        },
+        "miter": 3
+      },
+      {
+        "winding": "nonZero",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          46.5,
+          -21,
+          46.5,
+          21,
+          -46.45,
+          21,
+          -46.45,
+          -21,
+          46.5,
+          -21
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": null,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": null,
+        "miter": 3
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "bitmapIdentity": false,
+    "noRecurse": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 0.4980392156862745,
+        "color": 1193046
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          3,
+          2
+        ],
+        "data": [
+          2,
+          3,
+          12,
+          3,
+          20,
+          5,
+          12,
+          13,
+          2,
+          3
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "cubic": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 1,
+        "color": 1193046
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          3,
+          3,
+          3,
+          3,
+          2
+        ],
+        "data": [
+          0,
+          0,
+          0.25,
+          11.25,
+          4.7,
+          16.9,
+          9.15,
+          22.5,
+          15,
+          22.5,
+          20.85,
+          22.5,
+          25.3,
+          16.9,
+          29.75,
+          11.25,
+          30,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "authoredSecond": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 1,
+        "color": 0
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          -46.45,
+          -21,
+          46.5,
+          -21,
+          46.5,
+          21,
+          -46.45,
+          21,
+          -46.45,
+          -21
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      },
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": 1,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": {
+          "type": "flash.display::GraphicsSolidFill",
+          "alpha": 1,
+          "color": 16711680
+        },
+        "miter": 3
+      },
+      {
+        "winding": "nonZero",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          46.5,
+          -21,
+          46.5,
+          21,
+          -46.45,
+          21,
+          -46.45,
+          -21,
+          46.5,
+          -21
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": null,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": null,
+        "miter": 3
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "pending": [
+      {
+        "type": "flash.display::GraphicsSolidFill",
+        "alpha": 1,
+        "color": 11259375
+      },
+      {
+        "winding": "evenOdd",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2,
+          2,
+          2,
+          2
+        ],
+        "data": [
+          0,
+          0,
+          12,
+          0,
+          12,
+          13,
+          0,
+          13,
+          0,
+          0
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ],
+    "stroke": [
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": 4,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": {
+          "type": "flash.display::GraphicsSolidFill",
+          "alpha": 0.24705882352941178,
+          "color": 11194095
+        },
+        "miter": 3
+      },
+      {
+        "winding": "nonZero",
+        "type": "flash.display::GraphicsPath",
+        "commands": [
+          1,
+          2
+        ],
+        "data": [
+          3,
+          4,
+          13,
+          14
+        ]
+      },
+      {
+        "type": "flash.display::GraphicsStroke",
+        "scale": "normal",
+        "thickness": null,
+        "caps": "none",
+        "hint": false,
+        "joints": "round",
+        "fill": null,
+        "miter": 3
+      },
+      {
+        "type": "flash.display::GraphicsEndFill"
+      }
+    ]
+  },
+  "noAccounts": true,
+  "noOSInput": true
+}

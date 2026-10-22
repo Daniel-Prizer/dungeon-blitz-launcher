@@ -1,0 +1,61 @@
+{
+  "version": "0.31.0",
+  "checkedAtUtc": "2026-10-22T00:51:36.221Z",
+  "nativeSha256": "acd783efa341d216682b82b3af7824d83349a572f2a2e1c62d50d2f212fd7376",
+  "patchSha256": "669a054890f24506d7abc4e33688dbae40413de70cc6846ae827b87353c28ac3",
+  "clientSha256": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
+  "dungeon": {
+    "viewport": [
+      2560,
+      1440
+    ],
+    "room": "a_Room_BT12",
+    "level": "LevelsBT.swf",
+    "elapsedMs": 20007,
+    "gameUpdates": 2400,
+    "completedGpuPerSecond": 119.99002275499413,
+    "nativeSteps": 480.1680000000118,
+    "nativeElapsedMs": 20007,
+    "timerEvents": 200,
+    "markerPixels": 256,
+    "normalExit": true
+  },
+  "automaticTimeline": {
+    "frames": 151,
+    "callbacks": 301,
+    "elapsedMs": 2508,
+    "hostElapsedMs": 2510,
+    "requestedStageRate": 100,
+    "timerEvents": 25
+  },
+  "publicStartup": {
+    "origins": [
+      "https://dungeonblitzr.theminesa.studio/",
+      "https://dungeonblitz.theminesa.studio/"
+    ],
+    "verifiedSwfAssets": 52,
+    "viewport": [
+      1600,
+      900
+    ],
+    "secondaryGpuMean": 120.02452080836498,
+    "audioLevels": {
+      "creatures": 1,
+      "environment": 0.75,
+      "music": 0.5,
+      "player": 0.25
+    }
+  },
+  "controls": [
+    "typed Ö",
+    "physical rebind",
+    "repeat suppression",
+    "modifier chords",
+    "hide release",
+    "disable release",
+    "four viewports and 96 own-window hit tests",
+    "normal close and synthetic storage reopen"
+  ],
+  "unitGroups": 105,
+  "scope": "Original game artwork/HUD and anonymous public startup; no authenticated gameplay, physical desktop input or monitor scanout. Broader combat and long-session performance are unmeasured."
+}

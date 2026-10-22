@@ -1,0 +1,3396 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 69a005b18ee2f512b6fff66e8b3b701221b6f7e8..261d8b2d6f389ee563d75e752dcd4553f0bf6ffb 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -4971,6 +4971,7 @@ dependencies = [
+  "ruffle_render_wgpu",
+  "ruffle_video_external",
+  "ruffle_video_software",
++ "serde_json",
+  "sys-locale",
+  "thiserror 2.0.18",
+  "tokio",
+diff --git a/core/src/avm2/globals/flash/display.rs b/core/src/avm2/globals/flash/display.rs
+index 265bd103edd01708ac404741873bf85456090a9e..881516ad3d9c52cc9771a266f98def9aa1f8e291 100644
+--- a/core/src/avm2/globals/flash/display.rs
++++ b/core/src/avm2/globals/flash/display.rs
+@@ -5,6 +5,7 @@ pub mod bitmap_data;
+ pub mod display_object;
+ pub mod display_object_container;
+ pub mod graphics;
++mod graphics_read;
+ pub mod interactive_object;
+ pub mod loader;
+ pub mod loader_info;
+diff --git a/core/src/avm2/globals/flash/display/graphics.rs b/core/src/avm2/globals/flash/display/graphics.rs
+index 7770dba81116c8b4e0a46b28eeb7855b32466de5..68007b03c28b9227716a2467c30cb52e26e33cb6 100644
+--- a/core/src/avm2/globals/flash/display/graphics.rs
++++ b/core/src/avm2/globals/flash/display/graphics.rs
+@@ -10,7 +10,7 @@ use crate::avm2::globals::slots::flash_display_graphics_path as graphics_path_sl
+ use crate::avm2::globals::slots::flash_display_graphics_solid_fill as graphics_solid_fill_slots;
+ use crate::avm2::globals::slots::flash_display_graphics_stroke as graphics_stroke_slots;
+ use crate::avm2::globals::slots::flash_display_graphics_triangle_path as graphics_triangle_path_slots;
+-use crate::avm2::object::{Object, TObject as _, VectorObject};
++use crate::avm2::object::{Object, TObject as _};
+ use crate::avm2::parameters::ParametersExt;
+ use crate::avm2::value::Value;
+ use crate::avm2::vector::VectorStorage;
+@@ -1356,13 +1356,10 @@ pub fn line_bitmap_style<'gc>(
+ /// Implements `Graphics.readGraphicsData`
+ pub fn read_graphics_data<'gc>(
+     activation: &mut Activation<'_, 'gc>,
+-    _this: Value<'gc>,
+-    _args: FunctionArgs<'_, 'gc>,
++    this: Value<'gc>,
++    args: FunctionArgs<'_, 'gc>,
+ ) -> Result<Value<'gc>, Error<'gc>> {
+-    avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
+-    let value_type = activation.avm2().class_defs().igraphicsdata;
+-    let new_storage = VectorStorage::new(0, false, Some(value_type));
+-    Ok(VectorObject::from_vector(new_storage, activation).into())
++    super::graphics_read::read(activation, this, args.get_bool(0))
+ }
+ 
+ fn read_point<'gc>(
+diff --git a/core/src/avm2/globals/flash/display/graphics_read.rs b/core/src/avm2/globals/flash/display/graphics_read.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..e8a5b0acb0582e2b2903053f3636184af9449a0a
+--- /dev/null
++++ b/core/src/avm2/globals/flash/display/graphics_read.rs
+@@ -0,0 +1,456 @@
++//! Vector extraction used by Graphics.readGraphicsData. Snapshot the paths before
++//! constructing AVM objects, so no drawing borrow crosses an AVM call.
++use crate::avm2::globals::flash::geom::transform::matrix_to_object;
++use crate::avm2::object::{ArrayObject, BitmapDataObject, VectorObject};
++use crate::avm2::vector::VectorStorage;
++use crate::avm2::{Activation, ArrayStorage, Error, Value};
++use crate::bitmap::bitmap_data::BitmapData;
++use crate::character::Character;
++use crate::display_object::{DisplayObject, TDisplayObject};
++use crate::prelude::TDisplayObjectContainer;
++use crate::string::AvmString;
++use ruffle_render::bitmap::{BitmapInfo, PixelRegion, PixelSnapping};
++use ruffle_render::commands::{CommandHandler, CommandList};
++use ruffle_render::matrix::Matrix;
++use ruffle_render::quality::StageQuality;
++use ruffle_render::shape_utils::{DrawCommand, DrawPath, FillRule};
++use ruffle_render::transform::Transform;
++use std::sync::atomic::{AtomicUsize, Ordering};
++use swf::{Color, ColorTransform, FillStyle, GradientInterpolation, GradientSpread, Point, Twips};
++
++fn extracted_color(color: Color, transform: ColorTransform) -> Color {
++    let mut color = &transform * color;
++    if color.a > 0 && color.a < 255 {
++        let alpha = color.a as f64;
++        let channel = |v: u8| ((v as f64 * alpha / 255.0).round() * 255.0 / alpha).round() as u8;
++        color.r = channel(color.r);
++        color.g = channel(color.g);
++        color.b = channel(color.b);
++    }
++    color
++}
++
++fn construct<'gc>(
++    a: &mut Activation<'_, 'gc>,
++    name: &'static str,
++    args: &[Value<'gc>],
++) -> Result<Value<'gc>, Error<'gc>> {
++    let name = AvmString::new_utf8(a.gc(), name);
++    let domain = a.avm2().playerglobals_domain();
++    let class = domain
++        .get_defined_value_handling_vector(a, name)?
++        .as_object()
++        .unwrap()
++        .as_class_object()
++        .unwrap();
++    class.construct(a, args)
++}
++fn string<'gc>(a: &mut Activation<'_, 'gc>, value: &'static str) -> Value<'gc> {
++    AvmString::new_utf8(a.gc(), value).into()
++}
++fn array<'gc>(a: &mut Activation<'_, 'gc>, values: Vec<Value<'gc>>) -> Value<'gc> {
++    ArrayObject::from_storage(a.context, ArrayStorage::from_iter(values)).into()
++}
++
++fn bitmap<'gc>(
++    a: &mut Activation<'_, 'gc>,
++    owner: DisplayObject<'gc>,
++    id: u16,
++    info: Option<BitmapInfo>,
++) -> Option<Value<'gc>> {
++    let data = if let Some(info) = info {
++        let data = BitmapData::new(a.gc(), info.width, info.height, true, 0);
++        let target = data.bitmap_handle(a.gc(), a.context.renderer);
++        let region = PixelRegion::for_whole_size(info.width, info.height);
++        let mut commands = CommandList::new();
++        commands.render_bitmap(
++            info.handle,
++            Transform::default(),
++            false,
++            PixelSnapping::Never,
++            region,
++        );
++        let sync =
++            a.context
++                .renderer
++                .render_offscreen(target, commands, StageQuality::High, region)?;
++        let (raw, _) = data.overwrite_cpu_pixels_from_gpu(a.gc());
++        raw.borrow_mut(a.gc()).set_gpu_dirty(a.gc(), sync, region);
++        data
++    } else {
++        let movie = owner.movie();
++        let character = a
++            .context
++            .library
++            .library_for_movie(movie)
++            .and_then(|lib| lib.character_by_id(id));
++        let Character::Bitmap(source) = character? else {
++            return None;
++        };
++        let decoded = source.compressed().decode().ok()?;
++        BitmapData::new_with_pixels(
++            a.gc(),
++            decoded.width(),
++            decoded.height(),
++            true,
++            decoded
++                .as_colors()
++                .map(crate::bitmap::bitmap_data::Color::from)
++                .collect(),
++        )
++    };
++    Some(BitmapDataObject::from_bitmap_data(a.context, data).into())
++}
++
++fn fill<'gc>(
++    a: &mut Activation<'_, 'gc>,
++    owner: DisplayObject<'gc>,
++    style: &FillStyle,
++    matrix: Matrix,
++    color_transform: ColorTransform,
++    bitmaps: &[BitmapInfo],
++) -> Result<Option<Value<'gc>>, Error<'gc>> {
++    match style {
++        FillStyle::Color(color) => {
++            let color = extracted_color(*color, color_transform);
++            construct(
++                a,
++                "flash.display::GraphicsSolidFill",
++                &[color.to_rgb().into(), (color.a as f64 / 255.0).into()],
++            )
++            .map(Some)
++        }
++        FillStyle::Bitmap {
++            id,
++            matrix: bitmap_matrix,
++            ..
++        } => {
++            let Some(data) = bitmap(a, owner, *id, bitmaps.get(*id as usize).cloned()) else {
++                return Ok(None);
++            };
++            let mut bm = Matrix::from(*bitmap_matrix);
++            bm.a /= 20.0;
++            bm.b /= 20.0;
++            bm.c /= 20.0;
++            bm.d /= 20.0;
++            let bm = matrix_to_object(matrix * bm, a)?;
++            construct(
++                a,
++                "flash.display::GraphicsBitmapFill",
++                &[data, bm, true.into(), false.into()],
++            )
++            .map(Some)
++        }
++        FillStyle::LinearGradient(g)
++        | FillStyle::RadialGradient(g)
++        | FillStyle::FocalGradient { gradient: g, .. } => {
++            let kind = string(
++                a,
++                if matches!(style, FillStyle::LinearGradient(_)) {
++                    "linear"
++                } else {
++                    "radial"
++                },
++            );
++            let colors = array(
++                a,
++                g.records
++                    .iter()
++                    .map(|v| Value::from(extracted_color(v.color, color_transform).to_rgba()))
++                    .collect(),
++            );
++            let alphas = array(
++                a,
++                g.records
++                    .iter()
++                    .map(|v| {
++                        Value::from(extracted_color(v.color, color_transform).a as f64 / 255.0)
++                    })
++                    .collect(),
++            );
++            let ratios = array(
++                a,
++                g.records
++                    .iter()
++                    .map(|v| Value::from(v.ratio as u32))
++                    .collect(),
++            );
++            let bm = matrix_to_object(matrix * Matrix::from(g.matrix), a)?;
++            let spread = string(
++                a,
++                match g.spread {
++                    GradientSpread::Pad => "pad",
++                    GradientSpread::Reflect => "reflect",
++                    GradientSpread::Repeat => "repeat",
++                },
++            );
++            let interpolation = string(
++                a,
++                match g.interpolation {
++                    GradientInterpolation::Rgb => "rgb",
++                    GradientInterpolation::LinearRgb => "linearRGB",
++                },
++            );
++            let focal = if let FillStyle::FocalGradient { focal_point, .. } = style {
++                focal_point.to_f64()
++            } else {
++                0.0
++            };
++            construct(
++                a,
++                "flash.display::GraphicsGradientFill",
++                &[
++                    kind,
++                    colors,
++                    alphas,
++                    ratios,
++                    bm,
++                    spread,
++                    interpolation,
++                    focal.into(),
++                ],
++            )
++            .map(Some)
++        }
++    }
++}
++
++fn path<'gc>(
++    a: &mut Activation<'_, 'gc>,
++    commands: Vec<DrawCommand>,
++    matrix: Matrix,
++    winding: FillRule,
++    close: bool,
++) -> Result<Option<Value<'gc>>, Error<'gc>> {
++    let mut output = Vec::new();
++    let mut data = Vec::new();
++    let mut cursor = Point::ZERO;
++    let mut start = Point::ZERO;
++    let mut pending_move = Some(Point::ZERO);
++    let mut drawn = false;
++    fn point<'gc>(data: &mut Vec<Value<'gc>>, matrix: Matrix, p: Point<Twips>) {
++        let p = matrix * p;
++        data.push(p.x.to_pixels().into());
++        data.push(p.y.to_pixels().into());
++    }
++    for command in commands {
++        if let DrawCommand::MoveTo(p) = command {
++            if close && drawn && cursor != start {
++                output.push(2.into());
++                point(&mut data, matrix, start);
++            }
++            cursor = p;
++            start = p;
++            pending_move = Some(p);
++            drawn = false;
++            continue;
++        }
++        if let Some(p) = pending_move.take() {
++            output.push(1.into());
++            point(&mut data, matrix, p);
++        }
++        match command {
++            DrawCommand::MoveTo(_) => unreachable!(),
++            DrawCommand::LineTo(p) => {
++                output.push(2.into());
++                point(&mut data, matrix, p);
++                cursor = p;
++            }
++            DrawCommand::QuadraticCurveTo { control, anchor } => {
++                output.push(3.into());
++                point(&mut data, matrix, control);
++                point(&mut data, matrix, anchor);
++                cursor = anchor;
++            }
++            DrawCommand::CubicCurveTo {
++                control_a,
++                control_b,
++                anchor,
++            } => {
++                let coords = [cursor, control_a, control_b, anchor]
++                    .map(|p| (p.x.to_pixels(), p.y.to_pixels()));
++                let cubic = |t: f64| {
++                    let u = 1.0 - t;
++                    (
++                        u * u * u * coords[0].0
++                            + 3.0 * u * u * t * coords[1].0
++                            + 3.0 * u * t * t * coords[2].0
++                            + t * t * t * coords[3].0,
++                        u * u * u * coords[0].1
++                            + 3.0 * u * u * t * coords[1].1
++                            + 3.0 * u * t * t * coords[2].1
++                            + t * t * t * coords[3].1,
++                    )
++                };
++                let error = (coords[0].0 - 3.0 * coords[1].0 + 3.0 * coords[2].0 - coords[3].0)
++                    .abs()
++                    .max((coords[0].1 - 3.0 * coords[1].1 + 3.0 * coords[2].1 - coords[3].1).abs());
++                let mut pieces = 1usize;
++                while pieces < 1024
++                    && error / (24.0 * 3.0f64.sqrt() * (pieces as f64).powi(3)) > 0.05
++                {
++                    pieces *= 2;
++                }
++                for n in 0..pieces {
++                    let from = cubic(n as f64 / pieces as f64);
++                    let mid = cubic((n as f64 + 0.5) / pieces as f64);
++                    let to = cubic((n + 1) as f64 / pieces as f64);
++                    let rounded = |x: f64, y: f64| {
++                        Point::new(
++                            Twips::new((x * 20.0).round() as i32),
++                            Twips::new((y * 20.0).round() as i32),
++                        )
++                    };
++                    let control = rounded(
++                        2.0 * mid.0 - (from.0 + to.0) / 2.0,
++                        2.0 * mid.1 - (from.1 + to.1) / 2.0,
++                    );
++                    output.push(3.into());
++                    point(&mut data, matrix, control);
++                    point(&mut data, matrix, rounded(to.0, to.1));
++                }
++                cursor = anchor;
++            }
++        }
++        drawn = true;
++    }
++    if close && drawn && cursor != start {
++        output.push(2.into());
++        point(&mut data, matrix, start);
++    }
++    if output.is_empty() {
++        return Ok(None);
++    }
++    let ints = a.avm2().class_defs().int;
++    let numbers = a.avm2().class_defs().number;
++    let commands =
++        VectorObject::from_vector(VectorStorage::from_values(output, false, Some(ints)), a).into();
++    let data =
++        VectorObject::from_vector(VectorStorage::from_values(data, false, Some(numbers)), a).into();
++    let winding = string(
++        a,
++        if winding == FillRule::EvenOdd {
++            "evenOdd"
++        } else {
++            "nonZero"
++        },
++    );
++    construct(a, "flash.display::GraphicsPath", &[commands, data, winding]).map(Some)
++}
++
++pub(super) fn read<'gc>(
++    a: &mut Activation<'_, 'gc>,
++    this: Value<'gc>,
++    recurse: bool,
++) -> Result<Value<'gc>, Error<'gc>> {
++    let mut output = Vec::new();
++    let mut pending = Vec::new();
++    let root = this.as_object().and_then(|o| o.as_display_object());
++    if let Some(owner) = root {
++        pending.push((owner, Matrix::IDENTITY, ColorTransform::IDENTITY));
++    }
++    let mut visited = 0;
++    while let Some((owner, matrix, color_transform)) = pending.pop() {
++        if !owner.visible() {
++            continue;
++        }
++        visited += 1;
++        let drawing = match owner {
++            DisplayObject::Graphic(graphic) => Some(graphic.drawing_snapshot()),
++            DisplayObject::MovieClip(clip) => clip.drawing().map(|drawing| drawing.clone()),
++            _ => None,
++        };
++        if let Some(drawing) = drawing {
++            let bitmaps = drawing.bitmap_infos();
++            for part in drawing.export_paths() {
++                match part {
++                    DrawPath::Fill {
++                        style,
++                        commands,
++                        winding_rule,
++                    } => {
++                        let Some(p) = path(a, commands, matrix, winding_rule, true)? else {
++                            continue;
++                        };
++                        if let Some(f) = fill(a, owner, style, matrix, color_transform, bitmaps)? {
++                            output.push(f);
++                            output.push(p);
++                            output.push(construct(a, "flash.display::GraphicsEndFill", &[])?);
++                        }
++                    }
++                    DrawPath::Stroke {
++                        style, commands, ..
++                    } => {
++                        let Some(p) = path(a, commands, matrix, FillRule::NonZero, false)? else {
++                            continue;
++                        };
++                        if let Some(f) = fill(
++                            a,
++                            owner,
++                            style.fill_style(),
++                            matrix,
++                            color_transform,
++                            bitmaps,
++                        )? {
++                            let normal = string(a, "normal");
++                            let none = string(a, "none");
++                            let round = string(a, "round");
++                            let scale = ((matrix.a * matrix.a
++                                + matrix.b * matrix.b
++                                + matrix.c * matrix.c
++                                + matrix.d * matrix.d)
++                                / 2.0)
++                                .sqrt() as f64;
++                            let width =
++                                Twips::new((style.width().get() as f64 * scale).round() as i32)
++                                    .to_pixels();
++                            output.push(construct(
++                                a,
++                                "flash.display::GraphicsStroke",
++                                &[
++                                    width.into(),
++                                    false.into(),
++                                    normal,
++                                    none,
++                                    round,
++                                    3.0.into(),
++                                    f,
++                                ],
++                            )?);
++                            output.push(p);
++                            output.push(construct(a, "flash.display::GraphicsStroke", &[])?);
++                            output.push(construct(a, "flash.display::GraphicsEndFill", &[])?);
++                        }
++                    }
++                }
++            }
++        }
++        if recurse {
++            if let Some(container) = owner.as_container() {
++                for child in container.iter_render_list().rev() {
++                    pending.push((
++                        child,
++                        matrix * child.base().matrix(),
++                        color_transform * child.base().color_transform(),
++                    ));
++                }
++            }
++        }
++    }
++    static READS: AtomicUsize = AtomicUsize::new(0);
++    if std::env::var_os("BLITZ_GRAPHICS_DEBUG").is_some()
++        && READS.fetch_add(1, Ordering::Relaxed) < 200
++    {
++        tracing::info!(
++            "BLITZ_GRAPHICS_READ owner={:?} id={:?} recurse={} visited={} output={}",
++            root.and_then(|o| o.name())
++                .map(|n| n.to_utf8_lossy().into_owned()),
++            root.map(|o| o.id()),
++            recurse,
++            visited,
++            output.len()
++        );
++    }
++    let kind = a.avm2().class_defs().igraphicsdata;
++    Ok(VectorObject::from_vector(VectorStorage::from_values(output, false, Some(kind)), a).into())
++}
+diff --git a/core/src/avm2/globals/flash/display/stage.rs b/core/src/avm2/globals/flash/display/stage.rs
+index cb471eabd8cc2232c4bf370834a6b2eaadfc4334..c321a4b72a5521d954dc91ef0549053cdc4f1d52 100644
+--- a/core/src/avm2/globals/flash/display/stage.rs
++++ b/core/src/avm2/globals/flash/display/stage.rs
+@@ -216,7 +216,7 @@ pub fn get_frame_rate<'gc>(
+     _this: Value<'gc>,
+     _args: FunctionArgs<'_, 'gc>,
+ ) -> Result<Value<'gc>, Error<'gc>> {
+-    let mut frame_rate = *activation.context.frame_rate;
++    let mut frame_rate = activation.context.presentation_clock.as_ref().map(|clock|clock.requested_rate).unwrap_or(*activation.context.frame_rate);
+     if frame_rate < 0.0 {
+         // Uncommon frame rate from the SWF header.
+         frame_rate = frame_rate.rem_euclid(256.0);
+@@ -230,7 +230,9 @@ pub fn set_frame_rate<'gc>(
+     _this: Value<'gc>,
+     args: FunctionArgs<'_, 'gc>,
+ ) -> Result<Value<'gc>, Error<'gc>> {
+-    if !activation.context.forced_frame_rate {
++    if let Some(clock) = &mut activation.context.presentation_clock {
++        clock.requested_rate = args.get_f64(0).clamp(0.01,1000.0);
++    } else if !activation.context.forced_frame_rate {
+         let new_frame_rate = args.get_f64(0).clamp(0.01, 1000.0);
+         *activation.context.frame_rate = new_frame_rate;
+     }
+diff --git a/core/src/context.rs b/core/src/context.rs
+index 7c36d00a9ea119020a03e2156e3401243c5975e9..45581fed32240c05fa4eef6000fbed47a315ab75 100644
+--- a/core/src/context.rs
++++ b/core/src/context.rs
+@@ -206,6 +206,7 @@ pub struct UpdateContext<'gc> {
+ 
+     /// Whether movies are prevented from changing the stage frame rate.
+     pub forced_frame_rate: bool,
++    pub(crate) presentation_clock: Option<&'gc mut crate::presentation_clock::PresentationClock>,
+ 
+     /// Amount of actions performed since the last timeout check
+     pub actions_since_timeout_check: &'gc mut u32,
+@@ -357,6 +358,7 @@ impl<'gc> UpdateContext<'gc> {
+     /// of previous stage contents. If you need to load a new root movie, you
+     /// should use `replace_root_movie`.
+     pub fn set_root_movie(&mut self, movie: SwfMovie) {
++        if let Some(clock) = &mut self.presentation_clock { clock.requested_rate = movie.frame_rate().into(); }
+         if !self.forced_frame_rate {
+             *self.frame_rate = movie.frame_rate().into();
+         }
+diff --git a/core/src/display_object/graphic.rs b/core/src/display_object/graphic.rs
+index 8b139136b7e08646f39a2dd11689e375073872be..a02a4d4753ba5384617abd703803fb7a0b62060f 100644
+--- a/core/src/display_object/graphic.rs
++++ b/core/src/display_object/graphic.rs
+@@ -123,6 +123,13 @@ impl<'gc> Graphic<'gc> {
+         self.0.drawing.get_or_init(Default::default).borrow_mut()
+     }
+ 
++    /// Read authored vectors without activating the replacement drawing. A read
++    /// must not hide the original SWF shape or affect subsequent rendering.
++    pub fn drawing_snapshot(&self) -> Drawing {
++        self.0.drawing.get().map(|drawing| drawing.borrow().clone())
++            .unwrap_or_else(|| Drawing::from_swf_shape(&self.0.shared.get().shape))
++    }
++
+     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
+         unlock!(Gc::write(mc, self.0), GraphicData, class).set(Some(class));
+     }
+diff --git a/core/src/display_object/movie_clip.rs b/core/src/display_object/movie_clip.rs
+index 63b3eae7e946c02123ec3d6eb484bc3d2db97f5e..f38d798d7a0ffa56318003e4fecec3f6ce025b97 100644
+--- a/core/src/display_object/movie_clip.rs
++++ b/core/src/display_object/movie_clip.rs
+@@ -169,6 +169,7 @@ pub struct MovieClipData<'gc> {
+     base: InteractiveObjectBase<'gc>,
+     cell: RefLock<MovieClipDataMut<'gc>>,
+     shared: Lock<Gc<'gc, MovieClipShared<'gc>>>,
++    avm2_instance_class: Lock<Option<Avm2ClassObject<'gc>>>,
+ 
+     tag_stream_pos: Cell<u64>,
+ 
+@@ -243,6 +244,7 @@ impl<'gc> MovieClipData<'gc> {
+                 avm1_text_field_bindings: Vec::new(),
+             }),
+             shared: Lock::new(Gc::new(mc, shared)),
++            avm2_instance_class: Lock::new(None),
+             tag_stream_pos: Cell::new(0),
+             current_frame: Cell::new(0),
+             audio_stream: Cell::new(None),
+@@ -1211,7 +1213,11 @@ impl<'gc> MovieClip<'gc> {
+     }
+ 
+     pub fn avm2_class(self) -> Option<Avm2ClassObject<'gc>> {
+-        self.0.shared.get().avm2_class.get()
++        self.0.avm2_instance_class.get().or_else(||self.0.shared.get().avm2_class.get())
++    }
++
++    fn set_instance_avm2_class(self, mc:&Mutation<'gc>, class:Avm2ClassObject<'gc>){
++        unlock!(Gc::write(mc,self.0),MovieClipData,avm2_instance_class).set(Some(class));
+     }
+ 
+     pub fn set_avm2_class(self, mc: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
+@@ -1510,9 +1516,46 @@ impl<'gc> MovieClip<'gc> {
+         }
+ 
+         let movie = self.movie();
+-        let library = context.library.library_for_movie_mut(movie.clone());
+-        match library.instantiate_by_id(id, context.gc_context) {
++        let mut placed_class=None;
++        let symbol = if id == 0 && place_object.class_name.is_some() && movie.is_action_script_3() {
++            let domain = context.library.library_for_movie_mut(movie.clone()).avm2_domain();
++            let mut activation = Avm2Activation::from_nothing(context);
++            let name = AvmString::new(activation.gc(),
++                ruffle_wstr::from_utf8_bytes(place_object.class_name.expect("checked class name").as_bytes()));
++            let value = domain.get_defined_value_handling_vector(&mut activation, name);
++            match value {
++                Ok(Avm2Value::Object(object)) => object.as_class_object().and_then(|class| {
++                    placed_class=Some(class);
++                    let mut current=Some(class.inner_class_definition());
++                    while let Some(definition)=current {
++                        if let Some(symbol)=activation.context.library.avm2_class_registry().class_symbol(definition) {return Some(symbol);}
++                        current=definition.super_class();
++                    }
++                    tracing::warn!("BLITZ_CLASS no symbol {}",name.to_utf8_lossy());
++                    None
++                }),
++                Err(error) => {tracing::warn!("BLITZ_CLASS lookup failed {} {:?}",name.to_utf8_lossy(),error);None},
++                _ => {tracing::warn!("BLITZ_CLASS not a class {}",name.to_utf8_lossy());None},
++            }
++        } else { Some((movie.clone(), id)) };
++        let child = symbol.and_then(|(source, symbol_id)| {
++            context.library.library_for_movie_mut(source).instantiate_by_id(symbol_id, context.gc_context)
++        });
++        match child {
+             Some(child) => {
++                if let Some(class)=placed_class {
++                    match child {
++                        DisplayObject::MovieClip(clip)=>clip.set_instance_avm2_class(context.gc(),class),
++                        DisplayObject::Graphic(graphic)=>graphic.set_avm2_class(context.gc(),class),
++                        DisplayObject::EditText(text)=>text.set_avm2_class(context.gc(),class),
++                        DisplayObject::Avm2Button(button)=>button.set_avm2_class(context.gc(),class),
++                        DisplayObject::Bitmap(bitmap)=>{
++                            let Some(class)=BitmapClass::from_class_object(class,context) else {return None;};
++                            bitmap.set_avm2_bitmapdata_class(context.gc(),class);
++                        }
++                        _=>return None,
++                    }
++                }
+                 // Remove previous child from children list,
+                 // and add new child onto front of the list.
+                 let prev_child = self.replace_at_depth(context, child, depth);
+@@ -2093,7 +2136,7 @@ impl<'gc> MovieClip<'gc> {
+         context: &mut UpdateContext<'gc>,
+         display_object: DisplayObject<'gc>,
+     ) {
+-        let class_object = self.0.shared.get().avm2_class.get();
++        let class_object = self.avm2_class();
+         let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
+ 
+         let object =
+@@ -2109,7 +2152,7 @@ impl<'gc> MovieClip<'gc> {
+     /// intended to be called from `post_instantiate`.
+     #[inline(never)]
+     fn construct_as_avm2_object(self, context: &mut UpdateContext<'gc>) {
+-        let class_object = self.0.shared.get().avm2_class.get();
++        let class_object = self.avm2_class();
+         let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
+ 
+         if let Some(object) = self.0.object2.get() {
+@@ -2558,7 +2601,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
+         if self.movie().is_action_script_3() {
+             let is_playing = self.playing();
+ 
+-            if is_playing {
++            if is_playing && (self.current_frame() == 0 || context.presentation_clock.as_ref().is_none_or(|clock|clock.advance)) {
+                 self.run_frame_internal(context, true, true, true);
+             }
+ 
+@@ -3249,8 +3292,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
+             }
+ 
+             // Check drawing, because this selects the current clip, it must have mouse enabled
+-            if self.world_bounds(BoundsMode::Engine).contains(point)
+-                && let Some(drawing) = self.drawing()
++            if let Some(drawing) = self.drawing()
++                && self.world_bounds(BoundsMode::Engine).contains(point)
+                 && drawing.hit_test(local_matrix * point, &local_matrix)
+             {
+                 return if self.mouse_enabled() {
+diff --git a/core/src/drawing.rs b/core/src/drawing.rs
+index f3dc5bd0febd60b0ebaa5299ce1e0ab6dd773134..ef49550c0f1a78e012691d50f05e357f7aff6316 100644
+--- a/core/src/drawing.rs
++++ b/core/src/drawing.rs
+@@ -239,6 +239,72 @@ impl Drawing {
+         id
+     }
+ 
++    /// Snapshot the same ordered paths used by rendering, without ending fills.
++    pub fn export_paths(&self) -> Vec<DrawPath<'_>> {
++        let mut paths = Vec::with_capacity(self.paths.len());
++
++        for path in &self.paths {
++            match path {
++                DrawingPath::Fill(fill) => {
++                    paths.push(DrawPath::Fill {
++                        style: &fill.style,
++                        commands: fill.commands.to_owned(),
++                        winding_rule: fill.rule,
++                    });
++                }
++                DrawingPath::Line(line) => {
++                    paths.push(DrawPath::Stroke {
++                        style: &line.style,
++                        commands: line.commands.to_owned(),
++                        is_closed: line.is_closed,
++                    });
++                }
++            }
++        }
++
++        if let Some(fill) = &self.current_fill {
++            paths.push(DrawPath::Fill {
++                style: &fill.style,
++                commands: fill.commands.to_owned(),
++                winding_rule: fill.rule,
++            })
++        }
++
++        for line in &self.pending_lines {
++            let mut commands = line.commands.to_owned();
++            let is_closed = if self.current_fill.is_some() {
++                commands.push(DrawCommand::LineTo(self.fill_start));
++                true
++            } else {
++                self.cursor == self.fill_start
++            };
++            paths.push(DrawPath::Stroke {
++                style: &line.style,
++                commands,
++                is_closed,
++            })
++        }
++
++        if let Some(line) = &self.current_line {
++            let mut commands = line.commands.to_owned();
++            let is_closed = if self.current_fill.is_some() {
++                commands.push(DrawCommand::LineTo(self.fill_start));
++                true
++            } else {
++                self.cursor == self.fill_start
++            };
++            paths.push(DrawPath::Stroke {
++                style: &line.style,
++                commands,
++                is_closed,
++            })
++        }
++
++        paths
++    }
++
++    pub fn bitmap_infos(&self) -> &[BitmapInfo] { &self.bitmaps }
++
+     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
+     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
+         if self.is_empty {
+@@ -246,64 +312,7 @@ impl Drawing {
+         }
+ 
+         let handle = self.render_handle.get_or_init(|| {
+-            let mut paths = Vec::with_capacity(self.paths.len());
+-
+-            for path in &self.paths {
+-                match path {
+-                    DrawingPath::Fill(fill) => {
+-                        paths.push(DrawPath::Fill {
+-                            style: &fill.style,
+-                            commands: fill.commands.to_owned(),
+-                            winding_rule: fill.rule,
+-                        });
+-                    }
+-                    DrawingPath::Line(line) => {
+-                        paths.push(DrawPath::Stroke {
+-                            style: &line.style,
+-                            commands: line.commands.to_owned(),
+-                            is_closed: line.is_closed,
+-                        });
+-                    }
+-                }
+-            }
+-
+-            if let Some(fill) = &self.current_fill {
+-                paths.push(DrawPath::Fill {
+-                    style: &fill.style,
+-                    commands: fill.commands.to_owned(),
+-                    winding_rule: fill.rule,
+-                })
+-            }
+-
+-            for line in &self.pending_lines {
+-                let mut commands = line.commands.to_owned();
+-                let is_closed = if self.current_fill.is_some() {
+-                    commands.push(DrawCommand::LineTo(self.fill_start));
+-                    true
+-                } else {
+-                    self.cursor == self.fill_start
+-                };
+-                paths.push(DrawPath::Stroke {
+-                    style: &line.style,
+-                    commands,
+-                    is_closed,
+-                })
+-            }
+-
+-            if let Some(line) = &self.current_line {
+-                let mut commands = line.commands.to_owned();
+-                let is_closed = if self.current_fill.is_some() {
+-                    commands.push(DrawCommand::LineTo(self.fill_start));
+-                    true
+-                } else {
+-                    self.cursor == self.fill_start
+-                };
+-                paths.push(DrawPath::Stroke {
+-                    style: &line.style,
+-                    commands,
+-                    is_closed,
+-                })
+-            }
++            let paths = self.export_paths();
+ 
+             let shape = DistilledShape {
+                 paths,
+diff --git a/core/src/fps_research.rs b/core/src/fps_research.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..b3aa27e313ac60e0fe1bba097d60bd4d1a409f1f
+--- /dev/null
++++ b/core/src/fps_research.rs
+@@ -0,0 +1,16 @@
++use std::sync::{LazyLock,Mutex};
++use web_time::Instant;
++static ENABLED:LazyLock<bool>=LazyLock::new(||std::env::var_os("BLITZ_FPS_PROOF_DIR").is_some());
++static RETAIN_BACKLOG:LazyLock<bool>=LazyLock::new(||std::env::var_os("BLITZ_FPS_RETAIN_BACKLOG").is_some());
++static SEQUENTIAL:LazyLock<bool>=LazyLock::new(||std::env::var_os("BLITZ_FPS_SEQUENTIAL").is_some());
++pub fn retain_backlog()->bool{*ENABLED&&*RETAIN_BACKLOG}
++pub fn sequential()->bool{*ENABLED&&*SEQUENTIAL}
++static CLOCK:LazyLock<Instant>=LazyLock::new(Instant::now);
++static COUNTS:LazyLock<Mutex<std::collections::BTreeMap<&'static str,(u64,u128,u128,u128)>>>=LazyLock::new(||Mutex::new(Default::default()));
++pub fn cost(name:&'static str,started:Instant){
++ if !*ENABLED{return;}
++ let elapsed=started.elapsed().as_micros();let now=CLOCK.elapsed().as_micros();
++ let mut all=COUNTS.lock().expect("owned core probe");let counter=all.entry(name).or_insert((0,0,0,now));
++ counter.0+=1;counter.1+=elapsed;counter.2=counter.2.max(elapsed);
++ if now-counter.3>=1_000_000 {tracing::info!("BLITZ_CORE_COST stage={} calls={} meanUs={} maxUs={}",name,counter.0,counter.1/counter.0 as u128,counter.2);*counter=(0,0,0,now);}
++}
+diff --git a/core/src/frame_lifecycle.rs b/core/src/frame_lifecycle.rs
+index 91bdb52df526dbb0dbbcad9d1c179667ff629fce..653f810260c27e5d2aa9a62ceb991a9dc28f4b5a 100644
+--- a/core/src/frame_lifecycle.rs
++++ b/core/src/frame_lifecycle.rs
+@@ -71,6 +71,7 @@ pub enum FramePhase {
+ /// output exactly for two complex test cases (see `avm2/orphan_movie*`)
+ #[instrument(level = "debug", skip_all)]
+ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
++    let probe_enter=web_time::Instant::now();
+     let stage = context.stage;
+ 
+     if !stage.movie().is_action_script_3() {
+@@ -82,21 +83,27 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
+         orphan.enter_frame(context);
+     });
+     stage.enter_frame(context);
++    crate::fps_research::cost("enter",probe_enter);
+ 
++    let probe_construct=web_time::Instant::now();
+     *context.frame_phase = FramePhase::Construct;
+     OrphanManager::each_orphan_obj(context, |orphan, context| {
+         orphan.construct_frame(context);
+     });
+     stage.construct_frame(context);
+     broadcast_frame_constructed(context);
++    crate::fps_research::cost("construct",probe_construct);
+ 
++    let probe_scripts=web_time::Instant::now();
+     *context.frame_phase = FramePhase::FrameScripts;
+     OrphanManager::each_orphan_obj(context, |orphan, context| {
+         orphan.run_frame_scripts(context);
+     });
+     stage.run_frame_scripts(context);
+     run_frame_script_cleanup(context);
++    crate::fps_research::cost("scripts",probe_scripts);
+ 
++    let probe_exit=web_time::Instant::now();
+     *context.frame_phase = FramePhase::Exit;
+     broadcast_frame_exited(context);
+ 
+@@ -109,6 +116,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
+     // This performs special handling of clips which became orphaned as
+     // a result of a RemoveObject tag - see `cleanup_dead_orphans` for details.
+     context.orphan_manager.cleanup_dead_orphans(context.gc());
++    crate::fps_research::cost("exit",probe_exit);
+ 
+     *context.frame_phase = FramePhase::Idle;
+ }
+diff --git a/core/src/lib.rs b/core/src/lib.rs
+index d76c1cba70d37735277fcffae9fff6c8bdaddc36..6573e30af49bccb5e7634b2cde40786fcf2bfb70 100644
+--- a/core/src/lib.rs
++++ b/core/src/lib.rs
+@@ -27,6 +27,8 @@ pub mod events;
+ pub mod focus_tracker;
+ pub mod font;
+ mod frame_lifecycle;
++mod fps_research;
++mod presentation_clock;
+ pub mod fte;
+ mod html;
+ mod input;
+diff --git a/core/src/loader.rs b/core/src/loader.rs
+index 5d69fb97bc08c2c216199c9f5efa01b73c7023ea..dfe1325cd46ec54d83aa635b9840d26de6d49250 100644
+--- a/core/src/loader.rs
++++ b/core/src/loader.rs
+@@ -458,8 +458,21 @@ impl<'gc> LoadManager<'gc> {
+             };
+ 
+             if matches!(status, Some(LoaderStatus::Parsing)) {
++                let probe = web_time::Instant::now();
+                 match MovieLoader::preload_tick(handle, context, limit, 0, false) {
+-                    Ok(f) => did_finish = did_finish && f,
++                    Ok(f) => {
++                        did_finish = did_finish && f;
++                        static SAMPLES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
++                        if std::env::var_os("BLITZ_FPS_PROOF_DIR").is_some() && context.start_time.elapsed().as_secs() >= 3 && probe.elapsed().as_micros() >= 1000
++                            && SAMPLES.fetch_add(1,std::sync::atomic::Ordering::Relaxed) < 32 {
++                            if let Some(MovieLoader { target_clip, .. }) = context.load_manager.get_loader(handle) {
++                                let movie = target_clip.movie();
++                                let file = movie.url().rsplit('/').next().unwrap_or("").split('?').next().unwrap_or("");
++                                let counts = target_clip.as_movie_clip().map(|clip|(clip.loaded_bytes(),clip.total_bytes()));
++                                tracing::info!(target:"blitz_loader_probe","BLITZ_LOADER_COST file={} costUs={} complete={} counts={:?}",file,probe.elapsed().as_micros(),f,counts);
++                            }
++                        }
++                    },
+                     Err(e) => tracing::error!("Error encountered while preloading movie: {}", e),
+                 }
+             }
+diff --git a/core/src/player.rs b/core/src/player.rs
+index 675ef3a78e7a92652e8076b99921771d91818094..daf5d3cf53657c59750d3ee48cf9ea9d9e5033c7 100644
+--- a/core/src/player.rs
++++ b/core/src/player.rs
+@@ -351,6 +351,7 @@ pub struct Player {
+ 
+     frame_rate: f64,
+     forced_frame_rate: bool,
++    presentation_clock: Option<crate::presentation_clock::PresentationClock>,
+     actions_since_timeout_check: u32,
+ 
+     frame_phase: FramePhase,
+@@ -553,12 +554,13 @@ impl Player {
+         self.frame_accumulator += dt;
+         let frame_duration = self.frame_duration();
+ 
+-        let max_frames_per_tick = self.max_frames_per_tick();
++        let max_frames_per_tick = if self.presentation_clock.is_some() || crate::fps_research::sequential(){1}else{self.max_frames_per_tick()};
+         let mut frame = 0;
+ 
+         while frame < max_frames_per_tick && self.frame_accumulator >= frame_duration {
+             let timer = Instant::now();
+             self.run_frame();
++            crate::fps_research::cost("frame",timer);
+             let elapsed = timer.elapsed().as_millis() as f64;
+ 
+             self.add_frame_timing(elapsed);
+@@ -587,12 +589,13 @@ impl Player {
+         // Also note that in Flash, a blocking busy loop would delay setTimeout
+         // and cancel some setInterval callbacks, but here busy loops don't block
+         // so timer callbacks won't get cancelled/delayed.
++        let probe_housekeeping=Instant::now();
+         self.time_offset = 0;
+ 
+         // Sanity: If we had too many frames to tick, just reset the accumulator
+         // to prevent running at turbo speed.
+         if self.frame_accumulator >= frame_duration {
+-            self.frame_accumulator = FloatDuration::ZERO;
++            self.frame_accumulator = if self.presentation_clock.is_some() || crate::fps_research::sequential() {self.frame_accumulator.min(frame_duration+frame_duration)} else if crate::fps_research::retain_backlog() {frame_duration} else {FloatDuration::ZERO};
+         }
+ 
+         // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
+@@ -611,6 +614,7 @@ impl Player {
+             StreamManager::tick(context, dt);
+         });
+         self.audio.tick();
++        crate::fps_research::cost("housekeeping",probe_housekeeping);
+     }
+ 
+     pub fn time_til_next_timer(&self) -> Option<f64> {
+@@ -2021,10 +2025,13 @@ impl Player {
+                 .root_clip()
+                 .and_then(|root| root.as_movie_clip())
+             {
++                let root_probe = Instant::now();
+                 let was_root_movie_loaded = root.loaded_bytes() as i32 == root.total_bytes();
+                 did_finish = root.preload(context, limit);
++                crate::fps_research::cost("rootPreload", root_probe);
+ 
+                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
++                    let progress_probe = Instant::now();
+                     let mut activation = Avm2Activation::from_nothing(context);
+ 
+                     let progress_evt = Avm2EventObject::progress_event(
+@@ -2035,14 +2042,19 @@ impl Player {
+                     );
+ 
+                     Avm2::dispatch_event(context, progress_evt, loader_info.into());
++                    crate::fps_research::cost("rootProgress", progress_probe);
+                 }
+             }
+ 
+             if did_finish {
++                let loader_probe = Instant::now();
+                 did_finish = LoadManager::preload_tick(context, limit);
++                crate::fps_research::cost("loaderPreload", loader_probe);
+             }
+ 
++            let actions_probe = Instant::now();
+             Self::run_actions(context);
++            crate::fps_research::cost("preloadActions", actions_probe);
+ 
+             did_finish
+         })
+@@ -2050,6 +2062,7 @@ impl Player {
+ 
+     #[instrument(level = "debug", skip_all)]
+     pub fn run_frame(&mut self) {
++        if let Some(clock) = &mut self.presentation_clock { clock.tick(self.start_time.elapsed()); }
+         let frame_time = self.frame_time(750_000_000.0);
+         let frame_time = Duration::from_nanos(frame_time as u64);
+         let (mut execution_limit, may_execute_while_streaming) = match self.load_behavior {
+@@ -2063,7 +2076,9 @@ impl Player {
+             ),
+             LoadBehavior::Blocking => (ExecutionLimit::none(), false),
+         };
++        let preload_probe = Instant::now();
+         let preload_finished = self.preload(&mut execution_limit);
++        crate::fps_research::cost("preload", preload_probe);
+ 
+         if !preload_finished && !may_execute_while_streaming {
+             return;
+@@ -2072,9 +2087,15 @@ impl Player {
+         self.update(|context| {
+             // TODO: Is this order correct?
+             run_all_phases_avm2(context);
++            let avm1_probe = Instant::now();
+             Avm1::run_frame(context);
++            crate::fps_research::cost("avm1", avm1_probe);
++            let audio_probe = Instant::now();
+             AudioManager::update_sounds(context);
++            crate::fps_research::cost("audio", audio_probe);
++            let local_probe = Instant::now();
+             LocalConnections::update_connections(context);
++            crate::fps_research::cost("localConnections", local_probe);
+ 
+             // Only run the current list of callbacks - any callbacks added during callback execution
+             // will be run at the end of the *next* frame.
+@@ -2362,6 +2383,7 @@ impl Player {
+                 audio_manager,
+                 frame_rate: &mut this.frame_rate,
+                 forced_frame_rate: this.forced_frame_rate,
++                presentation_clock: this.presentation_clock.as_mut(),
+                 actions_since_timeout_check: &mut this.actions_since_timeout_check,
+                 frame_phase: &mut this.frame_phase,
+                 stub_tracker: &mut this.stub_tracker,
+@@ -2437,10 +2459,14 @@ impl Player {
+         self.mutate_with_update_context(|context| {
+             Self::update_drag(context);
+         });
++        let probe_mouse=Instant::now();
+         self.update_mouse_state(EnumSet::empty(), false, &mut false);
++        crate::fps_research::cost("mouse",probe_mouse);
+ 
+         // GC
++        let probe_gc=Instant::now();
+         self.gc_arena.borrow_mut().collect_debt();
++        crate::fps_research::cost("gc",probe_gc);
+ 
+         rval
+     }
+@@ -2660,6 +2686,7 @@ pub struct PlayerBuilder {
+     quality: StageQuality,
+     page_url: Option<String>,
+     frame_rate: Option<f64>,
++    preserve_timelines: bool,
+     external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
+     fs_command_provider: Box<dyn FsCommandProvider>,
+     #[cfg(feature = "known_stubs")]
+@@ -2717,6 +2744,7 @@ impl PlayerBuilder {
+             quality: StageQuality::High,
+             page_url: None,
+             frame_rate: None,
++            preserve_timelines:false,
+             external_interface_provider: None,
+             fs_command_provider: Box::new(NullFsCommandProvider),
+             #[cfg(feature = "known_stubs")]
+@@ -2917,6 +2945,9 @@ impl PlayerBuilder {
+     }
+ 
+     /// Sets and locks the player's frame rate. If None is provided, this has no effect.
++    /// Separate the presentation cadence from automatic movie timelines.
++    pub fn with_preserved_timelines(mut self, enabled:bool) -> Self { self.preserve_timelines=enabled;self }
++
+     pub fn with_frame_rate(mut self, frame_rate: Option<f64>) -> Self {
+         self.frame_rate = frame_rate;
+         self
+@@ -3082,6 +3113,7 @@ impl PlayerBuilder {
+                 // Timing
+                 frame_rate,
+                 forced_frame_rate,
++                presentation_clock: if self.preserve_timelines {Some(crate::presentation_clock::PresentationClock::new())} else {crate::presentation_clock::PresentationClock::private_fixture()},
+                 frame_phase: Default::default(),
+                 frame_accumulator: FloatDuration::ZERO,
+                 recent_run_frame_timings: VecDeque::with_capacity(10),
+diff --git a/core/src/presentation_clock.rs b/core/src/presentation_clock.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..88789580daf869dfd8804a27fc55179be7438fb4
+--- /dev/null
++++ b/core/src/presentation_clock.rs
+@@ -0,0 +1,44 @@
++//! Keep automatic timeline timing separate from the presentation cadence.
++use std::time::Duration;
++
++pub struct PresentationClock {
++    pub requested_rate: f64,
++    pub advance: bool,
++    next_frame: Duration,
++}
++impl PresentationClock {
++    pub fn new() -> Self {
++        Self {
++            requested_rate: 60.0,
++            advance: true,
++            next_frame: Duration::ZERO,
++        }
++    }
++    pub fn private_fixture() -> Option<Self> {
++        (std::env::var_os("BLITZ_FPS_PRESERVE_TIMELINES").is_some()
++            && std::env::var("BLITZ_PRIVATE_DESKTOP")
++                .is_ok_and(|name| name.starts_with("BlitzTest-")))
++        .then_some(Self {
++            requested_rate: 60.0,
++            advance: true,
++            next_frame: Duration::ZERO,
++        })
++    }
++    pub fn tick(&mut self, elapsed: Duration) {
++        // The existing Flash host executes automatic timelines at no more than
++        // 60/s even when this client requests 100. Preserve that observed speed.
++        let rate = if self.requested_rate.is_finite() {
++            self.requested_rate.clamp(0.01, 60.0)
++        } else {
++            60.0
++        };
++        let period = Duration::from_secs_f64(1.0 / rate);
++        self.advance = elapsed >= self.next_frame;
++        if self.advance {
++            self.next_frame += period;
++            if elapsed.saturating_sub(self.next_frame) > period * 4 {
++                self.next_frame = elapsed + period;
++            }
++        }
++    }
++}
+diff --git a/desktop/Cargo.toml b/desktop/Cargo.toml
+index 37faf25700cf986655649748092f0e4e98a42db5..7592939385c47f4275a06115223ef3d03d216b53 100644
+--- a/desktop/Cargo.toml
++++ b/desktop/Cargo.toml
+@@ -27,6 +27,7 @@ ruffle_video_software = { path = "../video/software", optional = true }
+ ruffle_video_external = { path = "../video/external", features = ["openh264"], optional = true }
+ ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", "navigator"] }
+ tracing = { workspace = true }
++serde_json.workspace = true
+ tracing-subscriber = { workspace = true }
+ tracing-appender = "0.2.5"
+ winit = "0.30.13"
+diff --git a/desktop/build.rs b/desktop/build.rs
+index be36e8a8e1847d8c5a74e7d91508420f0d7d6e0a..0c1e9d889c33bdb1f638be42c452516b9d05287f 100644
+--- a/desktop/build.rs
++++ b/desktop/build.rs
+@@ -45,9 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
+         if target.contains("msvc") {
+             println!("cargo:rustc-link-arg=/STACK:4000000");
+         } else {
+-            println!("cargo:rustc-link-arg=-Xlinker");
+-            println!("cargo:rustc-link-arg=--stack");
+-            println!("cargo:rustc-link-arg=4000000");
++            println!("cargo:rustc-link-arg=-Wl,--stack,4000000");
+         }
+     }
+ 
+diff --git a/desktop/src/app.rs b/desktop/src/app.rs
+index a3410740e5aaee3a0d5db0bd7cbba9f205449207..ca03dbb6bb1fb9d21d4904382b256fde3945d25d 100644
+--- a/desktop/src/app.rs
++++ b/desktop/src/app.rs
+@@ -24,6 +24,8 @@ use winit::keyboard::{Key, NamedKey};
+ use winit::window::{Fullscreen, Icon, WindowAttributes, WindowId};
+ 
+ struct MainWindow {
++    launcher: Option<Arc<crate::launcher_host::Channel>>,
++    controls:crate::launcher_controls::Controls,
+     preferences: GlobalPreferences,
+     gui: GuiController,
+     player: PlayerController,
+@@ -46,19 +48,22 @@ struct MainWindow {
+ }
+ 
+ impl MainWindow {
++    fn render_movie(&mut self) {
++        let mut player=self.player.get();
++        if let Some(ref mut player)=player {
++            let started=Instant::now();player.render();crate::fps_probe::timing("raster",started);
++        }
++        let started=Instant::now();self.gui.render(player);crate::fps_probe::timing("gui",started);
++    }
+     pub fn window_event(&mut self, event_loop: &ActiveEventLoop, event: WindowEvent) {
+         if matches!(event, WindowEvent::RedrawRequested) {
+             // Don't render when nobody can see the result: while minimized, the
+             // surface also keeps the size it had before, as `GuiController::resize`
+             // refuses to reconfigure it to a zero size.
+             if !self.minimized && !self.occluded {
+-                let mut player = self.player.get();
+-                if let Some(ref mut player) = player {
+-                    // Even if the movie is paused, user interaction with debug tools can change the render output
+-                    player.render();
++                if !crate::fps_probe::direct_loop() || self.player.get().is_some_and(|player|player.needs_render()) || (!self.no_gui&&self.gui.needs_render()) {
++                    self.render_movie();
+                 }
+-
+-                self.gui.render(player);
+             }
+ 
+             // Important that we return here, or we'll get a feedback loop with egui
+@@ -66,15 +71,19 @@ impl MainWindow {
+             return;
+         }
+ 
+-        if self.gui.handle_event(&event) {
++        if crate::launcher_host::configured() {
++            if let WindowEvent::Resized(size)=&event {self.gui.resize(*size);}
++        } else if self.gui.handle_event(&event) {
+             // Event consumed by GUI.
+             return;
+         }
+         match event {
+             WindowEvent::CloseRequested => {
++                if let Some(channel)=&self.launcher {channel.send(serde_json::json!({"type":"close"}));}
+                 event_loop.exit();
+             }
+             WindowEvent::Resized(size) => {
++                self.controls.invalidate();
+                 // How minimizing shows up on Windows; winit still has no
+                 // `WindowEvent::Minimize`. (`Window::is_minimized` does exist by
+                 // now, but it has to be polled, and it wouldn't tell us anything
+@@ -102,6 +111,7 @@ impl MainWindow {
+                     self.gui.window().request_redraw();
+                 }
+             }
++            WindowEvent::ScaleFactorChanged {..}=>{self.controls.invalidate();}
+             WindowEvent::CursorMoved { position, .. } => {
+                 if self.gui.is_context_menu_visible() {
+                     return;
+@@ -121,6 +131,7 @@ impl MainWindow {
+                 self.check_redraw();
+             }
+             WindowEvent::DroppedFile(file) => {
++                if crate::launcher_host::configured(){return;}
+                 if let Some(content_descriptor) = ContentDescriptor::new_local(&file, None) {
+                     self.gui.create_movie(
+                         &mut self.player,
+@@ -131,11 +142,14 @@ impl MainWindow {
+             }
+             WindowEvent::Focused(true) => {
+                 self.player.handle_event(PlayerEvent::FocusGained);
++                if let Some(channel)=&self.launcher {channel.send(serde_json::json!({"type":"focused"}));}
+             }
+             WindowEvent::Focused(false) => {
+                 self.player.handle_event(PlayerEvent::FocusLost);
++                self.controls.blur();
+             }
+             WindowEvent::MouseInput { button, state, .. } => {
++                if state==ElementState::Pressed {crate::launcher_host::gesture();}
+                 if self.gui.is_context_menu_visible() {
+                     return;
+                 }
+@@ -161,7 +175,7 @@ impl MainWindow {
+                     ElementState::Released => PlayerEvent::MouseUp { x, y, button },
+                 };
+                 let handled = self.player.handle_event(event);
+-                if !handled && state == ElementState::Pressed && button == RuffleMouseButton::Right
++                if !crate::launcher_host::configured() && !handled && state == ElementState::Pressed && button == RuffleMouseButton::Right
+                 {
+                     // Show context menu.
+                     if let Some(mut player) = self.player.get() {
+@@ -217,6 +231,13 @@ impl MainWindow {
+                     return;
+                 }
+ 
++                if crate::launcher_host::configured() {
++                    if let Some(mut player)=self.player.get() {
++                        self.controls.key(&event,self.modifiers.state(),&mut player);
++                    }
++                }
++                // Escape belongs to the game when embedded.
++                if !crate::launcher_host::configured() {
+                 // Handle escaping from fullscreen.
+                 if let KeyEvent {
+                     state: ElementState::Pressed,
+@@ -229,6 +250,7 @@ impl MainWindow {
+                         .send_event(RuffleEvent::ExitFullScreen);
+                 }
+ 
++                }
+                 let key = winit_input_to_ruffle_key_descriptor(&event);
+                 match event.state {
+                     ElementState::Pressed => {
+@@ -276,7 +298,7 @@ impl MainWindow {
+ 
+         // To prevent issues like waiting on resize indefinitely (#11364) or desyncing the window state on Windows,
+         // do not resize while window is maximized.
+-        let should_resize = !self.gui.window().is_maximized();
++        let should_resize = !crate::launcher_host::configured() && !self.gui.window().is_maximized();
+ 
+         let (viewport_size, state) = if should_resize {
+             let movie_width = swf_header.stage_size().width().to_pixels();
+@@ -351,7 +373,7 @@ impl MainWindow {
+         } else {
+             None
+         });
+-        self.gui.window().set_visible(true);
++        if !crate::launcher_host::configured() {self.gui.window().set_visible(true);}
+ 
+         let viewport_scale_factor = self.gui.window().scale_factor();
+         if let Some(mut player) = self.player.get() {
+@@ -364,6 +386,9 @@ impl MainWindow {
+     }
+ 
+     fn about_to_wait(&mut self, gilrs: Option<&mut Gilrs>) {
++        if crate::launcher_host::configured() {
++            if let Some(mut player)=self.player.get(){self.controls.apply(&mut player,self.gui.window().scale_factor());}
++        }
+         if let Some(Event { event, .. }) = gilrs.and_then(|gilrs| gilrs.next_event()) {
+             match event {
+                 EventType::ButtonPressed(button, _) => {
+@@ -393,10 +418,14 @@ impl MainWindow {
+             if dt.as_millis() > 0.0 {
+                 self.time = new_time;
+                 self.next_frame_time = self.player.get().map(|mut player| {
++                    let probe_started=Instant::now();
+                     player.tick(dt);
++                    crate::fps_probe::timing("tick",probe_started);
+                     new_time + player.time_til_next_frame()
+                 });
+-                self.check_redraw();
++                if crate::fps_probe::direct_loop() && !self.minimized && !self.occluded && self.player.get().is_some_and(|player|player.needs_render()) {
++                    self.render_movie();
++                } else {self.check_redraw();}
+             }
+         }
+     }
+@@ -433,13 +462,15 @@ impl App {
+         let mut font_database = fontdb::Database::default();
+         font_database.load_system_fonts();
+ 
+-        let gilrs = Gilrs::new()
++        let gilrs = if crate::launcher_host::configured() || std::env::var("BLITZ_PRIVATE_DESKTOP").is_ok_and(|name|name.starts_with("BlitzTest-")) {None} else {Gilrs::new()
+             .inspect_err(|err| {
+                 tracing::warn!("Gamepad support could not be initialized: {err}");
+             })
+-            .ok();
++            .ok()};
+         let event_loop_proxy = event_loop.create_proxy();
++        crate::fixture_control::start(event_loop_proxy.clone());
+         let runtime = tokio::runtime::Runtime::new()?;
++        crate::launcher_host::start(event_loop_proxy.clone(),runtime.handle());
+ 
+         Ok((
+             Self {
+@@ -479,9 +510,12 @@ impl ApplicationHandler<RuffleEvent> for App {
+             #[cfg_attr(not(target_os = "linux"), allow(unused_mut))]
+             let mut window_attributes = WindowAttributes::default()
+                 .with_visible(false)
++                .with_decorations(!crate::launcher_host::configured())
++                .with_resizable(!crate::launcher_host::configured())
+                 .with_title("Ruffle")
+                 .with_window_icon(Some(icon))
+                 .with_min_inner_size(min_window_size);
++            if crate::launcher_host::configured(){window_attributes=window_attributes.with_inner_size(PhysicalSize::new(preferred_width.unwrap_or(1280.0),preferred_height.unwrap_or(720.0)));}
+ 
+             #[cfg(target_os = "linux")]
+             {
+@@ -501,7 +535,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+             let window = event_loop
+                 .create_window(window_attributes)
+                 .expect("Window should be created");
+-            let max_window_size = get_screen_size(&window);
++            let max_window_size = if crate::launcher_host::configured(){PhysicalSize::new(8192,8192)} else {get_screen_size(&window)};
+             window.set_max_inner_size(Some(max_window_size));
+             let window = Arc::new(window);
+             let font_database = self.font_database.clone();
+@@ -547,6 +581,8 @@ impl ApplicationHandler<RuffleEvent> for App {
+             }
+ 
+             self.main_window = Some(MainWindow {
++                launcher: None,
++                controls:Default::default(),
+                 preferences,
+                 gui,
+                 player,
+@@ -574,6 +610,50 @@ impl ApplicationHandler<RuffleEvent> for App {
+         enter_runtime!(self);
+ 
+         match (&mut self.main_window, event) {
++            (Some(window),RuffleEvent::LauncherConnected(channel)) => {
++                use winit::raw_window_handle::{HasWindowHandle,RawWindowHandle};
++                if let Ok(handle)=window.gui.window().window_handle() {
++                    if let RawWindowHandle::Win32(handle)=handle.as_raw() {
++                        channel.send(serde_json::json!({"type":"ready","hwnd":handle.hwnd.get().to_string(),"native":"ruffle-0.7.1-blitz120"}));
++                    }
++                }
++                crate::launcher_host::set_channel(channel.clone());
++                window.launcher=Some(channel);
++            }
++            (Some(window),RuffleEvent::LauncherCommand(command)) => {
++                let kind=command["type"].as_str().expect("validated command");
++                match kind {
++                    "quit"=>event_loop.exit(),
++                    "visibility"=>{let visible=command["value"].as_bool().unwrap();if !visible {if let Some(mut player)=window.player.get(){window.controls.stop(&mut player);}} window.gui.window().set_visible(visible);},
++                    "viewport"=>{let _=window.gui.window().request_inner_size(LogicalSize::new(command["width"].as_u64().unwrap()as u32,command["height"].as_u64().unwrap()as u32));window.controls.invalidate();},
++                    "focus"=>{if !crate::launcher_host::fixture(){window.gui.window().focus_window();}},
++                    _=>{if let Some(mut player)=window.player.get(){window.controls.command(&command,&mut player);}}
++                }
++            }
++            (window, RuffleEvent::FixtureControl(request)) => {
++                let result=window.as_mut().and_then(|window|{
++                    if request.name=="BlitzFixtureShortcut" {
++                        return window.player.get().map(|mut player|ruffle_core::external::Value::Bool(window.controls.fixture_key(&request.arguments,&mut player)));
++                    }
++                    if request.name=="BlitzFixtureCapture" {
++                        let [ruffle_core::external::Value::Number(id)]=request.arguments.as_slice() else{return None;};
++                        if !id.is_finite() || *id<1.0 || *id>1000.0 || id.fract()!=0.0 {return None;}
++                        crate::fps_probe::request_capture(*id as u64);window.render_movie();
++                        return Some(ruffle_core::external::Value::Bool(true));
++                    }
++                    if request.name=="BlitzFixtureResize" {
++                        let size=crate::fixture_control::size(&request.arguments)?;
++                        let _=window.gui.window().request_inner_size(size);
++                        return Some(ruffle_core::external::Value::Bool(true));
++                    }
++                    if let Some(event)=crate::fixture_control::input(&request.name,&request.arguments){
++                        window.player.handle_event(event);window.check_redraw();
++                        return Some(ruffle_core::external::Value::Bool(true));
++                    }
++                    window.player.get().map(|mut player|player.call_internal_interface(&request.name,request.arguments.iter().cloned()))
++                });
++                crate::fixture_control::respond(request,result);
++            }
+             (Some(main_window), RuffleEvent::TaskPoll(task)) => main_window.player.poll(task),
+ 
+             (Some(main_window), RuffleEvent::OnMetadata(swf_header)) => {
+@@ -671,6 +751,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+             }
+ 
+             (_, RuffleEvent::ExitRequested) => {
++                tracing::info!("BLITZ_EXIT requested");
+                 event_loop.exit();
+             }
+ 
+@@ -703,17 +784,24 @@ impl ApplicationHandler<RuffleEvent> for App {
+             // Note: the control flow might be set to `ControlFlow::WaitUntil` with a
+             // timestamp in the past! Take that into consideration when changing this code.
+             if let Some(next_frame_time) = main_window.next_frame_time {
+-                event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
++                if crate::fps_probe::precise() {
++                    let now=Instant::now();
++                    let early=next_frame_time.checked_sub(std::time::Duration::from_micros(500)).unwrap_or(next_frame_time);
++                    if early>now {event_loop.set_control_flow(ControlFlow::WaitUntil(early));}
++                    else {std::thread::yield_now();event_loop.set_control_flow(ControlFlow::Poll);}
++                } else {event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));}
+             }
+         }
+     }
+ 
+     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
++        tracing::info!("BLITZ_EXIT dropping player/window");
+         // `MainWindow` needs a tokio context to properly drop.
+         {
+             enter_runtime!(self);
+             let _ = self.main_window.take();
+         }
++        tracing::info!("BLITZ_EXIT player/window dropped");
+ 
+         // Manually stop the tokio runtime: this makes sure that any pending Player-bound futures
+         // are properly cancelled and put back on the winit event loop before it closes, preventing
+@@ -721,6 +809,7 @@ impl ApplicationHandler<RuffleEvent> for App {
+         if let Some(runtime) = self.runtime.take() {
+             runtime.shutdown_timeout(std::time::Duration::from_secs(1));
+         }
++        tracing::info!("BLITZ_EXIT runtime stopped");
+     }
+ }
+ 
+diff --git a/desktop/src/backends/external_interface.rs b/desktop/src/backends/external_interface.rs
+index 8cd7aa9572ccd102a7fadebb82ee785ff1b12f21..81fdd30e72ff68bcd5250aa5ef3fcf097fc18ce6 100644
+--- a/desktop/src/backends/external_interface.rs
++++ b/desktop/src/backends/external_interface.rs
+@@ -36,11 +36,11 @@ impl ExternalInterfaceProvider for DesktopExternalInterfaceProvider {
+                 return ExternalValue::String(url.to_string());
+             }
+ 
+-            tracing::warn!("Trying to call eval with ExternalInterface: {args:?}");
++            // Arguments can contain account data; never log them.
+             return ExternalValue::Undefined;
+         }
+ 
+-        tracing::warn!("Trying to call unknown ExternalInterface method: {name}");
++        // Unknown browser calls have no privileges in the dedicated player.
+         ExternalValue::Undefined
+     }
+ 
+diff --git a/desktop/src/backends/navigator.rs b/desktop/src/backends/navigator.rs
+index 9f4dd8d0bf7a86d682e2f87a2da14fc3951b07a4..9f61de066b1d23cb39a0f9f9980ef514d906469c 100644
+--- a/desktop/src/backends/navigator.rs
++++ b/desktop/src/backends/navigator.rs
+@@ -126,6 +126,7 @@ impl DesktopNavigatorInterface {
+ 
+ impl NavigatorInterface for DesktopNavigatorInterface {
+     fn navigate_to_website(&self, url: Url) {
++        if crate::launcher_host::configured() {crate::launcher_host::navigate(url);return;}
+         let open_url_mode = self.preferences.open_url_mode();
+         if open_url_mode == OpenUrlMode::Deny {
+             tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
+diff --git a/desktop/src/backends/ui.rs b/desktop/src/backends/ui.rs
+index e04fa12220733c323c3d8e35002862480a27ccab..f6d75d4a13597e4eedeb9ef27de37d0cdb0b6fa0 100644
+--- a/desktop/src/backends/ui.rs
++++ b/desktop/src/backends/ui.rs
+@@ -144,6 +144,8 @@ impl FileDialogSelection for DesktopFileSelection {
+ }
+ 
+ pub struct DesktopUiBackend {
++    private_fixture: bool,
++    fixture_clipboard: String,
+     // It's important that `clipboard`` gets dropped before `window`, dropping
+     // them the other way around causes a segfault inside `smithay_clipboard`.
+     // See:
+@@ -180,6 +182,9 @@ impl DesktopUiBackend {
+         // If it fails it'll fallback to x11 or wlr-data-control
+         let clipboard = Clipboard::new(window.display_handle().ok().map(|handle| handle.as_raw()));
+         Ok(Self {
++            private_fixture: std::env::var("BLITZ_PRIVATE_DESKTOP")
++                .is_ok_and(|name| name.starts_with("BlitzTest-")),
++            fixture_clipboard: String::new(),
+             window,
+             event_loop,
+             cursor_visible: true,
+@@ -237,14 +242,25 @@ impl UiBackend for DesktopUiBackend {
+     }
+ 
+     fn clipboard_content(&mut self) -> String {
++        if self.private_fixture {
++            return self.fixture_clipboard.clone();
++        }
+         self.clipboard.get().unwrap_or_default()
+     }
+ 
+     fn set_clipboard_content(&mut self, content: String) {
++        if self.private_fixture {
++            self.fixture_clipboard = content;
++            return;
++        }
+         self.clipboard.set_text(content);
+     }
+ 
+     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError> {
++        if crate::launcher_host::configured() {
++            crate::launcher_host::emit(serde_json::json!({"type":"fullscreen","value":is_full}));
++            return Ok(());
++        }
+         self.window.set_fullscreen(if is_full {
+             Some(Fullscreen::Borderless(None))
+         } else {
+@@ -254,6 +270,12 @@ impl UiBackend for DesktopUiBackend {
+     }
+ 
+     fn display_root_movie_download_failed_message(&self, _invalid_swf: bool, _fetch_error: String) {
++        if crate::launcher_host::configured() {
++            crate::launcher_host::emit(
++                serde_json::json!({"type":"error","message":"The native player could not load the reviewed game. Reconnect or choose Original rendering."}),
++            );
++            return;
++        }
+         let _ = self
+             .event_loop
+             .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
+@@ -278,6 +300,9 @@ impl UiBackend for DesktopUiBackend {
+     }
+ 
+     fn display_unsupported_video(&self, url: Url) {
++        if crate::launcher_host::configured() {
++            return;
++        }
+         if url.scheme() == "javascript" {
+             tracing::warn!(
+                 "SWF tried to run a script on desktop, but javascript calls are not allowed"
+@@ -385,6 +410,9 @@ impl UiBackend for DesktopUiBackend {
+     }
+ 
+     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
++        if self.private_fixture || crate::launcher_host::configured() {
++            return None;
++        }
+         let result = self.show_open_dialog(&filters, |d| d.pick_file())?;
+ 
+         Some(Box::pin(async move {
+@@ -400,6 +428,9 @@ impl UiBackend for DesktopUiBackend {
+         &mut self,
+         filters: Vec<FileFilter>,
+     ) -> Option<MultiDialogResultFuture> {
++        if self.private_fixture || crate::launcher_host::configured() {
++            return None;
++        }
+         let result = self.show_open_dialog(&filters, |d| d.pick_files())?;
+ 
+         Some(Box::pin(async move {
+@@ -421,6 +452,9 @@ impl UiBackend for DesktopUiBackend {
+         file_name: String,
+         title: String,
+     ) -> Option<DialogResultFuture> {
++        if self.private_fixture || crate::launcher_host::configured() {
++            return None;
++        }
+         // Select the location to save the file to
+         let dialog = AsyncFileDialog::new()
+             .set_title(&title)
+diff --git a/desktop/src/custom_event.rs b/desktop/src/custom_event.rs
+index 9e739a209e8a24763b7879f9c219a455309626ca..3cf1619266039814dc1310be65d5949f379cffd2 100644
+--- a/desktop/src/custom_event.rs
++++ b/desktop/src/custom_event.rs
+@@ -13,6 +13,9 @@ pub enum OpenType {
+ 
+ /// User-defined events.
+ pub enum RuffleEvent {
++    LauncherConnected(std::sync::Arc<crate::launcher_host::Channel>),
++    LauncherCommand(serde_json::Value),
++    FixtureControl(crate::fixture_control::Request),
+     /// Indicates that a task is ready to be polled.
+     TaskPoll(PlayerRunnable),
+ 
+diff --git a/desktop/src/fixture_control.rs b/desktop/src/fixture_control.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2454ffa077d600f002db3ad39c8ab8ca9f145e2
+--- /dev/null
++++ b/desktop/src/fixture_control.rs
+@@ -0,0 +1,228 @@
++use crate::custom_event::RuffleEvent;
++use ruffle_core::external::Value as External;
++use serde_json::{Value, json};
++use std::collections::BTreeMap;
++use std::io::{BufRead, Read, Write};
++use std::sync::mpsc::{SyncSender, sync_channel};
++use std::time::Duration;
++use winit::event_loop::EventLoopProxy;
++
++// Lab control for known, unauthenticated SWFs. Never enabled by the product.
++pub struct Request {
++    pub id: u64,
++    pub name: String,
++    pub arguments: Vec<External>,
++    pub done: SyncSender<()>,
++}
++
++pub fn input(name: &str, args: &[External]) -> Option<ruffle_core::PlayerEvent> {
++    use ruffle_core::events::{
++        KeyDescriptor, KeyLocation, LogicalKey, MouseButton, NamedKey, PhysicalKey, PlayerEvent,
++    };
++    match (name, args) {
++        ("BlitzFixtureFocus", [External::Bool(true)]) => Some(PlayerEvent::FocusGained),
++        ("BlitzFixtureFocus", [External::Bool(false)]) => Some(PlayerEvent::FocusLost),
++        (
++            "BlitzFixtureMouse",
++            [
++                External::String(kind),
++                External::Number(x),
++                External::Number(y),
++            ],
++        ) if x.is_finite()
++            && y.is_finite()
++            && *x >= 0.0
++            && *y >= 0.0
++            && *x <= 4096.0
++            && *y <= 4096.0 =>
++        {
++            match kind.as_str() {
++                "move" => Some(PlayerEvent::MouseMove { x: *x, y: *y }),
++                "down" => Some(PlayerEvent::MouseDown {
++                    x: *x,
++                    y: *y,
++                    button: MouseButton::Left,
++                    index: Some(0),
++                }),
++                "up" => Some(PlayerEvent::MouseUp {
++                    x: *x,
++                    y: *y,
++                    button: MouseButton::Left,
++                }),
++                _ => None,
++            }
++        }
++        ("BlitzFixtureKey", [External::Bool(down), External::String(name)]) => {
++            let (physical_key, logical_key) = match name.as_str() {
++                "right" => (
++                    PhysicalKey::ArrowRight,
++                    LogicalKey::Named(NamedKey::ArrowRight),
++                ),
++                "left" => (
++                    PhysicalKey::ArrowLeft,
++                    LogicalKey::Named(NamedKey::ArrowLeft),
++                ),
++                "escape" => (PhysicalKey::Escape, LogicalKey::Named(NamedKey::Escape)),
++                "enter" => (PhysicalKey::Enter, LogicalKey::Named(NamedKey::Enter)),
++                "a" => (PhysicalKey::KeyA, LogicalKey::Character('a')),
++                "ö" => (PhysicalKey::Semicolon, LogicalKey::Character('ö')),
++                _ => return None,
++            };
++            let key = KeyDescriptor {
++                physical_key,
++                logical_key,
++                key_location: KeyLocation::Standard,
++            };
++            Some(if *down {
++                PlayerEvent::KeyDown { key }
++            } else {
++                PlayerEvent::KeyUp { key }
++            })
++        }
++        _ => None,
++    }
++}
++
++pub fn size(args: &[External]) -> Option<winit::dpi::PhysicalSize<u32>> {
++    match args {
++        [External::Number(width), External::Number(height)]
++            if width.is_finite()
++                && height.is_finite()
++                && *width >= 320.0
++                && *height >= 240.0
++                && *width <= 4096.0
++                && *height <= 2160.0
++                && width * height <= 8_388_608.0 =>
++        {
++            Some(winit::dpi::PhysicalSize::new(*width as u32, *height as u32))
++        }
++        _ => None,
++    }
++}
++
++fn from_json(value: &Value, depth: usize) -> Option<External> {
++    if depth > 16 {
++        return None;
++    }
++    Some(match value {
++        Value::Null => External::Null,
++        Value::Bool(value) => External::Bool(*value),
++        Value::Number(value) => External::Number(value.as_f64()?),
++        Value::String(value) => External::String(value.clone()),
++        Value::Array(value) => External::List(
++            value
++                .iter()
++                .map(|value| from_json(value, depth + 1))
++                .collect::<Option<_>>()?,
++        ),
++        Value::Object(value) => External::Object(
++            value
++                .iter()
++                .map(|(key, value)| Some((key.clone(), from_json(value, depth + 1)?)))
++                .collect::<Option<BTreeMap<_, _>>>()?,
++        ),
++    })
++}
++
++fn to_json(value: External, depth: usize) -> Option<Value> {
++    if depth > 16 {
++        return None;
++    }
++    Some(match value {
++        External::Undefined | External::Null => Value::Null,
++        External::Bool(value) => json!(value),
++        External::Number(value) => json!(value),
++        External::String(value) => json!(value),
++        External::List(value) => Value::Array(
++            value
++                .into_iter()
++                .map(|value| to_json(value, depth + 1))
++                .collect::<Option<_>>()?,
++        ),
++        External::Object(value) => Value::Object(
++            value
++                .into_iter()
++                .map(|(key, value)| Some((key, to_json(value, depth + 1)?)))
++                .collect::<Option<_>>()?,
++        ),
++    })
++}
++
++pub fn respond(request: Request, result: Option<External>) {
++    let value = result.and_then(|value| to_json(value, 0));
++    let response = json!({"id":request.id,"ok":value.is_some(),"value":value});
++    let output = response.to_string();
++    if output.len() <= 32768 {
++        let mut stream = std::io::stdout().lock();
++        let _ = writeln!(stream, "BLITZ_RPC {output}");
++        let _ = stream.flush();
++    }
++    let _ = request.done.send(());
++}
++
++pub fn start(proxy: EventLoopProxy<RuffleEvent>) {
++    if std::env::var_os("BLITZ_FIXTURE_CONTROL").is_none()
++        || !std::env::var("BLITZ_PRIVATE_DESKTOP").is_ok_and(|name| name.starts_with("BlitzTest-"))
++    {
++        return;
++    }
++    std::thread::spawn(move || {
++        let mut input = std::io::stdin().lock();
++        loop {
++            let mut line = Vec::new();
++            let read = (&mut input).take(32769).read_until(b'\n', &mut line);
++            if !read.is_ok_and(|length| length > 0 && length <= 32768)
++                || line.last() != Some(&b'\n')
++            {
++                break;
++            }
++            let Ok(value) = serde_json::from_slice::<Value>(&line) else {
++                break;
++            };
++            let Some(id) = value.get("id").and_then(Value::as_u64) else {
++                break;
++            };
++            let Some(name) = value.get("name").and_then(Value::as_str) else {
++                break;
++            };
++            if name == "CloseFixture" {
++                let _ = proxy.send_event(RuffleEvent::ExitRequested);
++                return;
++            }
++            if name.len() > 64
++                || !name.starts_with("Blitz")
++                || !name.bytes().all(|byte| byte.is_ascii_alphanumeric())
++            {
++                break;
++            }
++            let Some(values) = value.get("args").and_then(Value::as_array) else {
++                break;
++            };
++            if values.len() > 16 {
++                break;
++            }
++            let Some(arguments) = values
++                .iter()
++                .map(|value| from_json(value, 0))
++                .collect::<Option<Vec<_>>>()
++            else {
++                break;
++            };
++            let (done, wait) = sync_channel(1);
++            let request = Request {
++                id,
++                name: name.to_owned(),
++                arguments,
++                done,
++            };
++            if proxy
++                .send_event(RuffleEvent::FixtureControl(request))
++                .is_err()
++                || wait.recv_timeout(Duration::from_secs(5)).is_err()
++            {
++                break;
++            }
++        }
++        let _ = proxy.send_event(RuffleEvent::ExitRequested);
++    });
++}
+diff --git a/desktop/src/fps_probe.rs b/desktop/src/fps_probe.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d8a3dd28aa318123e742822890956ee0c1707bac
+--- /dev/null
++++ b/desktop/src/fps_probe.rs
+@@ -0,0 +1,285 @@
++use std::sync::atomic::{AtomicU64, Ordering};
++use std::sync::{LazyLock, Mutex};
++use std::time::Instant;
++
++pub static SOURCE: AtomicU64 = AtomicU64::new(0);
++static PRECISE: LazyLock<bool> = LazyLock::new(|| std::env::var_os("BLITZ_FPS_PRECISE").is_some());
++static DIRECT_LOOP: LazyLock<bool> =
++    LazyLock::new(|| std::env::var_os("BLITZ_FPS_DIRECT_LOOP").is_some());
++pub fn direct_loop() -> bool {
++    *DIRECT_LOOP || crate::launcher_host::production()
++}
++pub fn precise() -> bool {
++    *PRECISE || crate::launcher_host::production()
++}
++pub struct OwnTimer(bool);
++#[cfg(windows)]
++#[link(name = "winmm")]
++unsafe extern "system" {
++    fn timeBeginPeriod(period: u32) -> u32;
++    fn timeEndPeriod(period: u32) -> u32;
++}
++#[cfg(windows)]
++#[link(name = "kernel32")]
++unsafe extern "system" {
++    fn GetCurrentProcess() -> *mut std::ffi::c_void;
++    fn SetProcessInformation(
++        process: *mut std::ffi::c_void,
++        class: u32,
++        value: *const std::ffi::c_void,
++        length: u32,
++    ) -> i32;
++}
++pub fn init_timer() -> OwnTimer {
++    if !precise()
++        || (!crate::launcher_host::production()
++            && !std::env::var("BLITZ_PRIVATE_DESKTOP")
++                .is_ok_and(|name| name.starts_with("BlitzTest-")))
++    {
++        return OwnTimer(false);
++    }
++    #[cfg(windows)]
++    unsafe {
++        let state = [1u32, 4u32, 0u32];
++        let policy = SetProcessInformation(GetCurrentProcess(), 4, state.as_ptr().cast(), 12);
++        let timer = timeBeginPeriod(1) == 0;
++        tracing::info!(
++            "BLITZ_TIMER ownProcess=true policy={} resolution={}",
++            policy,
++            timer
++        );
++        return OwnTimer(timer);
++    }
++    #[cfg(not(windows))]
++    OwnTimer(false)
++}
++impl Drop for OwnTimer {
++    fn drop(&mut self) {
++        #[cfg(windows)]
++        if self.0 {
++            unsafe {
++                timeEndPeriod(1);
++            }
++        }
++    }
++}
++static CLOCK: LazyLock<Instant> = LazyLock::new(Instant::now);
++static COUNTS: Mutex<(u64, u64, u64, u128, u128)> = Mutex::new((0, 0, 0, 0, 0));
++static CAPTURED: AtomicU64 = AtomicU64::new(0);
++static CAPTURE_REQUEST: AtomicU64 = AtomicU64::new(0);
++pub fn request_capture(id: u64) {
++    CAPTURE_REQUEST.store(id, Ordering::Release);
++}
++static TIMING: LazyLock<Mutex<std::collections::BTreeMap<&'static str, (u64, u128, u128, u128)>>> =
++    LazyLock::new(|| Mutex::new(std::collections::BTreeMap::new()));
++
++pub fn timing(stage: &'static str, started: Instant) {
++    if SOURCE.load(Ordering::Relaxed) == 0 {
++        return;
++    }
++    let cost = started.elapsed().as_micros();
++    let now = CLOCK.elapsed().as_micros();
++    let mut all = TIMING.lock().expect("owned timings");
++    let counts = all.entry(stage).or_insert((0, 0, 0, now));
++    counts.0 += 1;
++    counts.1 += cost;
++    counts.2 = counts.2.max(cost);
++    if now - counts.3 >= 1_000_000 {
++        tracing::info!(
++            "BLITZ_COST stage={} calls={} meanUs={} maxUs={}",
++            stage,
++            counts.0,
++            counts.1 / counts.0 as u128,
++            counts.2
++        );
++        *counts = (0, 0, 0, now);
++    }
++}
++
++pub struct ProbeLog;
++impl ruffle_core::backend::log::LogBackend for ProbeLog {
++    fn avm_trace(&self, message: &str) {
++        if crate::launcher_host::production() {
++            return;
++        }
++        if let Some(value) = message.strip_prefix("BLITZ_SOURCE ") {
++            if let Ok(value) = value.parse::<u64>() {
++                SOURCE.store(value, Ordering::Release);
++            }
++        } else {
++            tracing::info!(target:"avm_trace","{}",message);
++        }
++    }
++    fn avm_warning(&self, message: &str) {
++        if crate::launcher_host::production() {
++            return;
++        }
++        tracing::info!(target:"avm_warning","{}",message);
++    }
++}
++
++pub fn complete(source: u64) {
++    if crate::launcher_host::production() {
++        native_complete();
++    }
++    if source == 0 {
++        return;
++    }
++    let phase = source >> 32;
++    let now = CLOCK.elapsed().as_micros();
++    let mut counts = COUNTS.lock().expect("owned probe counter");
++    if counts.0 != phase {
++        *counts = (phase, 0, 0, now, now);
++    }
++    if source == counts.1 {
++        return;
++    }
++    counts.1 = source;
++    counts.2 += 1;
++    if now - counts.4 >= 1_000_000 {
++        let elapsed = now - counts.3;
++        if SOURCE.load(Ordering::Acquire) >> 32 == phase {
++            tracing::info!(
++                "BLITZ_GPU_PROOF {{\"phase\":{},\"completed\":{},\"elapsedUs\":{},\"fps\":{},\"lastRevision\":{}}}",
++                phase,
++                counts.2,
++                elapsed,
++                (counts.2 - 1) as f64 * 1_000_000.0 / elapsed as f64,
++                source & 0xffff_ffff
++            );
++        } else {
++            tracing::info!(
++                "BLITZ_GPU_DRAIN {{\"phase\":{},\"completed\":{},\"elapsedUs\":{},\"lastRevision\":{}}}",
++                phase,
++                counts.2,
++                elapsed,
++                source & 0xffff_ffff
++            );
++        }
++        counts.4 = now;
++    }
++}
++
++static NATIVE_COMPLETIONS: Mutex<(u64, Option<Instant>)> = Mutex::new((0, None));
++fn native_complete() {
++    let mut state = NATIVE_COMPLETIONS.lock().unwrap();
++    let now = Instant::now();
++    let since = *state.1.get_or_insert(now);
++    state.0 += 1;
++    let elapsed = now.duration_since(since).as_secs_f64();
++    if elapsed >= 1.0 {
++        crate::launcher_host::emit(
++            serde_json::json!({"type":"native-status","value":{"phase":"running","cap":120,"renderFPS":(state.0-1)as f64/elapsed}}),
++        );
++        *state = (1, Some(now));
++    }
++}
++
++pub fn capture(
++    source: u64,
++    texture: &wgpu::Texture,
++    descriptors: &ruffle_render_wgpu::descriptors::Descriptors,
++) {
++    let request = CAPTURE_REQUEST.swap(0, Ordering::AcqRel);
++    let phase = if request > 0 { request } else { source >> 32 };
++    if request == 0
++        && (phase == 0 || source & 0xffff_ffff < 100 || CAPTURED.load(Ordering::Relaxed) == phase)
++    {
++        return;
++    }
++    let Ok(directory) = std::env::var("BLITZ_FPS_PROOF_DIR") else {
++        return;
++    };
++    if !std::env::var("BLITZ_PRIVATE_DESKTOP").is_ok_and(|name| name.starts_with("BlitzTest-")) {
++        return;
++    }
++    if request == 0 {
++        CAPTURED.store(phase, Ordering::Relaxed);
++    }
++    let size = texture.size();
++    let dims = ruffle_render_wgpu::utils::BufferDimensions::new(
++        size.width as usize,
++        size.height as usize,
++        texture.format(),
++    );
++    let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
++        label: Some("Owned FPS proof"),
++        size: dims.size(),
++        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
++        mapped_at_creation: false,
++    });
++    let mut encoder = descriptors
++        .device
++        .create_command_encoder(&Default::default());
++    encoder.copy_texture_to_buffer(
++        texture.as_image_copy(),
++        wgpu::TexelCopyBufferInfo {
++            buffer: &buffer,
++            layout: wgpu::TexelCopyBufferLayout {
++                offset: 0,
++                bytes_per_row: Some(dims.padded_bytes_per_row),
++                rows_per_image: None,
++            },
++        },
++        size,
++    );
++    let index = descriptors.queue.submit([encoder.finish()]);
++    let (send, receive) = std::sync::mpsc::channel();
++    buffer
++        .slice(..)
++        .map_async(wgpu::MapMode::Read, move |result| {
++            let _ = send.send(result);
++        });
++    if descriptors
++        .device
++        .poll(wgpu::PollType::Wait {
++            submission_index: Some(index),
++            timeout: Some(std::time::Duration::from_secs(2)),
++        })
++        .is_err()
++    {
++        tracing::error!("BLITZ_GPU_CAPTURE timeout");
++        return;
++    }
++    if !receive
++        .recv_timeout(std::time::Duration::from_secs(2))
++        .is_ok_and(|result| result.is_ok())
++    {
++        return;
++    }
++    let Ok(mapped) = buffer.slice(..).get_mapped_range() else {
++        return;
++    };
++    let bytes: Vec<u8> = mapped
++        .chunks(dims.padded_bytes_per_row as usize)
++        .flat_map(|row| row[..dims.unpadded_bytes_per_row].iter().copied())
++        .collect();
++    if let Some(picture) = image::RgbaImage::from_raw(size.width, size.height, bytes) {
++        let filename = if request > 0 {
++            format!("scene-{request}.png")
++        } else {
++            format!("gpu-phase-{phase}.png")
++        };
++        let output = std::path::Path::new(&directory).join(filename);
++        if picture.save(output).is_ok() {
++            if request > 0 {
++                tracing::info!(
++                    "BLITZ_SCENE_CAPTURE id={} width={} height={}",
++                    request,
++                    size.width,
++                    size.height
++                );
++            } else {
++                tracing::info!(
++                    "BLITZ_GPU_CAPTURE {{\"phase\":{},\"source\":{},\"width\":{},\"height\":{}}}",
++                    phase,
++                    source & 0xffff_ffff,
++                    size.width,
++                    size.height
++                );
++            }
++        }
++    }
++    drop(mapped);
++    buffer.unmap();
++}
+diff --git a/desktop/src/gui/controller.rs b/desktop/src/gui/controller.rs
+index 2383b2ddee49f69b0707af35025bbcc245260833..429b5e14fbf7eb9e47f7295458e38bf924c79db6 100644
+--- a/desktop/src/gui/controller.rs
++++ b/desktop/src/gui/controller.rs
+@@ -83,7 +83,9 @@ impl GuiController {
+             wgpu::TextureFormat::Rgba8Unorm,
+             wgpu::TextureFormat::Bgra8Unorm,
+         ];
+-        let supported_formats = surface.get_capabilities(&adapter).formats;
++        let capabilities = surface.get_capabilities(&adapter);
++        tracing::info!("BLITZ_PRESENT supported={:?} selected=AutoNoVsync", capabilities.present_modes);
++        let supported_formats = capabilities.formats;
+         let surface_format = preferred_formats
+             .iter()
+             .find(|format| supported_formats.contains(format))
+@@ -104,7 +106,7 @@ impl GuiController {
+                 color_space: wgpu::SurfaceColorSpace::Auto,
+                 width: size.width,
+                 height: size.height,
+-                present_mode: Default::default(),
++                present_mode: wgpu::PresentMode::AutoNoVsync,
+                 desired_maximum_frame_latency: 2,
+                 alpha_mode: Default::default(),
+                 view_formats: Default::default(),
+@@ -215,7 +217,7 @@ impl GuiController {
+                 color_space: wgpu::SurfaceColorSpace::Auto,
+                 width: self.size.width,
+                 height: self.size.height,
+-                present_mode: Default::default(),
++                present_mode: wgpu::PresentMode::AutoNoVsync,
+                 desired_maximum_frame_latency: 2,
+                 alpha_mode: Default::default(),
+                 view_formats: Default::default(),
+@@ -312,6 +314,8 @@ impl GuiController {
+     }
+ 
+     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
++        let probe_source=crate::fps_probe::SOURCE.load(std::sync::atomic::Ordering::Acquire);
++        let probe_acquire=Instant::now();
+         let surface_texture = match self.surface.get_current_texture() {
+             wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
+             wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
+@@ -358,6 +362,7 @@ impl GuiController {
+             }
+         };
+ 
++        crate::fps_probe::timing("acquire",probe_acquire);
+         #[cfg(feature = "tracy_images")]
+         if player.is_none() {
+             self.tracy_frame_captures
+@@ -438,6 +443,7 @@ impl GuiController {
+             let renderer =
+                 <dyn Any>::downcast_ref::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
+                     .expect("Renderer must be correct type");
++            crate::fps_probe::capture(probe_source, renderer.target().probe_texture(), &self.descriptors);
+             Some(renderer.target())
+         } else {
+             None
+@@ -488,7 +494,11 @@ impl GuiController {
+         }
+ 
+         self.window.pre_present_notify();
++        let probe_present=Instant::now();
+         self.descriptors.queue.present(surface_texture);
++        crate::fps_probe::timing("present",probe_present);
++        self.descriptors.queue.on_submitted_work_done(move || crate::fps_probe::complete(probe_source));
++        let _ = self.descriptors.device.poll(wgpu::PollType::Poll);
+         #[cfg(feature = "tracy")]
+         tracing_tracy::client::frame_mark();
+         #[cfg(feature = "tracy_images")]
+diff --git a/desktop/src/gui/movie.rs b/desktop/src/gui/movie.rs
+index 80faf01e58f629a77935d7bbe38a9418238fed43..79533962496f095ff3e5b4d8e589ee421b8ca80c 100644
+--- a/desktop/src/gui/movie.rs
++++ b/desktop/src/gui/movie.rs
+@@ -179,7 +179,7 @@ impl MovieView {
+             sample_count: 1,
+             dimension: wgpu::TextureDimension::D2,
+             format: wgpu::TextureFormat::Rgba8Unorm,
+-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
++            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC,
+             view_formats: &[],
+         });
+         let view = texture.create_view(&Default::default());
+@@ -208,6 +208,8 @@ impl MovieView {
+         }
+     }
+ 
++    pub fn probe_texture(&self) -> &wgpu::Texture { &self.texture }
++
+     pub fn render(
+         &self,
+         renderer: &MovieViewRenderer,
+diff --git a/desktop/src/launcher_controls.rs b/desktop/src/launcher_controls.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..630da362dadc313a93af710928c7792fdbeecd22
+--- /dev/null
++++ b/desktop/src/launcher_controls.rs
+@@ -0,0 +1,310 @@
++use ruffle_core::{Player, external::Value as External};
++use serde_json::Value;
++use std::{
++    collections::BTreeMap,
++    time::{Duration, Instant},
++};
++use winit::{
++    event::{ElementState, KeyEvent},
++    keyboard::{Key, ModifiersState, PhysicalKey},
++};
++
++pub fn valid_binding(key: &str) -> bool {
++    if key == "ö" {
++        return true;
++    }
++    if let Some(letter) = key.strip_prefix("Key") {
++        return letter.len() == 1 && letter.bytes().all(|c| c.is_ascii_uppercase());
++    }
++    if let Some(digit) = key
++        .strip_prefix("Digit")
++        .or_else(|| key.strip_prefix("Numpad"))
++    {
++        if digit.len() == 1 && digit.bytes().all(|c| c.is_ascii_digit()) {
++            return true;
++        }
++    }
++    if let Some(number) = key.strip_prefix('F') {
++        return number
++            .parse::<u8>()
++            .is_ok_and(|n| (1..=24).contains(&n) && n != 11);
++    }
++    [
++        "Space",
++        "Tab",
++        "Enter",
++        "Backspace",
++        "Insert",
++        "Delete",
++        "Home",
++        "End",
++        "PageUp",
++        "PageDown",
++        "ArrowLeft",
++        "ArrowUp",
++        "ArrowRight",
++        "ArrowDown",
++        "CapsLock",
++        "Semicolon",
++        "Equal",
++        "Comma",
++        "Minus",
++        "Period",
++        "Slash",
++        "Backquote",
++        "BracketLeft",
++        "Backslash",
++        "BracketRight",
++        "Quote",
++        "NumpadMultiply",
++        "NumpadAdd",
++        "NumpadSubtract",
++        "NumpadDecimal",
++        "NumpadDivide",
++    ]
++    .contains(&key)
++}
++
++pub struct Controls {
++    pending: BTreeMap<String, Value>,
++    zoom: f64,
++    density: f64,
++    key: String,
++    autorun: bool,
++    held: bool,
++    mount: bool,
++    mount_held: bool,
++    last_apply: Option<Instant>,
++    client_ready: bool,
++    audio_ready: bool,
++}
++impl Default for Controls {
++    fn default() -> Self {
++        Self {
++            pending: BTreeMap::new(),
++            zoom: 1.0,
++            density: 1.0,
++            key: "ö".into(),
++            autorun: true,
++            held: false,
++            mount: false,
++            mount_held: false,
++            last_apply: None,
++            client_ready: false,
++            audio_ready: false,
++        }
++    }
++}
++fn call(player: &mut Player, name: &str, args: impl IntoIterator<Item = External>) -> bool {
++    matches!(
++        player.call_internal_interface(name, args.into_iter()),
++        External::Bool(true)
++    )
++}
++impl Controls {
++    pub fn blur(&mut self) {
++        self.held = false;
++        self.mount_held = false;
++    }
++    pub fn stop(&mut self, player: &mut Player) {
++        self.blur();
++        call(player, "BlitzStopAutorun", []);
++    }
++    pub fn invalidate(&mut self) {
++        self.pending.insert(
++            "zoom".into(),
++            serde_json::json!({"type":"zoom","value":self.zoom}),
++        );
++        self.last_apply = None;
++    }
++    pub fn command(&mut self, value: &Value, player: &mut Player) {
++        let kind = value["type"].as_str().unwrap();
++        match kind {
++            "zoom" => {
++                self.zoom = value["value"].as_f64().unwrap();
++                self.invalidate();
++            }
++            "render-resolution" => {
++                self.density = value["value"].as_f64().unwrap();
++                self.invalidate();
++            }
++            "autorun" => {
++                let enabled = value["value"].as_bool().unwrap();
++                let key = value["key"].as_str().unwrap();
++                if self.autorun != enabled || self.key != key {
++                    self.stop(player);
++                }
++                self.autorun = enabled;
++                self.key = key.into();
++            }
++            "shift-mount" => {
++                self.mount = value["value"].as_bool().unwrap();
++                self.mount_held = false;
++                self.pending.insert(kind.into(), value.clone());
++            }
++            "background" => {}
++            "crosshair" => {}
++            _ => {
++                self.pending.insert(kind.into(), value.clone());
++            }
++        }
++        self.last_apply = None;
++    }
++    pub fn apply(&mut self, player: &mut Player, dpi: f64) {
++        if self
++            .last_apply
++            .is_some_and(|t| t.elapsed() < Duration::from_millis(100))
++        {
++            return;
++        }
++        self.last_apply = Some(Instant::now());
++        let mut done = Vec::new();
++        for (kind, value) in &self.pending {
++            let value = &value["value"];
++            let applied = match kind.as_str() {
++                "zoom" => call(
++                    player,
++                    "BlitzSetPictureZoom",
++                    [
++                        External::Number(self.zoom),
++                        External::Number(dpi * self.density),
++                    ],
++                ),
++                "show-fps" => call(
++                    player,
++                    "BlitzShowFPS",
++                    [External::Bool(value.as_bool().unwrap())],
++                ),
++                "widescreen" => call(
++                    player,
++                    "BlitzSetWidescreen",
++                    [External::Bool(value.as_bool().unwrap())],
++                ),
++                "centered-hotbar" => call(
++                    player,
++                    "BlitzSetCenteredHotbar",
++                    [External::Bool(value.as_bool().unwrap())],
++                ),
++                "centered-camera" => call(
++                    player,
++                    "BlitzSetCenteredCamera",
++                    [External::Bool(value.as_bool().unwrap())],
++                ),
++                "shift-mount" => call(
++                    player,
++                    "BlitzSetMountShortcut",
++                    [External::Bool(value.as_bool().unwrap())],
++                ),
++                "audio-mix" => call(
++                    player,
++                    "BlitzSetAudio",
++                    ["player", "music", "environment", "creatures"]
++                        .map(|k| External::Number(value[k].as_f64().unwrap())),
++                ),
++                _ => false,
++            };
++            if applied {
++                done.push(kind.clone());
++                crate::launcher_host::emit(
++                    serde_json::json!({"type":"applied","command":kind,"value":true}),
++                );
++                if kind == "zoom" && !self.client_ready {
++                    self.client_ready = true;
++                    crate::launcher_host::emit(
++                        serde_json::json!({"type":"client-integration","value":true}),
++                    );
++                    crate::launcher_host::emit(serde_json::json!({"type":"loading","value":false}));
++                }
++                if kind == "audio-mix" && !self.audio_ready {
++                    self.audio_ready = true;
++                    crate::launcher_host::emit(
++                        serde_json::json!({"type":"audio-integration","value":true}),
++                    );
++                }
++            }
++        }
++        for kind in done {
++            self.pending.remove(&kind);
++        }
++    }
++    pub fn key(&mut self, event: &KeyEvent, modifiers: ModifiersState, player: &mut Player) {
++        let code = match event.physical_key {
++            PhysicalKey::Code(code) => format!("{code:?}"),
++            _ => String::new(),
++        };
++        let typed = match &event.logical_key {
++            Key::Character(value) => value.as_str(),
++            _ => "",
++        };
++        self.shortcut(
++            typed,
++            &code,
++            event.state == ElementState::Pressed,
++            event.repeat,
++            modifiers.control_key() || modifiers.alt_key() || modifiers.super_key(),
++            modifiers.shift_key(),
++            player,
++        );
++    }
++    fn shortcut(
++        &mut self,
++        typed: &str,
++        code: &str,
++        down: bool,
++        repeat: bool,
++        chord: bool,
++        shift: bool,
++        player: &mut Player,
++    ) {
++        if down && !repeat && !chord {
++            crate::launcher_host::gesture();
++        }
++        if code == "ShiftLeft" {
++            if !down {
++                self.mount_held = false;
++            } else if !repeat && !self.mount_held {
++                self.mount_held = true;
++                if self.mount && !chord {
++                    call(player, "BlitzMount", []);
++                }
++            }
++        }
++        let matches = if self.key == "ö" {
++            typed.to_lowercase() == "ö"
++        } else {
++            code == self.key
++        };
++        if !matches {
++            return;
++        }
++        if !down {
++            self.held = false;
++            return;
++        }
++        if repeat || self.held {
++            return;
++        }
++        self.held = true;
++        if self.autorun && !chord && (self.key == "ö" || !shift) {
++            call(player, "BlitzAutorun", []);
++        }
++    }
++    pub fn fixture_key(&mut self, args: &[External], player: &mut Player) -> bool {
++        let [
++            External::String(typed),
++            External::String(code),
++            External::Bool(down),
++            External::Bool(repeat),
++            External::Bool(chord),
++            External::Bool(shift),
++        ] = args
++        else {
++            return false;
++        };
++        if typed.len() > 16 || code.len() > 32 {
++            return false;
++        }
++        self.shortcut(typed, code, *down, *repeat, *chord, *shift, player);
++        true
++    }
++}
+diff --git a/desktop/src/launcher_host.rs b/desktop/src/launcher_host.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7cfaf4471b0fbf93ee645dc41675c93d351fc8c
+--- /dev/null
++++ b/desktop/src/launcher_host.rs
+@@ -0,0 +1,203 @@
++//! Authenticated, bounded transport for the dedicated launcher and private fixtures.
++use crate::custom_event::RuffleEvent;
++use serde_json::{Value, json};
++use std::sync::{Arc, LazyLock, Mutex, OnceLock};
++use std::time::Duration;
++use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
++use tokio::sync::mpsc;
++use winit::event_loop::EventLoopProxy;
++
++pub struct Channel {
++    output: mpsc::Sender<Value>,
++}
++impl Channel {
++    pub fn send(&self, value: Value) -> bool {
++        if value.to_string().len() > 32768 {
++            return false;
++        }
++        self.output.try_send(value).is_ok()
++    }
++}
++
++pub fn fixture() -> bool {
++    std::env::var("BLITZ_HOST_TEST").as_deref() == Ok("1")
++        && std::env::var("BLITZ_PRIVATE_DESKTOP").is_ok_and(|n| n.starts_with("BlitzTest-"))
++}
++fn configuration() -> Option<(String, String)> {
++    if !fixture() && std::env::var("BLITZ_NATIVE_PLAYER").as_deref() != Ok("120") {
++        return None;
++    }
++    let pipe = std::env::var("BLITZ_HOST_CHANNEL").ok()?;
++    let token = std::env::var("BLITZ_HOST_TOKEN").ok()?;
++    let suffix = pipe.strip_prefix("\\\\.\\pipe\\blitz-game-")?;
++    if suffix.len() != 48
++        || !suffix.bytes().all(|b| b.is_ascii_hexdigit())
++        || token.len() != 64
++        || !token.bytes().all(|b| b.is_ascii_hexdigit())
++    {
++        return None;
++    }
++    Some((pipe, token))
++}
++pub fn configured() -> bool {
++    static ENABLED: LazyLock<bool> = LazyLock::new(|| configuration().is_some());
++    *ENABLED
++}
++pub fn production() -> bool {
++    static ENABLED: LazyLock<bool> = LazyLock::new(|| {
++        configured() && std::env::var("BLITZ_NATIVE_PLAYER").as_deref() == Ok("120")
++    });
++    *ENABLED
++}
++static CHANNEL: OnceLock<Arc<Channel>> = OnceLock::new();
++static LAST_GESTURE: Mutex<Option<std::time::Instant>> = Mutex::new(None);
++pub fn set_channel(channel: Arc<Channel>) {
++    let _ = CHANNEL.set(channel);
++}
++pub fn emit(value: Value) {
++    if let Some(channel) = CHANNEL.get() {
++        channel.send(value);
++    }
++}
++pub fn gesture() {
++    *LAST_GESTURE.lock().unwrap() = Some(std::time::Instant::now());
++}
++pub fn navigate(url: url::Url) {
++    if url.as_str().len() > 2048
++        || !LAST_GESTURE
++            .lock()
++            .unwrap()
++            .is_some_and(|t| t.elapsed() < Duration::from_secs(1))
++    {
++        return;
++    }
++    // The shell independently checks the destination against its link policy.
++    emit(json!({"type":"external-link","url":url.as_str(),"userGesture":true}));
++}
++
++pub fn valid_command(value: &Value) -> bool {
++    let Some(object) = value.as_object() else {
++        return false;
++    };
++    let Some(kind) = object.get("type").and_then(Value::as_str) else {
++        return false;
++    };
++    match kind {
++        "quit" | "focus" => object.len() == 1,
++        "visibility" | "show-fps" | "widescreen" | "centered-hotbar" | "centered-camera"
++        | "shift-mount" | "background" => {
++            object.len() == 2 && value.get("value").is_some_and(Value::is_boolean)
++        }
++        "zoom" => {
++            object.len() == 2
++                && value
++                    .get("value")
++                    .and_then(Value::as_f64)
++                    .is_some_and(|v| (0.5..=3.0).contains(&v))
++        }
++        "render-resolution" => {
++            object.len() == 2
++                && value
++                    .get("value")
++                    .and_then(Value::as_f64)
++                    .is_some_and(|v| [0.5, 0.75, 1.0].contains(&v))
++        }
++        "autorun" => {
++            object.len() == 3
++                && value["value"].is_boolean()
++                && value["key"]
++                    .as_str()
++                    .is_some_and(crate::launcher_controls::valid_binding)
++        }
++        "audio-mix" => {
++            object.len() == 2
++                && value["value"].as_object().is_some_and(|o| {
++                    o.len() == 4
++                        && ["player", "music", "environment", "creatures"]
++                            .iter()
++                            .all(|k| o.get(*k).and_then(Value::as_u64).is_some_and(|v| v <= 100))
++                })
++        }
++        // Custom cursor drawing is not supported by this player yet. A disabled
++        // setting is accepted so a profile can switch renderers without edits.
++        "crosshair" => object.len() == 2 && value["value"].is_object(),
++        "viewport" => {
++            object.len() == 3
++                && matches!((value.get("width").and_then(Value::as_u64),value.get("height").and_then(Value::as_u64)),(Some(w),Some(h))if(16..=8192).contains(&w)&&(16..=8192).contains(&h)&&w*h<=8_388_608)
++        }
++        _ => false,
++    }
++}
++
++#[cfg(windows)]
++pub fn start(proxy: EventLoopProxy<RuffleEvent>, runtime: &tokio::runtime::Handle) {
++    let Some((pipe, token)) = configuration() else {
++        return;
++    };
++    runtime.spawn(async move {
++        use tokio::net::windows::named_pipe::ClientOptions;
++        let mut client = None;
++        for _ in 0..100 {
++            if let Ok(value) = ClientOptions::new().open(&pipe) {
++                client = Some(value);
++                break;
++            }
++            tokio::time::sleep(Duration::from_millis(50)).await;
++        }
++        let Some(client) = client else {
++            let _ = proxy.send_event(RuffleEvent::ExitRequested);
++            return;
++        };
++        let (input, mut output) = tokio::io::split(client);
++        let auth = json!({"type":"auth","token":token}).to_string() + "\n";
++        if output.write_all(auth.as_bytes()).await.is_err() {
++            let _ = proxy.send_event(RuffleEvent::ExitRequested);
++            return;
++        }
++        let (send, mut receive) = mpsc::channel::<Value>(64);
++        let channel = Arc::new(Channel { output: send });
++        if proxy
++            .send_event(RuffleEvent::LauncherConnected(channel))
++            .is_err()
++        {
++            return;
++        }
++        let writer_proxy = proxy.clone();
++        let writer = tokio::spawn(async move {
++            while let Some(value) = receive.recv().await {
++                let line = value.to_string() + "\n";
++                if line.len() > 32769 || output.write_all(line.as_bytes()).await.is_err() {
++                    break;
++                }
++            }
++            let _ = writer_proxy.send_event(RuffleEvent::ExitRequested);
++        });
++        let mut input = BufReader::new(input);
++        loop {
++            let mut line = Vec::new();
++            let read = (&mut input).take(32769).read_until(b'\n', &mut line).await;
++            if !read.is_ok_and(|n| n > 0 && n <= 32769)
++                || line.len() > 32768
++                || line.last() != Some(&b'\n')
++            {
++                break;
++            }
++            let Ok(command) = serde_json::from_slice::<Value>(&line) else {
++                break;
++            };
++            if !valid_command(&command) {
++                break;
++            }
++            if proxy
++                .send_event(RuffleEvent::LauncherCommand(command))
++                .is_err()
++            {
++                break;
++            }
++        }
++        writer.abort();
++        let _ = proxy.send_event(RuffleEvent::ExitRequested);
++    });
++}
++#[cfg(not(windows))]
++pub fn start(_proxy: EventLoopProxy<RuffleEvent>, _runtime: &tokio::runtime::Handle) {}
+diff --git a/desktop/src/main.rs b/desktop/src/main.rs
+index 2265dc24c5f157677a510508ecad677f6a08e0d8..cae9305349ce4001b72efe4d8092cb10ae755b53 100644
+--- a/desktop/src/main.rs
++++ b/desktop/src/main.rs
+@@ -7,6 +7,10 @@
+ #![windows_subsystem = "windows"]
+ 
+ mod app;
++mod fps_probe;
++mod fixture_control;
++mod launcher_host;
++mod launcher_controls;
+ mod backends;
+ mod cli;
+ mod custom_event;
+@@ -144,6 +148,9 @@ fn panic_hook(info: &PanicHookInfo) {
+ fn main() -> Result<(), Error> {
+     let prev_hook = std::panic::take_hook();
+     std::panic::set_hook(Box::new(move |info| {
++        // The launcher owns errors. Do not expose game data through an
++        // upstream crash dialog, browser report or default panic output.
++        if launcher_host::configured() || std::env::var("BLITZ_PRIVATE_DESKTOP").is_ok_and(|name|name.starts_with("BlitzTest-")) {std::process::exit(1);}
+         prev_hook(info);
+         panic_hook(info);
+     }));
+@@ -194,6 +201,7 @@ fn main() -> Result<(), Error> {
+     };
+ 
+     subscriber.init();
++    let _own_timer=crate::fps_probe::init_timer();
+ 
+     let result = App::new(preferences).and_then(|(mut app, event_loop)| {
+         event_loop.run_app(&mut app).context("Event loop failure")
+diff --git a/desktop/src/player.rs b/desktop/src/player.rs
+index 52ebe8377d1c504780c64535f534c3db6dea60c7..f314aec4cee7cfef78e9e909e2139b00f55049bc 100644
+--- a/desktop/src/player.rs
++++ b/desktop/src/player.rs
+@@ -300,6 +300,7 @@ impl ActivePlayer {
+         });
+ 
+         builder = builder
++            .with_log(crate::fps_probe::ProbeLog)
+             .with_navigator(navigator)
+             .with_renderer(renderer)
+             .with_storage(preferences.storage_backend().create_backend(&opt))
+@@ -336,10 +337,11 @@ impl ActivePlayer {
+             .with_player_version(opt.player.player_version)
+             .with_player_runtime(opt.player.player_runtime.unwrap_or_default())
+             .with_frame_rate(opt.player.frame_rate)
++            .with_preserved_timelines(crate::launcher_host::production())
+             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
+         let player = builder.build();
+ 
+-        window.set_title(&format!("Ruffle - {readable_name}"));
++        if !crate::launcher_host::configured() {window.set_title(&format!("Ruffle - {readable_name}"));}
+ 
+         SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
+ 
+diff --git a/frontend-utils/src/backends.rs b/frontend-utils/src/backends.rs
+index 20c7461d44838e607b88d0fd31e850794ef81ef0..7c3ef75200734bd6dc76521f2f9da10ee8073413 100644
+--- a/frontend-utils/src/backends.rs
++++ b/frontend-utils/src/backends.rs
+@@ -2,6 +2,7 @@
+ pub mod audio;
+ #[cfg(feature = "navigator")]
+ pub mod navigator;
++pub mod native_resource;
+ #[cfg(feature = "fs")]
+ pub mod storage;
+ #[cfg(feature = "ui")]
+diff --git a/frontend-utils/src/backends/native_resource.rs b/frontend-utils/src/backends/native_resource.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d7aec6f25a21dfc1a63430fa1f4395d0112def91
+--- /dev/null
++++ b/frontend-utils/src/backends/native_resource.rs
+@@ -0,0 +1,91 @@
++use std::sync::LazyLock;
++use url::Url;
++
++struct Policy {
++    origin: String,
++    broker: Url,
++    token: String,
++}
++static POLICY: LazyLock<Result<Option<Policy>, &'static str>> = LazyLock::new(|| {
++    let Ok(value) = std::env::var("BLITZ_NATIVE_RESOURCE_BROKER") else {
++        return Ok(None);
++    };
++    let broker = Url::parse(&value).map_err(|_| "Invalid resource broker")?;
++    if broker.scheme() != "http"
++        || broker.host_str() != Some("127.0.0.1")
++        || broker.port().is_none()
++        || broker.path() != "/"
++        || broker.query().is_some()
++        || broker.fragment().is_some()
++        || !broker.username().is_empty()
++        || broker.password().is_some()
++    {
++        return Err("Invalid resource broker");
++    }
++    let origin =
++        std::env::var("BLITZ_NATIVE_RESOURCE_ORIGIN").map_err(|_| "Missing resource origin")?;
++    if ![
++        "https://dungeonblitzr.theminesa.studio",
++        "https://dungeonblitz.theminesa.studio",
++    ]
++    .contains(&origin.as_str())
++    {
++        return Err("Invalid resource origin");
++    }
++    let token =
++        std::env::var("BLITZ_NATIVE_RESOURCE_TOKEN").map_err(|_| "Missing resource token")?;
++    if token.len() != 64 || !token.bytes().all(|value| value.is_ascii_hexdigit()) {
++        return Err("Invalid resource token");
++    }
++    Ok(Some(Policy {
++        origin,
++        broker,
++        token,
++    }))
++});
++
++pub fn socket_allowed(host: &str, port: u16) -> bool {
++    let Ok(Some(_policy)) = &*POLICY else {
++        return false;
++    };
++    std::env::var("BLITZ_NATIVE_TCP").as_deref() == Ok("1")
++        && port == 8080
++        && host == "dungeonblitzr.theminesa.studio"
++        && std::env::var("BLITZ_NATIVE_TCP_HOST").as_deref() == Ok(host)
++}
++
++pub fn enabled() -> bool {
++    !matches!(&*POLICY, Ok(None))
++}
++
++pub fn rewrite(mut url: Url) -> Result<(Url, Option<String>), &'static str> {
++    let Some(policy) = POLICY.as_ref().map_err(|value| *value)? else {
++        return Ok((url, None));
++    };
++    if !url.username().is_empty() || url.password().is_some() || url.fragment().is_some() {
++        return Err("Resource URL rejected");
++    }
++    let own = policy.broker.origin();
++    if url.origin() != own {
++        let origin = url.origin().ascii_serialization();
++        // The reviewed ResourceManager emits this legacy origin when the
++        // alternative official page is selected. Nothing is fetched over HTTP:
++        // the broker serves only its already-admitted public resource paths.
++        let legacy = [
++            "http://dungeonblitzr.theminesa.studio",
++            "https://dungeonblitzr.theminesa.studio",
++        ]
++        .contains(&origin.as_str());
++        if origin != policy.origin && !legacy {
++            return Err("Resource origin rejected");
++        }
++        let mut target = policy.broker.clone();
++        target.set_path(url.path());
++        target.set_query(url.query());
++        url = target;
++    }
++    if url.origin() != own {
++        return Err("Resource origin rejected");
++    }
++    Ok((url, Some(policy.token.clone())))
++}
+diff --git a/frontend-utils/src/backends/navigator.rs b/frontend-utils/src/backends/navigator.rs
+index 798dfe58e1cd48c73bbfd60ffd16b51fa62d6c53..24188e346cea8a15c3237cdf6823752ee5b0affe 100644
+--- a/frontend-utils/src/backends/navigator.rs
++++ b/frontend-utils/src/backends/navigator.rs
+@@ -88,6 +88,7 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
+                 env!("CARGO_PKG_VERSION"),
+                 " (https://ruffle.rs)"
+             ));
++        if crate::backends::native_resource::enabled(){builder=builder.redirect(reqwest::redirect::Policy::none());}
+ 
+         if let Some(referer) = referer {
+             let mut headers = header::HeaderMap::new();
+@@ -194,6 +195,11 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
+             }
+         };
+ 
++        let (rewritten,resource_token)=match crate::backends::native_resource::rewrite(processed_url){
++            Ok(value)=>value,
++            Err(error)=>return async_return(Err(create_fetch_error(request.url(),error))),
++        };
++        processed_url=rewritten;
+         let client = self.client.clone();
+ 
+         match processed_url.scheme() {
+@@ -232,6 +238,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
+                     NavigationMethod::Get => client.get(processed_url.clone()),
+                     NavigationMethod::Post => client.post(processed_url.clone()),
+                 };
++                if let Some(token)=resource_token {request_builder=request_builder.header("X-Blitz-Resource-Token",token);}
+                 let (body_data, mime) = request.body().clone().unwrap_or_default();
+                 for (name, val) in request.headers().iter() {
+                     request_builder = request_builder.header(name, val);
+@@ -322,8 +329,9 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
+         }
+ 
+         let addr = format!("{host}:{port}");
+-        let is_allowed = self.socket_allowed.contains(&addr);
+-        let socket_mode = self.socket_mode;
++        let guarded=crate::backends::native_resource::enabled();
++        let is_allowed = if guarded {crate::backends::native_resource::socket_allowed(&host,port)} else {self.socket_allowed.contains(&addr)};
++        let socket_mode = if guarded {SocketMode::Deny} else {self.socket_mode};
+         let interface = self.interface.clone();
+ 
+         let future = Box::pin(async move {
+diff --git a/swf/src/read.rs b/swf/src/read.rs
+index a08343375e1aba18b112a9bf9996384f83262dda..6ef8bf1be826d76dd65c2fc190288e12c0f11923 100644
+--- a/swf/src/read.rs
++++ b/swf/src/read.rs
+@@ -1927,6 +1927,9 @@ impl<'a> Reader<'a> {
+         };
+ 
+         let action = match (flags.contains(PlaceFlag::MOVE), has_character_id) {
++            (false, false) if class_name.is_some() && place_object_version >= 3 => {
++                PlaceObjectAction::Place(0)
++            }
+             (true, false) => PlaceObjectAction::Modify,
+             (false, true) => {
+                 let id = self.read_u16()?;
+@@ -3136,4 +3139,22 @@ pub mod tests {
+             place_object
+         );
+     }
++
++    #[test]
++    fn read_class_only_place_object_3() {
++        let mut input = Reader::new(&b"\x04\x08\x01\x00ImageDogAlpha\x00\x00"[..], 19);
++        let tag = input.read_place_object_2_or_3(3).unwrap();
++        assert_eq!(tag.action, PlaceObjectAction::Place(0));
++        assert_eq!(tag.depth, 1);
++        assert_eq!(tag.class_name.unwrap().as_bytes(), b"ImageDogAlpha");
++        assert!(tag.matrix.is_some());
++        let expected=[Tag::PlaceObject(Box::new(tag))];
++        let mut output=Vec::new();
++        crate::write::write_swf(&Header::default_with_swf_version(19),&expected,&mut output).unwrap();
++        let buffer=decompress_swf(&output[..]).unwrap();
++        let parsed=parse_swf(&buffer).unwrap();
++        assert_eq!(parsed.tags[0],expected[0]);
++        let mut invalid = Reader::new(&b"\x04\x00\x01\x00\x00"[..], 19);
++        assert!(invalid.read_place_object_2_or_3(3).is_err());
++    }
+ }
+diff --git a/swf/src/types.rs b/swf/src/types.rs
+index 4a6d83ce790df1e5636b804575edf883ea338a9e..a79176bc847ff367e4f12ac90d23ff2c5a8f9531 100644
+--- a/swf/src/types.rs
++++ b/swf/src/types.rs
+@@ -355,6 +355,7 @@ bitflags! {
+ 
+ #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+ pub enum PlaceObjectAction {
++    // SWF3 class-only placement uses the reserved zero ID plus class_name.
+     Place(CharacterId),
+     Modify,
+     Replace(CharacterId),
+diff --git a/swf/src/write.rs b/swf/src/write.rs
+index b16213a1f0711901e4aa81e531cbcdecadfca312..0728bec883c6f363ccb9bcbd0f71d26682d18da6 100644
+--- a/swf/src/write.rs
++++ b/swf/src/write.rs
+@@ -1659,7 +1659,7 @@ impl<W: Write> Writer<W> {
+                 matches!(
+                     place_object.action,
+                     PlaceObjectAction::Place(_) | PlaceObjectAction::Replace(_)
+-                ),
++                ) && !(place_object_version >= 3 && place_object.action == PlaceObjectAction::Place(0) && place_object.class_name.is_some()),
+             );
+             flags.set(PlaceFlag::HAS_MATRIX, place_object.matrix.is_some());
+             flags.set(
+@@ -1703,7 +1703,7 @@ impl<W: Write> Writer<W> {
+ 
+             match place_object.action {
+                 PlaceObjectAction::Place(character_id)
+-                | PlaceObjectAction::Replace(character_id) => writer.write_u16(character_id)?,
++                | PlaceObjectAction::Replace(character_id) => {if flags.contains(PlaceFlag::HAS_CHARACTER) {writer.write_u16(character_id)?;}},
+                 PlaceObjectAction::Modify => (),
+             }
+             if let Some(ref matrix) = place_object.matrix {
+diff --git a/tests/tests/swfs/avm2/class_only_delayed_symbolclass/output.txt b/tests/tests/swfs/avm2/class_only_delayed_symbolclass/output.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2c1c2ab3de34d318280f88589ab16d85426c2f3
+--- /dev/null
++++ b/tests/tests/swfs/avm2/class_only_delayed_symbolclass/output.txt
+@@ -0,0 +1,28 @@
++In constructor
++Finished constructor
++Called frameConstructed
++Main framescript 1
++Called init event!
++Called complete event!
++In SecondFrameChild class initializer
++In SecondFrameChild script initializer
++Called enterFrame
++SecondFrameChild: [class SecondFrameChild]
++In FourthFrameChild class initializer
++In FourthFrameChild script initializer
++FourthFrameChild: [class FourthFrameChild]
++Constructed SecondFrameChild
++Called frameConstructed
++Main framescript 2
++Called enterFrame
++SecondFrameChild: [class SecondFrameChild]
++FourthFrameChild: [class FourthFrameChild]
++Called frameConstructed
++Main framescript 3 - running gotoAndPlay(5)
++Called frameConstructed
++Main framescript 5
++Called enterFrame
++SecondFrameChild: [class SecondFrameChild]
++FourthFrameChild: [class FourthFrameChild]
++Called frameConstructed
++Main framescript 1
+diff --git a/tests/tests/swfs/avm2/class_only_delayed_symbolclass/test.swf b/tests/tests/swfs/avm2/class_only_delayed_symbolclass/test.swf
+new file mode 100644
+index 0000000000000000000000000000000000000000..f75fe2c387ece5d4469b6cd5f893301053a19cfb
+GIT binary patch
+literal 1615
+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
+NU<m8G{}*zCI=a|xGV=fc
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/tests/swfs/avm2/class_only_delayed_symbolclass/test.toml b/tests/tests/swfs/avm2/class_only_delayed_symbolclass/test.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..7cfc6eecb636401fc20c1ce6d455b2bfde10347d
+--- /dev/null
++++ b/tests/tests/swfs/avm2/class_only_delayed_symbolclass/test.toml
+@@ -0,0 +1 @@
++num_ticks = 4
+diff --git a/tests/tests/swfs/avm2/class_only_inherited_symbol/output.txt b/tests/tests/swfs/avm2/class_only_inherited_symbol/output.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..accf1c3a9c9ba8b3d3932e0b4b16362788a1b347
+--- /dev/null
++++ b/tests/tests/swfs/avm2/class_only_inherited_symbol/output.txt
+@@ -0,0 +1,33 @@
++// In SuperClass constructor
++// this.text
++[object TextField]
++
++// this.box
++[object MovieClip]
++
++// this["circle"]
++[object MovieClip]
++
++
++// In ChildClass constructor
++// this.text
++[object TextField]
++
++// this.box
++[object MovieClip]
++
++// this["circle"]
++[object MovieClip]
++
++
++// In SuperClass constructor
++// this.text
++[object TextField]
++
++// this.box
++[object MovieClip]
++
++// this["circle"]
++[object MovieClip]
++
++
+diff --git a/tests/tests/swfs/avm2/class_only_inherited_symbol/test.swf b/tests/tests/swfs/avm2/class_only_inherited_symbol/test.swf
+new file mode 100644
+index 0000000000000000000000000000000000000000..83f8622b59b9f12d0088ebe3476af12e3103323e
+GIT binary patch
+literal 1505
+zcmV<71s?iCS5pth3jhFkoTXLWZ`)K9Ki8je((iU%$u{PB2#{Fgn>2Kt)kbtlTNSAq
+ztV5cFD&pGLt--M^`?k%H(0BnMzQhwkNC?CWuRQU(y&;g0@-)HA#6Q3T5*lBEplc^h
+zvvvbEE6Tn1_;-HyoZq?kxC!D*0K=aFOd+U^P65F6@evVVKC&I-a&1{{HatHzBHLNe
+zwkZt_UEkZ=E9}h_f@n)GUbt{U$0fZ~nvQH|I=<#pvpMa@XSIr&Fw{tFMQ%vlz*pJY
+z+zfW;f~Iw7n~iXv){hIO9c+?<6*Tmw8S2FX))`N;5gOHqm^6s41c6ssWGHpnGvjUb
+zxhQZ*9J_&UdTMojR-INicU;d_%X7tf{cg_#T%=}FQYqom%rq`dmr7TPb4Iyjl+Qnf
+ziw4FAd{boVx<;sJo76nye8DIejq=Pv=RR!5J+NKp+JAEHA=P>PE+zk)wzjn|ZMYM8
+zNxf`KCmv}KpT>HzP)y{tEyD?-hDj@C7<#T{GD5vM9d8HLD|_ZHnRb}e^Lh{XpdmFI
+z;o92$3*KnxU35$@6X*Wu_{z1A=$A<x>_is1Oq{cw1GBbftokuEeT%HtD$Pb%a9!Id
+z7RyU`w)}K$`C@6QRxDmzTw1)iym)bD7SGP$#l=MXe%CHrEwFZ&ZXGuJf3O{J?Xq2p
+z+%4BPy(3s_b4%so>|C)ncYoF+DE4C|k-JOm<tS(*RS3-}CQPXXtt%CiDbd$(56krL
+zAslk;ve^%k&>`0@TktS4-IGGyFHBFTqmQ)SX@V6Ms$9F>e&-m1b&L2!EdqQuhCo2l
+zOR?$408kx6@XU4PLjd4l@6YUC*S|dX!A~Uw-wSPkHl)v!0P~@0dhV9Lpn1fhT4mk|
+ze5yL8MHaM#OjBd`RkEPXmNeB0ydYZ8&N>dp7;CCWC?(N)Xj-nnwV>ew#_5Y!NaQD`
+zqE@MHvkrKLH0iv~$Sd=DSb_G$3jn~w)*a*PJI2jA7%CVlLNL>YHhK~OZr!@o9)0><
+zM>~~yTLWB%fx+8vJ>S%3enYjtVdK}=j=%9ET>1sZ|2VVPdh7N;230xGGOt5R5dguP
+zl7xT<cm@D|o)BT{&UyLHd8orI`yJlsy^ntQwDvLm=8LLBzp6t^k-8*eO43$V06+!=
+zH>6<zcpL!-`EUPx7AR>_xFL-&BL@OZy>5SQxsl}&xFHQOs{j(5{N()aH#dW3LUv=~
+zeE|TmB8)(R4QD}EGhKf$X>SGFjYH48rmO|KE~$EMm|foqNmTXBIF?dwfo+>j;cTif
+ziI-jC+5BeE%qFrY_>5`W$x6Dk`7*KSK<YzwS>qjEVnfZ1Lz7zDBpR%xJEzdmRiBc`
+zw5YpFQp;rD`)c4*)AdOtt%s3IiAW>UA}4iSUG>#o#HtneF^zUC8bkxSuF`EcPGZh=
+z7n?zIv@?HEOY_q<&UBh>uhTBB&*&wLXLa^jrLKRxPc36#t%-hn8r)<3#-kHC-48mH
+z|B3sMoIEJ3ahI?iQF>)LD2l>LUohjxa5B@`-y@S~lAq$H#L3K5ZgNNj5sstGBY82O
+z&!5Pj%%93Xnm^5~`J8x0<no*_m_bT5CkzY@4UdeDAv83OCbBu{SjTWoMx4wEG7@DZ
+z$w-z(MMhZ}<zzG<qd{37mbnp`8<n{+nH!hU#0jK`+zDREaSGh?VP{xNM;>ts4>Ir^
+zyMesGdXESofy`zZUXeh6Omgjc2_XRi$52Q_838y25K^*y3$Fkm9%XY^Te!6f8zbkA
+zT^d0fBj+ZQq2-9_5~aiOj#cinPNmj!k~7+8XTu5r$04LV(ZU;J^(?OEaD4#R2XTD}
+z*N1VP!*%W|I+Z@#{0d79Wpim{0*`V7`;n;+6WRDtk%=5a*{51~W8&z@cwFbNa;Lh{
+zWmW*BPBH}Ul?-&@YzLVoBPAKE0AzZiPmXgSL+{oC06T~9!Kjcy&^x%0ShzkU>uLW0
+HrEoj1g~ZrW
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/tests/swfs/avm2/class_only_inherited_symbol/test.toml b/tests/tests/swfs/avm2/class_only_inherited_symbol/test.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..dbee897f5863de232a205314e14a557abaa3f733
+--- /dev/null
++++ b/tests/tests/swfs/avm2/class_only_inherited_symbol/test.toml
+@@ -0,0 +1 @@
++num_frames = 1
+diff --git a/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/output.txt b/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/output.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a7912b10cc6a9dc8c999636e6f51ffca6d1a37c
+--- /dev/null
++++ b/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/output.txt
+@@ -0,0 +1,68 @@
++Calling Main super()
++Called Main super()
++//var my_button = new MyButton();
++//Constructed UpButtonShape ( instance3 )!
++//Constructed OverButtonShape ( instance5 ): Main.INSTANCE.my_button = undefined
++//Constructed DownButtonShape ( instance7 )!
++///MyButton constructor!
++//this.addChild(my_button);
++//my_button
++[object MyButton]
++//my_button.upState
++[object Sprite]
++// numChildren:  2
++[object Shape]
++[object UpButtonShape]
++//my_button.overState
++[object OverButtonShape]
++// numChildren:  1
++[object Shape]
++//my_button.downState
++[object DownButtonShape]
++// numChildren:  1
++[object Shape]
++//my_button.hitTestState
++[object Shape]
++//my_button.upState = new UpButtonShape();
++//Constructed UpButtonShape ( instance11 )!
++//my_button.overState = new OverButtonShape();
++//Constructed OverButtonShape ( instance13 ): Main.INSTANCE.my_button = [object MyButton]
++//my_button.downState = new DownButtonShape();
++//Constructed DownButtonShape ( instance15 )!
++//my_button.hitTestState = new HitButtonShape();
++//Constructed HitButtonShape ( instance17 )!
++//my_button.upState
++[object UpButtonShape]
++// numChildren:  1
++[object Shape]
++//my_button.overState
++[object OverButtonShape]
++// numChildren:  1
++[object Shape]
++//my_button.downState
++[object DownButtonShape]
++// numChildren:  1
++[object Shape]
++//my_button.hitTestState
++[object HitButtonShape]
++// numChildren:  1
++[object Shape]
++//Constructed UpButtonShape ( instance20 )!
++//Constructed OverButtonShape ( instance22 ): Main.INSTANCE.my_button = [object MyButton]
++//Constructed DownButtonShape ( instance24 )!
++//this.timeline_symbol.upState
++[object Sprite]
++// numChildren:  2
++[object Shape]
++[object UpButtonShape]
++//this.timeline_symbol.overState
++[object OverButtonShape]
++// numChildren:  1
++[object Shape]
++//this.timeline_symbol.downState
++[object DownButtonShape]
++// numChildren:  1
++[object Shape]
++//this.timeline_symbol.hitTestState
++[object Shape]
++///MyButton constructor!
+diff --git a/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/test.swf b/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/test.swf
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ec5c836eae61f51ed4c69cb3ac855475700e705
+GIT binary patch
+literal 2845
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/test.toml b/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/test.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..c64cb4c7df1bd0adf569e349e2c0e30e9da5c97d
+--- /dev/null
++++ b/tests/tests/swfs/avm2/class_only_simplebutton_symbolclass/test.toml
+@@ -0,0 +1 @@
++num_frames = 3

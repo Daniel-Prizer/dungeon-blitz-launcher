@@ -13,6 +13,7 @@ Download **Dungeon Blitz Launcher Setup.exe** from the [latest release](https://
 - Rankings and other game links open in your default browser.
 - Singleplayer worlds managed by the launcher, without a separate server setup.
 - Optional GPU world rendering. Gameplay and dialogue stay in native Flash.
+- An optional 120 FPS player for reviewed multiplayer clients.
 
 Open **Settings** to change these options. Save applies settings; changing the server or renderer also requires **Reconnect**. **F11** toggles fullscreen and **Ctrl+,** opens Settings. Autorun defaults to **Ö** and can be rebound under Controls.
 
@@ -20,7 +21,9 @@ For singleplayer, choose **Settings → Connection → Use singleplayer**, Save,
 
 ## Rendering
 
-Original Flash is the default. GPU mode renders world artwork separately and interpolates movement between native snapshots. Its world-render counter is different from native game FPS and monitor refresh. A cap of 1000 is a ceiling, not a performance claim. Whole-game 100+ FPS has not been achieved. Singleplayer uses Original.
+Original Flash is the default. GPU world mode renders artwork separately and interpolates between native snapshots. Its counter measures world renders, not whole-game FPS. Its 1000 cap is a ceiling.
+
+The **120 FPS player · Beta** runs the game in a native GPU player with separate animation timing. It uses its own sign-in profile. Performance depends on the scene and hardware; cold artwork loading can take longer. Custom pointers and reduced rendering resolution currently require Original or GPU world mode. Singleplayer uses Original.
 
 Client-dependent enhancements disable themselves when the downloaded game no longer matches a reviewed compatibility contract. The unmodified game remains available.
 

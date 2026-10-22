@@ -59,3 +59,11 @@ Follow [the test matrix](TESTING.md). Exercise real native artwork, input, camer
 For a release, synchronize versions, package in staging, retain production integrity fuses, sign and verify all physical files, then test the packaged updater and installer. [Development](DEVELOPMENT.md) describes publication. Keep old builds, the local version hold and update opt-out. Never interrupt a running game or install into an agent-owned copy.
 
 Historical review notes remain in Git at the corresponding release tags.
+
+## Native 120 FPS admission
+
+The native player is qualified separately for **swf-eedde5fc22be**, 983,395 bytes, SHA-256 `c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d`. The complete Original contract produces enhanced SHA-256 `874171b528c3850b9fa17d6365f64cdc3ff94e843c0579627ee82999008d2532`. All 52 SWFs listed by this deployment match the reviewed artwork inventory.
+
+Admission checks both hashes, the complete adapter contract, the exact SWF inventory and every artwork hash. A source or helper change needs fresh native qualification. Failure restores Original and preserves preferences. This does not approve the same deployment for the separate retained GPU world adapter.
+
+The pinned native fork supports the current class-only placements and inherited symbols. Its vector extraction matches 18 Flash reference cases, including repeated reads of authored shapes without erasing them. Automatic timelines retain the effective 60/s ceiling while frame callbacks and rendering may run at 120/s. Original elapsed-time game methods, packet code, dungeon/session behavior and loot logic remain unchanged. See [native build and qualification](../research/native-player/README.md).

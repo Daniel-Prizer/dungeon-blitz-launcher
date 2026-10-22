@@ -28,6 +28,9 @@ const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file))
   }
   compare('src');
   compare('assets');
+  require('./prepare-native-player.cjs').verify(
+    path.join(output, 'resources/runtime/native-player')
+  );
   const local = path.join(output, 'resources/runtime/singleplayer.asar'),
     localSource = path.join(root, 'runtime/singleplayer');
   assert(fs.statSync(local).isFile());

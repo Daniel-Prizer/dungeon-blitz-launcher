@@ -35,6 +35,7 @@ const root = path.resolve(__dirname, '..');
     });
   await require('./prepare-webview-sdk.cjs')();
   require('./prepare-modern.cjs')();
+  require('./prepare-native-player.cjs').verify(path.join(root, 'runtime/native-player'));
   if (!fs.existsSync(path.join(root, 'runtime/singleplayer/provenance.json')))
     throw Error('Prepare the owned singleplayer bundle before packaging.');
   const paths = await packager({

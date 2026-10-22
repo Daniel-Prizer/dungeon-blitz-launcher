@@ -124,6 +124,28 @@ const root = path.resolve(__dirname, '..'),
       const footer = await page.locator('footer').boundingBox();
       assert(footer.y >= 0 && footer.y + footer.height <= size.height + 1);
       await page.screenshot({ path: path.join(out, `settings-${size.width}.png`) });
+      await page.locator('#game-renderer').selectOption('native');
+      assert.equal(await page.locator('#gpu-frame-cap').isDisabled(), true);
+      assert.equal(await page.locator('#gpu-frame-cap').inputValue(), '240');
+      assert.equal(await page.locator('#render-resolution').isDisabled(), true);
+      assert.match(await page.locator('#renderer-hint').textContent(), /separate sign-in profile/);
+      await page.screenshot({ path: path.join(out, `native-settings-${size.width}.png`) });
+      await page.locator('#discard').click();
+      assert.equal(await page.locator('#game-renderer').inputValue(), 'gpu');
+      assert.equal(await page.locator('#gpu-frame-cap').isEnabled(), true);
+      await page.locator('#game-renderer').selectOption('native');
+      await page.locator('#save-settings').click();
+      await page.waitForFunction(() => document.querySelector('#save-settings').disabled);
+      assert.equal(
+        await page.evaluate(
+          () => fixtureCalls.findLast((c) => c.name === 'save-settings').value.gameRenderer
+        ),
+        'native'
+      );
+      assert.equal(
+        await page.evaluate(() => fixtureCalls.some((c) => c.name === 'restart-game')),
+        false
+      );
     }
     await page.goto(origin + '/index.html');
     const pointer = await page.evaluate(async () => {
@@ -190,6 +212,8 @@ const root = path.resolve(__dirname, '..'),
             'Save records cap',
             'Disabled graphics preserves cap',
             'Pinned footer remains visible',
+            '120 FPS selection remains a draft until Save and never reconnects automatically',
+            'Native mode preserves the GPU world cap and disables unsupported controls',
           ],
           checkedAt: new Date().toISOString(),
         },

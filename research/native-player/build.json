@@ -1,0 +1,19 @@
+{
+  "runtime": "ruffle-0.7.1-blitz120",
+  "upstreamCommit": "89a7049965f3090e706265670df309a5128233ac",
+  "patchSha256": "669a054890f24506d7abc4e33688dbae40413de70cc6846ae827b87353c28ac3",
+  "target": "x86_64-pc-windows-gnullvm",
+  "rust": "1.99.1",
+  "llvmMingw": "20261020-ucrt-x86_64",
+  "profile": "dist",
+  "features": [
+    "lzma"
+  ],
+  "files": {
+    "BlitzNativePlayer.exe": "acd783efa341d216682b82b3af7824d83349a572f2a2e1c62d50d2f212fd7376",
+    "LLVM-LICENSE.txt": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "RUFFLE-LICENSE.md": "e39a2fa3dfd7238f0924f568fabb659ee1a9d95ea6460dbae4bc9b67017a1c71",
+    "SOURCE.txt": "e0f4e9e7b8542510840b306ed90ce685b00639307bcb18ec740291a70e2863c6",
+    "libunwind.dll": "f170c420d203cfb6640b3f90ca46373fd886670adad08ce5f2fdde054db27976"
+  }
+}

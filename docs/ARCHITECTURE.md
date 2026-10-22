@@ -6,6 +6,7 @@
 | --- | --- |
 | Electron shell: main.cjs, preload.cjs, ui.js | Local Settings, window layout, preferences and update coordination |
 | LegacyRuntime / NativeGpuRuntime | Start the native game host and exchange validated control messages |
+| NativePlayerRuntime / native-player-resources | Admit the reviewed multiplayer client and assets, broker public resources, and start the separate native GPU player |
 | legacy/main.cjs and NativeHost.cs | Flash window, client interception, attachment, input and process-scoped audio |
 | BlitzDisplay / BlitzAudio / BlitzInput | Revision-checked game presentation, audio and own-stage input helpers |
 | GPU session and workers | Retained artwork decoding, world composition and bounded presentation interpolation |
@@ -22,6 +23,10 @@ Client reconstruction belongs in the legacy adapter modules. Game hashes, recipe
 
 GPU code separates collection, scene validation, interpolation, resource decoding and graphics submission. The worker queue is bounded. Native gameplay owns clocks, input, audio and networking. The local module bundler accepts a limited syntax; changes to its grammar need bundle tests on the legacy engine.
 
+The optional 120 FPS player uses a pinned Ruffle fork, not the retained world worker. A per-player presentation clock separates 120 frame callbacks from automatic timelines capped at the existing Flash host's effective 60/s. The client's elapsed-time simulation remains unchanged. Admission requires both the complete Original adapter contract and a separately qualified source hash, manifest inventory and artwork hashes. Unknown sources restore Original without changing the saved renderer choice.
+
+The shell brokers only listed public resources over a token-authenticated loopback HTTP server. The native player cannot fetch arbitrary origins or files, open a browser directly, or execute browser JavaScript. TCP is restricted to the reviewed game endpoint on port 8080, including when the other official asset origin is selected. Its settings pipe shares the existing bounded authentication and window bridge. Storage belongs to a separate native-player profile; existing Flash login state is never copied.
+
 ## Assessment
 
 The codebase has useful isolation and regression coverage, but accumulated avoidable maintenance debt:
@@ -34,6 +39,6 @@ The codebase has useful isolation and regression coverage, but accumulated avoid
 - Build/research scripts still repeat fixture setup and depend on ignored local inputs. Consolidating fixture construction and making clean-checkout preparation reproducible are worthwhile follow-ups.
 - Native C#/AS3 methods still need a separate readability pass with their compiler and bytecode fixtures. They were not mechanically rewritten alongside JavaScript.
 
-A full rewrite is not justified by this audit. Refactor bounded responsibilities behind existing tests, and keep compatibility checks intact. Formatting and a cleaner README do not establish a completed architecture migration or solve the whole-game FPS limit.
+A full rewrite is not justified by this audit. Refactor bounded responsibilities behind existing tests and keep compatibility checks intact.
 
 References: [Diátaxis](https://diataxis.fr/) for documentation structure, [Fowler](https://martinfowler.com/bliki/VibeCoding.html) for the distinction between generated and reviewed code, [Prettier](https://prettier.io/docs/options) for formatting, and [commit-message guidance](https://cbea.ms/git-commit/) for concise history.

@@ -9,7 +9,8 @@ const { update } = require('../src/setup-update.cjs');
 test('Setup installs latest signed release, refuses running games/invalid bootstrap, and repeats without rewriting a current build', async () => {
   if (process.platform !== 'win32') return;
   const root = path.resolve(__dirname, '..'),
-    directory = fs.mkdtempSync(path.join(root, '.test-tools/setup-update-unit-')),
+    toolsDirectory = fs.realpathSync(path.join(root, '.test-tools')),
+    directory = fs.mkdtempSync(path.join(toolsDirectory, 'setup-update-unit-')),
     savedFetch = global.fetch;
   const installation = path.join(directory, 'installed'),
     oldBuild = path.join(installation, 'release/0.1.0/Dungeon Blitz Launcher-win32-x64'),
@@ -139,7 +140,7 @@ test('Setup installs latest signed release, refuses running games/invalid bootst
           process.kill();
         });
     if (
-      path.dirname(directory) === path.join(root, '.test-tools') &&
+      path.dirname(directory) === toolsDirectory &&
       path.basename(directory).startsWith('setup-update-unit-')
     )
       fs.rmSync(directory, { recursive: true, force: true });

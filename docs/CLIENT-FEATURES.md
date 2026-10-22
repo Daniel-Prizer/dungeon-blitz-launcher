@@ -12,11 +12,17 @@ F11 toggles fullscreen. Escape stays with game menus; in Settings it dismisses t
 
 GPU mode keeps native Flash for gameplay, NPCs, dialogue, input, audio and HUD. A WebGL2 worker composites retained world artwork. Two artwork workers decode bounded cache entries; presentation transforms interpolate between native snapshots. It does not capture the final game frame or change game clocks.
 
-The adjustable 15–1000 cap limits world rendering. Status reports completed world renders and source snapshots separately. The in-game FPS counter measures Main's ENTER_FRAME cadence. None measures physical scanout. Whole-game 100+ FPS has not been achieved; a high interpolated render count is not that result.
+The adjustable 15–1000 cap limits world rendering. Status reports completed world renders and source snapshots separately. The in-game FPS counter measures Main's ENTER_FRAME cadence. None measures physical scanout.
 
 Unknown clients/assets, unsupported scenes, stale data and GPU faults restore Original rendering. Cleanup waits for active transactions; unacknowledged native-worker shutdown disables retries until reconnect. Sustained collection cost restores Original with bounded backoff. Singleplayer GPU remains unavailable.
 
 Both multiplayer renderer choices use the existing Flash profile. Old WebView2 storage is left untouched.
+
+## 120 FPS player
+
+This optional multiplayer player renders the original game scene on the GPU with a 120 FPS cap. Automatic movie timelines retain their effective 60/s ceiling; the movie's requested rate and elapsed-time game step remain unchanged. Settings reports completed GPU renders separately from the in-game callback counter and physical scanout.
+
+It uses a separate sign-in profile and a separately qualified client/artwork inventory. Unknown deployments restore Original; the saved renderer choice remains. Initial asset parsing can lower startup FPS. Custom pointers and reduced rendering resolution are not supported in this player yet; those preferences remain available in the Flash modes. Singleplayer retains its independent Original contract.
 
 ## Controls
 

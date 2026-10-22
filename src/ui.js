@@ -114,6 +114,7 @@ function render(next) {
   const entering = state.modal === 'settings' && !settingsOpen;
   if (entering || state.modal !== 'settings') edits = {};
   const s = draft();
+  const nativeSelection = s.gameRenderer === 'native' && !s.ownedSingleplayer;
   document.body.classList.toggle('fullscreen', state.fullscreen);
   $('change-character').disabled = state.loading || !!state.error;
   $('waiting-text').textContent = state.error || 'Opening Dungeon Blitz…';
@@ -193,24 +194,42 @@ function render(next) {
       : 'Player includes abilities and menu sounds. Environment includes ambient and world sounds. Master volume scales every category.';
   for (const bus of audioBuses) $('audio-' + bus).disabled = state.audioIntegration === false;
   $('render-resolution').disabled =
-    state.clientIntegration === false || state.audioIntegration === false;
+    nativeSelection || state.clientIntegration === false || state.audioIntegration === false;
+  $('resolution-hint').textContent = nativeSelection
+    ? 'The 120 FPS player uses full rendering resolution. Your saved preference is kept for Original.'
+    : 'Lower detail draws fewer pixels and looks softer.';
   $('gpu-frame-cap').disabled =
     s.ownedSingleplayer || s.gameRenderer !== 'gpu' || !s.hardwareAcceleration;
   $('renderer-hint').textContent = s.ownedSingleplayer
     ? 'Singleplayer uses Original Flash. This renderer preference is kept for multiplayer.'
-    : 'GPU keeps the native game, dialogue and existing Flash profile. Reconnect after saving.';
+    : s.gameRenderer === 'native'
+      ? 'GPU rendering with a 120 FPS cap and a separate sign-in profile. Automatic animation timing is preserved. Reconnect after saving.'
+      : 'GPU world keeps the native game, dialogue and existing Flash profile. Reconnect after saving.';
   $('gpu-status').textContent =
     state.gpu?.completedFrames > 0
       ? `${state.gpu.phase === 'gpu' ? 'Average' : 'Last average'}: ${Math.round(state.gpu.completedCanvasFPS || 0)} world renders/s · ${Math.round(state.gpu.sourceSnapshotsFPS || 0)} source snapshots/s. Native game FPS and monitor scanout are separate.`
       : state.gpu?.reason ||
         'World render cap: 15–1000. Game updates, animation poses and dialogue retain their native rate.';
+  $('gpu-cap-row').hidden = nativeSelection;
+  $('native-performance').hidden = !nativeSelection;
+  if (nativeSelection)
+    $('native-status').textContent =
+      state.native?.reason ||
+      (state.native?.renderFPS
+        ? `${Math.round(state.native.renderFPS)} completed game renders/s · 120 FPS cap. Monitor scanout is separate.`
+        : '120 FPS cap. Performance depends on the scene and hardware; initial artwork loading can take longer.');
   if (s.ownedSingleplayer)
     $('gpu-status').textContent =
       'Singleplayer uses Original Flash with launcher enhancements. Your GPU preference is kept for multiplayer.';
   $('fps-hint').textContent =
-    s.gameRenderer === 'gpu' && !s.ownedSingleplayer
+    ['gpu', 'native'].includes(s.gameRenderer) && !s.ownedSingleplayer
       ? 'The in-game counter measures native game ticks. GPU rendering is measured above.'
       : 'Current FPS and 30-second low / high averages, in the gray margin.';
+  for (const id of ['crosshair-style', 'crosshair-color', 'crosshair-size', 'crosshair-outline'])
+    $(id).disabled = nativeSelection;
+  if (nativeSelection)
+    $('crosshair-preview-label').textContent =
+      'The 120 FPS player uses the game pointer. Your custom pointer preference is kept.';
   $('show-fps').disabled = state.clientIntegration === false || state.audioIntegration === false;
   $('experimental-widescreen').disabled =
     state.clientIntegration === false || state.audioIntegration === false;

@@ -49,7 +49,7 @@ function validSettings(input = {}) {
     unlockKey: Object.hasOwn(UNLOCK_KEYS, input.unlockKey) ? input.unlockKey : 'AltLeft',
     gameZoom: zoom(input.gameZoom ?? input.defaultZoom),
     renderResolution: [0.5, 0.75, 1].includes(input.renderResolution) ? input.renderResolution : 1,
-    gameRenderer: input.gameRenderer === 'gpu' ? 'gpu' : 'original',
+    gameRenderer: ['gpu', 'native'].includes(input.gameRenderer) ? input.gameRenderer : 'original',
     gpuFrameCap:
       Number.isInteger(input.gpuFrameCap) && input.gpuFrameCap >= 15 && input.gpuFrameCap <= 1000
         ? input.gpuFrameCap

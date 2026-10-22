@@ -27,6 +27,7 @@ class LegacyRuntime extends EventEmitter {
     this.test = test;
     this.privateDesktop = privateDesktop;
     this.modern = options.modern === true;
+    this.nativePlayer = !!options.nativePlayer;
     this.audioIntegration = false;
     this.layoutRevision = 0;
     this.appliedLayoutRevision = 0;
@@ -34,7 +35,11 @@ class LegacyRuntime extends EventEmitter {
     this.activationRechecks = 0;
     const executable = path.join(
       root,
-      options.modern ? 'modern/BlitzGpuHost.exe' : 'game/BlitzGame.exe'
+      this.nativePlayer
+        ? 'native-player/BlitzNativePlayer.exe'
+        : options.modern
+          ? 'modern/BlitzGpuHost.exe'
+          : 'game/BlitzGame.exe'
     );
     const log = (message) => {
       try {
@@ -55,6 +60,56 @@ class LegacyRuntime extends EventEmitter {
     if (require('./legacy/singleplayer-network.cjs').ports(options.singleplayerPorts))
       env.BLITZ_SINGLEPLAYER_PORTS = JSON.stringify(options.singleplayerPorts);
     env.BLITZ_GAME_ACCELERATION = hardwareAcceleration === false ? '0' : '1';
+    let nativeArguments = [];
+    if (this.nativePlayer) {
+      const native = options.nativePlayer,
+        profile = native.profile;
+      const config = path.join(profile, 'config');
+      fs.mkdirSync(config, { recursive: true });
+      const preferences = path.join(config, 'preferences.toml');
+      if (!fs.existsSync(preferences))
+        fs.writeFileSync(preferences, 'enable_openh264 = false\n', { flag: 'wx' });
+      Object.assign(env, {
+        BLITZ_NATIVE_PLAYER: '120',
+        BLITZ_NATIVE_TCP: '1',
+        BLITZ_NATIVE_TCP_HOST: native.tcpHost,
+        BLITZ_NATIVE_RESOURCE_BROKER: native.brokerURL,
+        BLITZ_NATIVE_RESOURCE_ORIGIN: native.origin,
+        BLITZ_NATIVE_RESOURCE_TOKEN: native.token,
+        RUST_LOG: 'off',
+      });
+      nativeArguments = [
+        '--no-gui',
+        '--graphics',
+        'dx12',
+        '--width',
+        '1280',
+        '--height',
+        '720',
+        '--frame-rate',
+        '120',
+        '--volume',
+        '1',
+        '--storage',
+        'disk',
+        '--dummy-external-interface',
+        '--config',
+        config,
+        '--cache-directory',
+        path.join(profile, 'cache'),
+        '--save-directory',
+        path.join(profile, 'saves'),
+        '--tcp-connections',
+        'deny',
+        '--open-url-mode',
+        'deny',
+        '--filesystem-access-mode',
+        'deny',
+        '--spoof-url',
+        native.sourceURL,
+        native.movieURL,
+      ];
+    }
     if (options.modern && typeof options.config === 'string') env.BLITZ_GPU_CONFIG = options.config;
     if (options.nativeGpu === true) {
       env.BLITZ_NATIVE_GPU = '1';
@@ -83,7 +138,11 @@ class LegacyRuntime extends EventEmitter {
           return;
         }
         if (event.type === 'ready') {
-          log(`Game runtime ready: Electron ${event.electron}, Chromium ${event.chromium}`);
+          log(
+            event.native
+              ? `Game runtime ready: ${event.native}`
+              : `Game runtime ready: Electron ${event.electron}, Chromium ${event.chromium}`
+          );
           if (!/^\d+$/.test(event.hwnd)) return;
           // Hidden tests never create, raise, focus or reparent desktop windows.
           if (this.test && !this.privateDesktop) {
@@ -188,7 +247,7 @@ class LegacyRuntime extends EventEmitter {
         this.server.close();
         return;
       }
-      this.child = spawn(executable, [], {
+      this.child = spawn(executable, nativeArguments, {
         stdio: ['ignore', 'ignore', 'pipe'],
         windowsHide: true,
         env,
@@ -271,7 +330,7 @@ class LegacyRuntime extends EventEmitter {
   send(command) {
     if (this.closed) return;
     if (
-      this.modern &&
+      (this.modern || this.nativePlayer) &&
       command.type === 'visibility' &&
       command.value === true &&
       !this.hostAttached

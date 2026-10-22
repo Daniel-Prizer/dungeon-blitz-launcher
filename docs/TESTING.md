@@ -37,3 +37,11 @@ The native GPU fixture covers nine pixel/resource checks, five restarts, resize 
 Its final RTX 4080 SUPER run measured about 59.4 native updates/s, 24.5 source snapshots/s and 396.4 interpolated world renders/s. At a 240 ceiling it completed 191.1 world renders/s. These are account-free fixture results, not live-combat or whole-game FPS measurements. The earlier 426 figure also counted world rendering only.
 
 Cursor tests never call ClipCursor or alter shared OS input. Fake APIs test accessibility policy without changing system settings. Inactive-desktop tests cannot verify Explorer/taskbar behavior. Anonymous startup cannot establish authenticated gameplay, all dungeon effects or long-session performance.
+
+## Native 120 FPS player
+
+The 0.31.0 candidate passes 105 unit groups and Settings UI at both sizes. Its pinned native distribution completes 119.99 changing game renders/s in the 2560×1440 original dungeon-artwork/HUD fixture over 20 seconds. The 16×16 source marker matches every expected pixel; original elapsed-time integration stays at 24 steps/s and the 100-ms timer fires 200 times. Automatic timeline and requested-rate checks pass separately at 120 callbacks/s.
+
+Anonymous startup on both official addresses, audio helper levels, Ö/rebinding, repeat/chord handling, hide/disable, synthetic disk persistence, four window sizes and normal shutdown pass in owned fixtures. The alternative address exercises the client's hardcoded legacy resource URL through the same admitted HTTPS cache. No account, physical desktop input or scanout measurement was used. Native source/build instructions and the Flash vector reference are in [native-player](../research/native-player/README.md); the release qualification record binds the tested binary and source hashes.
+
+The packaged build passes source/runtime hashes, production fuses, registered archive integrity, singleplayer lifecycle, signed updater and independent installer checks. The retained signed 0.30.1 helper installs and verifies all 442 files of the complete new payload, including the native player.

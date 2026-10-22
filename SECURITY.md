@@ -16,6 +16,8 @@ GPU mode validates the client and loaded artwork before replacing the world comp
 
 The native control pipe uses a random token, bounded messages and validated commands. Child processes receive a restricted environment. Cursor and audio controls affect the game window or its process tree. They do not record keystrokes or alter system cursor definitions, master audio or other applications.
 
+The optional 120 FPS player is a pinned native Ruffle fork with its own storage profile. It runs admitted SWF code in the native process; it is not an OS sandbox. Source and artwork checks establish compatibility, not safety against a malicious trusted server. Its HTTP requests pass through a bounded, token-authenticated loopback resource broker with a public-file allowlist; TCP is confined to the reviewed game endpoint on port 8080. File dialogs, arbitrary browser calls and direct external navigation are disabled. Approved links return to the shell's gesture and destination policy. Trace output is suppressed so game data cannot enter diagnostics.
+
 ## Singleplayer
 
 The bundled server is imported from a pinned Git commit. Accounts, saves, environment files and another checkout's working changes are excluded. Each launcher profile owns one locked world on OS-assigned loopback ports. Normal shutdown waits for persistence. Manual local-server URLs remain external to this lifecycle.

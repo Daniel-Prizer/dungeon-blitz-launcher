@@ -26,6 +26,7 @@ const { loadStore } = require('./store.cjs');
 const { LegacyRuntime } = require('./legacy-runtime.cjs');
 const { modernAddress } = require('./game-source.cjs');
 const { NativeGpuRuntime } = require('./native-gpu-runtime.cjs');
+const { NativePlayerRuntime } = require('./native-player-runtime.cjs');
 const { Updater } = require('./updater.cjs');
 const { Singleplayer } = require('./singleplayer.cjs');
 const { classifyLink } = require('./legacy/links.cjs');
@@ -67,6 +68,8 @@ let win,
 let singleplayer,
   launchRevision = 0,
   activeSettings = null;
+let nativePreparation = null,
+  nativeFallback = '';
 const externalLinks = [];
 let lastExternalLink = 0;
 async function openGameLink(event) {
@@ -107,6 +110,8 @@ function state() {
     cursor: game?.cursorState || { enabled: store.data.settings.cursorLock, active: false },
     audio: game?.audioState || null,
     gpu: game?.gpuStatus || null,
+    native:
+      game?.nativeStatus || (nativeFallback ? { phase: 'fallback', reason: nativeFallback } : null),
     singleplayer: singleplayer?.status || { phase: 'stopped' },
     activeSingleplayer: activeSettings?.ownedSingleplayer === true,
     originalPointer: game?.originalPointer || null,
@@ -188,10 +193,12 @@ function keyboard(event, input) {
   else return;
   event.preventDefault();
 }
-async function startGame() {
+async function startGame(settingsOverride = null) {
   const revision = ++launchRevision,
-    settings = { ...store.data.settings };
+    settings = { ...(settingsOverride || store.data.settings) };
   capturingShortcut = false;
+  nativePreparation?.abort();
+  nativeFallback = '';
   game?.close();
   game = null;
   error = '';
@@ -209,16 +216,48 @@ async function startGame() {
     gameAddress = local?.url || settings.gameURL;
     // Preserve the saved GPU choice when switching to the separately reviewed
     // local Flash client. Local GPU artwork has not been reviewed for parity.
-    const Runtime = settings.gameRenderer === 'gpu' && !local ? NativeGpuRuntime : LegacyRuntime;
-    const instance = new Runtime(
-      root,
-      win.getNativeWindowHandle(),
-      smoke,
-      privateDesktop,
-      gameAddress,
-      settings.hardwareAcceleration,
-      { singleplayerPorts: local?.ports }
-    );
+    let Runtime = settings.gameRenderer === 'gpu' && !local ? NativeGpuRuntime : LegacyRuntime;
+    let prepared = null;
+    if (settings.gameRenderer === 'native' && !local) {
+      if (settings.hardwareAcceleration === false)
+        nativeFallback =
+          'Enable graphics acceleration and restart to use the 120 FPS player. Original rendering is active.';
+      else {
+        const controller = new AbortController();
+        nativePreparation = controller;
+        try {
+          prepared = await NativePlayerRuntime.prepare(
+            root,
+            gameAddress,
+            path.join(app.getPath('userData'), 'native-player'),
+            controller.signal
+          );
+          Runtime = NativePlayerRuntime;
+        } catch (e) {
+          nativeFallback = e.message;
+        }
+        if (nativePreparation === controller) nativePreparation = null;
+        if (closing || revision !== launchRevision) {
+          prepared?.close();
+          return;
+        }
+      }
+    }
+    let instance;
+    try {
+      instance = new Runtime(
+        root,
+        win.getNativeWindowHandle(),
+        smoke,
+        privateDesktop,
+        gameAddress,
+        settings.hardwareAcceleration,
+        prepared || { singleplayerPorts: local?.ports }
+      );
+    } catch (e) {
+      prepared?.close();
+      throw e;
+    }
     game = instance;
     const current = () => game === instance && !closing;
     instance.on('ready', () => {
@@ -291,11 +330,21 @@ async function startGame() {
         layout();
         win.webContents.focus();
       }
-      if (event.type === 'fullscreen') setFullscreen(!win.isFullScreen());
+      if (event.type === 'fullscreen')
+        setFullscreen(typeof event.value === 'boolean' ? event.value : !win.isFullScreen());
       if (event.type === 'settings') openSettings();
-      if (event.type === 'close-window') win.close();
+      if (event.type === 'close-window' || event.type === 'close') win.close();
       publish();
-      if (event.type === 'external-link') void openGameLink(event);
+      if (event.type === 'external-link') {
+        if (
+          instance.nativePlayer &&
+          event.userGesture === true &&
+          !modal &&
+          classifyLink(event.url, gameAddress)?.type === 'reload'
+        )
+          void startGame(activeSettings);
+        else void openGameLink(event);
+      }
     });
     instance.on('key', (key) => {
       if (!current()) return;
@@ -346,6 +395,10 @@ async function action(name, value) {
         modal = null;
         error = '';
         loading = true;
+        if (game.nativePlayer) {
+          void startGame(activeSettings);
+          return;
+        }
         game.send({ type: 'reload' });
         layout();
         focusGame();
@@ -392,8 +445,8 @@ async function action(name, value) {
         throw new Error('Volume must be a whole number from 0 to 100.');
       if ('renderResolution' in value && ![0.5, 0.75, 1].includes(value.renderResolution))
         throw new Error('Choose 100%, 75% or 50% rendering resolution.');
-      if ('gameRenderer' in value && !['original', 'gpu'].includes(value.gameRenderer))
-        throw new Error('Choose Original or GPU rendering.');
+      if ('gameRenderer' in value && !['original', 'gpu', 'native'].includes(value.gameRenderer))
+        throw new Error('Choose Original, GPU world or the 120 FPS player.');
       if ('ownedSingleplayer' in value && typeof value.ownedSingleplayer !== 'boolean')
         throw new Error('Choose a valid singleplayer mode.');
       if (
@@ -403,7 +456,7 @@ async function action(name, value) {
         throw new Error('GPU frame cap must be a whole number from 15 to 1000.');
       if (
         !(value.ownedSingleplayer ?? store.data.settings.ownedSingleplayer) &&
-        (value.gameRenderer ?? store.data.settings.gameRenderer) === 'gpu' &&
+        ['gpu', 'native'].includes(value.gameRenderer ?? store.data.settings.gameRenderer) &&
         !modernAddress(value.gameURL ?? store.data.settings.gameURL)
       )
         throw new Error('Choose Original rendering for a local or custom server.');
@@ -657,6 +710,7 @@ async function start() {
     event.preventDefault();
     if (closing) return;
     closing = true;
+    nativePreparation?.abort();
     ++launchRevision;
     store.data.window = {
       width: win.getNormalBounds().width,
