@@ -1,0 +1,47 @@
+{
+  "version": "0.31.2",
+  "reviewedAtUtc": "2026-10-22T16:52:39.986Z",
+  "previousSource": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
+  "sourceSha256": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
+  "sourceBytes": 984298,
+  "revision": "swf-585c2b60a1a8",
+  "enhancedSha256": "dc1f074c7838df061aaf6f6e379dd11bbb2661086bc832b5fc9ce56dda0b795f",
+  "swfTags": 34,
+  "changedTag": 7,
+  "addedTag": 30,
+  "changedMethod": "class_4.method_249",
+  "mainInterfaceUnchanged": true,
+  "other3775MainBodiesByteIdentical": true,
+  "existingNonMainTagsByteIdentical": true,
+  "review": {
+    "main": "Three instructions prepend ScreenRepaint.Tick(this) to the UI update. Removing them and relocating branch targets by three yields the original raw instruction sequence. No exception table is added or changed.",
+    "helper": "New ScreenRepaint watches visible screen membership. On a change it temporarily adds a Shape with alpha 1/255, toggles visibility and removes it after 12 ENTER_FRAME callbacks. No clocks, networking or gameplay changes.",
+    "exceptions": "Reviewed all seven helper bodies and their resolved raw instructions. Tick catches Error around tick(ui); onFrame catches Error around cover updates/removal. Branches and exception boundaries validate.",
+    "adaptation": "Complete Original contract passes. The adapter preserves the new helper tag and the prepended call. Existing TouchBridge retention cleanup remains byte-identical."
+  },
+  "precedingDeployment": {
+    "version": "0.31.2",
+    "reviewedAtUtc": "2026-10-22T16:27:25.626Z",
+    "previousSource": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
+    "sourceSha256": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
+    "sourceBytes": 983412,
+    "revision": "swf-0d01ad1de11f",
+    "enhancedSha256": "0e66a4b2c323162a69b161bf5e8b58271c9b1108cdecc37023bf2caa9452ccf5",
+    "swfTags": 33,
+    "changedTag": 29,
+    "changedClass": "TouchBridge",
+    "otherTagsByteIdentical": true,
+    "methodBodies": 16,
+    "rawChangedMethods": 13,
+    "resolvedChangedMethods": 8,
+    "review": {
+      "Attach": "Skip sSeen retention when ExternalInterface is unavailable; remember games only before sMain is known. The same addCallback calls remain within their Error catch.",
+      "LiveGame": "Clear sSeen once sMain is discovered. Existing selection of an active or fallback Game is preserved.",
+      "otherInstructions": "Reviewed compiler coercions around Boolean/Number/typed fallbacks, Array push/join namespace forms and global isNaN resolution; helper operations unchanged.",
+      "exceptions": "Attach and Icon ranges relocate with inserted instructions; protected operations, handler flow and Error catch types are preserved. Other normalized exception tables match.",
+      "interface": "Semantic method/class/script contracts differ only in the SOURCE_DIGEST constant.",
+      "gameplay": "Main, Game, Entity, timings, packet code, transitions, recovery and gameplay tags are byte-identical to the previously qualified client.",
+      "adaptation": "Complete Original contract passes and retains the new TouchBridge tag byte-for-byte."
+    }
+  }
+}

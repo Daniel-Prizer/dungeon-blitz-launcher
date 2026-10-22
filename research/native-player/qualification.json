@@ -1,9 +1,9 @@
 {
-  "version": "0.31.1",
-  "checkedAtUtc": "2026-10-22T01:38:31.652Z",
+  "version": "0.31.2",
+  "checkedAtUtc": "2026-10-22T16:57:24.251Z",
   "nativeSha256": "acd783efa341d216682b82b3af7824d83349a572f2a2e1c62d50d2f212fd7376",
   "patchSha256": "669a054890f24506d7abc4e33688dbae40413de70cc6846ae827b87353c28ac3",
-  "clientSha256": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
+  "clientSha256": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
   "dungeon": {
     "viewport": [
       2560,
@@ -11,11 +11,11 @@
     ],
     "room": "a_Room_BT12",
     "level": "LevelsBT.swf",
-    "elapsedMs": 20000,
-    "gameUpdates": 2399,
-    "completedGpuPerSecond": 119.99038749817387,
-    "nativeSteps": 480.00000000001273,
-    "nativeElapsedMs": 20000,
+    "elapsedMs": 20003,
+    "gameUpdates": 2400,
+    "completedGpuPerSecond": 120.00378528752486,
+    "nativeSteps": 480.04800000001137,
+    "nativeElapsedMs": 20002,
     "timerEvents": 200,
     "markerPixels": 256,
     "normalExit": true
@@ -23,8 +23,8 @@
   "automaticTimeline": {
     "frames": 151,
     "callbacks": 301,
-    "elapsedMs": 2508,
-    "hostElapsedMs": 2510,
+    "elapsedMs": 2509,
+    "hostElapsedMs": 2511,
     "requestedStageRate": 100,
     "timerEvents": 25
   },
@@ -38,7 +38,7 @@
       1600,
       900
     ],
-    "secondaryGpuMean": 120.02452080836498,
+    "secondaryGpuMean": 120.02065699300044,
     "audioLevels": {
       "creatures": 1,
       "environment": 0.75,
@@ -64,5 +64,13 @@
     "review": "level-resources.json",
     "binaryUnchangedFrom": "0.31.0",
     "packagedModule": true
-  }
+  },
+  "deploymentReview": "deployments/2026-10-22.json",
+  "upstreamRepaint": {
+    "visibleScreenChanges": 2,
+    "coverCallbacksEach": 12,
+    "unchangedScreenAddsNothing": true,
+    "malformedUiCaught": true
+  },
+  "retainedControlsQualification": "0.31.1; native binary and control implementation unchanged"
 }

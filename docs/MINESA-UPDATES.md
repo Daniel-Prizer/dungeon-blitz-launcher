@@ -8,7 +8,7 @@ The last fully reviewed GPU deployment is **swf-e20d49253050**, 978,778 bytes:
 c0abc2eac96a102b3be0246e8d3b83342bfe29e45e2c0a62e1942a051b485294
 ```
 
-On 21 October at 16:14 UTC, both official origins served **swf-82cb959b0047**, 981,633 bytes, SHA-256 `7ac0aee9a35c39ef95d05105e52a9eb9af922b5762e9f09e129720dd3d50f9e4`. The existing complete Original contract accepts it; the exact-source GPU guard rejects it and restores Original. GPU adaptation for those new bytes requires a separate review.
+On 22 October at 16:48 UTC, both official origins served **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract accepts it. Native 120 FPS admission is reviewed separately below; the retained GPU world adapter still rejects this source and restores Original.
 
 All 73 artwork assets matched at the preceding reviewed deployment. Exact layouts and reusable recipes live in src/legacy; GPU recipes and artwork hashes live in src/gpu. The separate local-client contract is restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes.
 
@@ -62,7 +62,9 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## Native 120 FPS admission
 
-The native player is qualified separately for **swf-eedde5fc22be**, 983,395 bytes, SHA-256 `c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d`. The complete Original contract produces enhanced SHA-256 `874171b528c3850b9fa17d6365f64cdc3ff94e843c0579627ee82999008d2532`. Admission verifies the 52 master-list SWFs and 21 separately requested level libraries on both official origins.
+The native player is qualified separately for **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract produces enhanced SHA-256 `dc1f074c7838df061aaf6f6e379dd11bbb2661086bc832b5fc9ce56dda0b795f`. Admission verifies the 52 master-list SWFs and 21 separately requested level libraries on both official origins.
+
+The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. The latest deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
 The 0.31.1 resource fix includes the level libraries, which are absent from `masterFileList.xml`. Two current level files contain the same dialogue spelling correction; their other tags, constant pools, class contracts and all raw method bodies/exception tables are unchanged. [Level review](../research/native-player/level-resources.json) records the hashes and comparison. Unknown files and changed bytes still fail admission.
 
