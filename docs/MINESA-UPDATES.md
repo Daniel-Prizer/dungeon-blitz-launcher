@@ -2,7 +2,7 @@
 
 ## Deployment status
 
-On 22 October, both official origins served **swf-585c2b60a1a8**, 984,298 bytes, SHA-256 `d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6`. The complete Original contract and separate High FPS admission accept it.
+On 23 October, both official origins served **swf-7a8b76cf4524**, 986,140 bytes, SHA-256 `2a0777535e552b56e904c350dc257f6591261992ad9f8edaabd6ea1fef38cc79`. The complete Original contract and separate High FPS admission accept it.
 
 All 73 SWF assets match the reviewed inventory: 52 master-list assets and 21 level libraries. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `b090e83fbce01a81525a293ba2ae0b35b69a5ccfe0d4b4fb9fe4c1b1f5a97752`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `312e04010bf3a8eec0dc8316ef7077c5fff4df195c510ddec526c2e82f44fba7`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. The latest deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
@@ -63,3 +63,5 @@ The pinned fork supports class-only placements, inherited symbols and non-mutati
 Refresh and Enter-to-revive add guards for the original selection, respawn and button-handler dependencies. Twelve native method envelopes and their exception tables remain byte-identical; [the control review](../research/native-player/session-controls.json) records their hashes. The helper calls the original handlers and preserves their authentication, enabled-state and cooldown checks. See [native qualification](../research/native-player/README.md).
 
 The 0.32.1 audio correction gates the original fade loop at 60 Hz in the native player. Embedded Flash retains its existing callbacks. Its original loop instructions and exception data are retained; the other 3,775 game method bodies are unchanged from 0.32.0. Game cursor artwork now uses native `MouseCursorData` support without editing the client's cursor selection. [Audio and cursor review](../research/native-player/audio-cursor-review.json) records the comparison.
+
+The 0.32.2 compatibility patch qualifies Minesa's AIR loading helper, Rankings navigation correction and BaseDamageMult fix. Raw instruction and exception review accounts for all four changed main bodies; the other 3,772 remain byte-identical. The existing adapter preserves all four changed bodies and every upstream helper. See [the October 23 review](../research/native-player/deployments/2026-10-23.json).

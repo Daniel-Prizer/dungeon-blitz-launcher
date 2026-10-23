@@ -1,0 +1,45 @@
+{
+  "version": "0.32.2",
+  "reviewedAtUtc": "2026-10-23T23:01:24.890Z",
+  "previousSourceSha256": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
+  "sourceSha256": "2a0777535e552b56e904c350dc257f6591261992ad9f8edaabd6ea1fef38cc79",
+  "sourceBytes": 986140,
+  "revision": "swf-7a8b76cf4524",
+  "enhancedSha256": "312e04010bf3a8eec0dc8316ef7077c5fff4df195c510ddec526c2e82f44fba7",
+  "swfTags": 35,
+  "mainInterfaceUnchanged": true,
+  "changedMainMethods": [
+    {
+      "name": "Game.method_1218",
+      "change": "Two ExternalInterface calls delegate through AirCompat.call"
+    },
+    {
+      "name": "class_34.method_335",
+      "change": "Original Loader.load(request,context) delegates through AirCompat.Load(loader,request,context); one extra stack receiver and max_stack 7; relocated branches identical"
+    },
+    {
+      "name": "ResourceManager.method_1544",
+      "change": "Six Security.allowDomain calls delegate through AirCompat.allowDomain"
+    },
+    {
+      "name": "CombatState.method_1192",
+      "change": "Eight inserted instructions add a truthy BaseDamageMult contribution to local 12; all remaining instructions and branches identical"
+    }
+  ],
+  "otherMainMethodsByteIdentical": 3772,
+  "review": {
+    "airCompat": "New nine-body helper wraps ExternalInterface calls, skips Security.allowDomain only in the application sandbox, and uses Loader.load unchanged outside AIR. AIR uses URLLoader BINARY followed by loadBytes with allowCodeImport; IO/security errors fall back to the original load. No helper exception table; all branch offsets validated.",
+    "rankings": "Twenty bodies after removing unused CanDraw. Parent/listener/child/frame accesses use public multinames. OpenPage falls back to root loaderInfo.parameters.origin when the previous source URL has no origin. All three Error catch ranges and the increased scope envelope were reviewed; button placement and original navigation remain upstream code.",
+    "combat": "A truthy BaseDamageMult result is added to the existing local damage multiplier. Removing the eight inserted instructions and relocating branches reproduces the previous raw method exactly. The adapter preserves the new body byte-for-byte.",
+    "main": "Only the four listed main bodies changed. Delegation substitutions, one loader receiver/max_stack change and the eight combat instructions fully account for resolved differences. Constant-pool prefixes and main semantic interface remain intact.",
+    "preservation": "All four changed main bodies and every non-main ABC, including AirCompat, RankingsButton, TouchBridge and ScreenRepaint, are byte-identical between current input and enhanced output. No guard, networking or gameplay method is replaced."
+  },
+  "exceptions": {
+    "rawOffsetsValidated": true,
+    "mainChangesIntroduceNoExceptionDelta": true,
+    "airCompatBodies": 9,
+    "rankingsBodies": 20,
+    "rankingsOpenPageErrorCatches": 3
+  },
+  "evidence": "Ignored review workspace artifacts/daily-oct23-pMtVGF; fresh qualification binds this source and enhanced hash."
+}
