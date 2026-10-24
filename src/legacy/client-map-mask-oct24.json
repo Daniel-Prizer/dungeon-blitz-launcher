@@ -1,0 +1,10 @@
+{
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-a637df16ed49",
+  "inputHash": "a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c",
+  "method": "class_119.OnRefreshScreen",
+  "bodyHash": "88dfe7bc657e7defdcd105b2682305c3d602bea8edb67d6b658d9d09b1888da6",
+  "codeHash": "235bcc17ecf057fb1e8043bf94d4a5546fcd36332f351c1103772f2184db56e6",
+  "codeOffset": 788,
+  "expected": "60c70166fa01",
+  "replacement": "258009020202"
+}

@@ -90,6 +90,7 @@ public class TransitionFixtureBuilder {
      // original width expression for the negative control, retaining its handler.
      Set<String> accepted=new HashSet<>(Set.of(expected));
      if(!singleplayer&&method[1].equals("OnRefreshScreen"))accepted.add("2f9d567fcc26def1547accc063b8e6aaef3f9fe71e316b4020952238c3f77fe6");
+     if(!singleplayer&&method[1].equals("OnRefreshScreen"))accepted.add("235bcc17ecf057fb1e8043bf94d4a5546fcd36332f351c1103772f2184db56e6");
      if(original==null||!accepted.contains(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(original))))throw new IllegalStateException("Unreviewed camera/map baseline: "+method[1]);
      MethodBody body=abc.findBodyByClassAndName(method[0],method[1]);body.setCodeBytes(original);body.getCode().checkValidOffsets(body);body.setCodeBytes(original);
     }

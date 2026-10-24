@@ -109,6 +109,10 @@ const target = path.join(root, 'runtime/game');
     stdio: 'inherit',
     windowsHide: true,
   });
+  execFileSync(process.execPath, [path.join(__dirname, 'prepare-map-mask-contract.cjs')], {
+    stdio: 'inherit',
+    windowsHide: true,
+  });
   execFileSync(process.execPath, [path.join(__dirname, 'prepare-singleplayer.cjs')], {
     stdio: 'inherit',
     windowsHide: true,

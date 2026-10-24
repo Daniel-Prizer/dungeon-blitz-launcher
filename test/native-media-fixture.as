@@ -12,7 +12,17 @@ package {
    var art:MovieClip=class_4.method_16(name);stop(art);art.x=80+i*150;art.y=120;addChild(art);
    var icon:Bitmap=class_4.method_639(game,name,1);var p:BitmapData=icon.bitmapData;icon.x=80+i*150;icon.y=300;addChild(icon);
    var bounds:Rectangle=art.getBounds(art);var raw:ByteArray=p.getPixels(p.rect);raw.compress();results.push({name:name,exists:true,width:p.width,height:p.height,bounds:{x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height},argb:base64(raw)});
-  }filterChecks();ready=true;}catch(e:Error){failure=e.toString()+" "+e.getStackTrace();}}
+  }filterChecks();mapMaskChecks();ready=true;}catch(e:Error){failure=e.toString()+" "+e.getStackTrace();}}
+  private function mapMaskChecks():void {
+   if(!ApplicationDomain.currentDomain.hasDefinition("MapZoneMask"))return;
+   var helper:Class=ApplicationDomain.currentDomain.getDefinition("MapZoneMask") as Class;
+   var data:BitmapData=new BitmapData(32,16,true,0xffff3300);var source:Bitmap=new Bitmap(data);var target:BitmapData=new BitmapData(32,16,true,0);
+   helper["Draw"](target,source);checks.push({name:"Map helper preserves an unmasked bitmap",actual:target.getPixel32(8,8),expected:0xffff3300});
+   var holder:Sprite=new Sprite();var mask:Sprite=new Sprite();mask.graphics.beginFill(0xffffff);mask.graphics.drawRect(4,0,12,16);mask.graphics.endFill();holder.addChild(source);holder.addChild(mask);holder.addChild(new Sprite());mask.visible=false;source.mask=mask;
+   target.fillRect(target.rect,0);helper["Draw"](target,source);
+   checks.push({name:"Map helper retains masked inside",actual:target.getPixel32(8,8),expected:0xffff3300});checks.push({name:"Map helper clears masked outside",actual:target.getPixel32(24,8),expected:0});
+   checks.push({name:"Map helper restores mask ownership and visibility",actual:(holder.numChildren==3&&mask.parent===holder&&holder.getChildIndex(mask)==1&&source.mask===mask&&!mask.visible?1:0),expected:1});target.dispose();data.dispose();
+  }
   private function filterChecks():void {
    var root:Sprite=new Sprite();var child:Sprite=new Sprite();child.graphics.beginFill(0xff0000);child.graphics.drawRect(4,4,16,16);child.graphics.endFill();root.addChild(child);
    child.filters=[new ColorMatrixFilter([0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0])];

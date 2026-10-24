@@ -1,0 +1,32 @@
+{
+  "version": "0.32.3",
+  "reviewedAtUtc": "2026-10-24T20:37:00.257Z",
+  "previousSourceSha256": "2a0777535e552b56e904c350dc257f6591261992ad9f8edaabd6ea1fef38cc79",
+  "sourceSha256": "a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c",
+  "sourceBytes": 986798,
+  "revision": "swf-a637df16ed49",
+  "enhancedSha256": "51e2fb0b23d670f8d5ed1bd3fd230f1bc918dd1b12259fe211a690527674d03d",
+  "swfTags": 36,
+  "mainInterfaceUnchanged": true,
+  "changedMainMethods": [
+    {
+      "name": "class_119.OnRefreshScreen",
+      "change": "The map BitmapData draw delegates to MapZoneMask.Draw; removing the delegation and relocating branch/exception instruction indices reproduces the preceding body exactly."
+    }
+  ],
+  "otherMainMethodsByteIdentical": 3775,
+  "review": {
+    "mapMask": "New four-body helper preserves drawing when no mask exists. With a mask, it temporarily draws that mask to a separate bitmap, merges source pixels with its alpha, restores the original mask visibility, parent/index and bitmap mask, disposes its temporary bitmap and rethrows any caught Error. The complete helper is retained byte-for-byte.",
+    "repaint": "ScreenRepaint uses a Sprite instead of Shape and disables mouseEnabled and mouseChildren on its cover. The resolved tick and frame-handler instructions, frame count and Error catches are unchanged; original cover geometry and all other helper behavior remain intact.",
+    "adapter": "One exact method-envelope variant applies the existing 1152-pixel authored map width expression at code offset 788, using six equal-width bytes. All original branches and exception bytes remain unchanged. Existing source and enhanced hashes remain supported; the prior 0.32.2 output is byte-identical.",
+    "preservation": "All 3,775 unrelated main method envelopes and every non-main input tag, including MapZoneMask, ScreenRepaint, AirCompat, RankingsButton and TouchBridge, are retained byte-for-byte. All previous original pool entries, root bindings and the main semantic interface match. No simulation, networking, authentication or gameplay changes."
+  },
+  "exceptions": {
+    "rawOffsetsValidated": true,
+    "mapDelegationInstructionCountDelta": -4,
+    "mapRefreshOriginalAndPatchedExceptionBytesIdentical": true,
+    "mapMaskErrorCatches": 1,
+    "repaintErrorCatchesUnchanged": true
+  },
+  "evidence": "Ignored review workspace artifacts/client-oct24-mVvZtx"
+}

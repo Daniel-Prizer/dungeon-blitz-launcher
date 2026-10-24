@@ -123,8 +123,29 @@ function patchAdaptiveClient(input, recipe) {
         edit.references.length > 1000
       )
         return null;
-      const replacement = applyDelta(body.bytes, edit.delta);
-      for (const ref of edit.references) {
+      if (
+        edit.variants !== undefined &&
+        (!Array.isArray(edit.variants) || edit.variants.length > 7)
+      )
+        return null;
+      const variants = [edit, ...(edit.variants || [])],
+        hashes = new Set();
+      for (const variant of variants) {
+        const inputHash = variant?.delta?.inputHash;
+        if (
+          !/^[a-f0-9]{64}$/.test(inputHash) ||
+          hashes.has(inputHash) ||
+          !Array.isArray(variant.references) ||
+          variant.references.length > 1000
+        )
+          return null;
+        hashes.add(inputHash);
+      }
+      // Each reviewed envelope retains its own exact delta and relocation table.
+      const variant = variants.find((entry) => entry.delta.inputHash === hash(body.bytes));
+      if (!variant) return null;
+      const replacement = applyDelta(body.bytes, variant.delta);
+      for (const ref of variant.references) {
         const old = integer(ref.index),
           value = integer(map(ref.pool, ref.index));
         if (
