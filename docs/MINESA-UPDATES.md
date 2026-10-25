@@ -2,9 +2,9 @@
 
 ## Deployment status
 
-On 24 October, both official origins served **swf-a637df16ed49**, 986,798 bytes, SHA-256 `a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c`. The complete Original contract and separate High FPS admission accept it.
+On 25 October, both official origins served **swf-eae765589aea**, 1,023,006 bytes, SHA-256 `b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c`. The complete Original contract and separate High FPS admission accept it.
 
-All 73 SWF assets match the reviewed inventory: 52 master-list assets and 21 level libraries. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
+All 73 SWF assets match the reviewed inventory: 52 master-list assets and 21 level libraries. The October 25 home library removes three placements from one sprite; all other tags and the other 72 assets are unchanged. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -50,9 +50,9 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `51e2fb0b23d670f8d5ed1bd3fd230f1bc918dd1b12259fe211a690527674d03d`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `5dbd84c65d4cea88e472b29192e3140a21ecac8b473222d868658eb646d40223`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
-The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. The latest deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
+The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. That deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
 The 0.31.1 resource fix includes the level libraries, which are absent from `masterFileList.xml`. Two current level files contain the same dialogue spelling correction; their other tags, constant pools, class contracts and all raw method bodies/exception tables are unchanged. [Level review](../research/native-player/level-resources.json) records the hashes and comparison. Unknown files and changed bytes still fail admission.
 
@@ -67,3 +67,5 @@ The 0.32.1 audio correction gates the original fade loop at 60 Hz in the native 
 The 0.32.2 compatibility patch qualifies Minesa's AIR loading helper, Rankings navigation correction and BaseDamageMult fix. Raw instruction and exception review accounts for all four changed main bodies; the other 3,772 remain byte-identical. The existing adapter preserves all four changed bodies and every upstream helper. See [the October 23 review](../research/native-player/deployments/2026-10-23.json).
 
 The 0.32.3 compatibility patch preserves Minesa's new map-mask drawing and non-interactive repaint cover. An exact map-refresh envelope variant retains the authored map width correction; older reviewed envelopes remain unchanged. Each method permits at most eight distinct, hash-checked replacements and rejects ambiguous or unfamiliar bytes. See [the October 24 review](../research/native-player/deployments/2026-10-24.json).
+
+The 0.32.4 compatibility patch qualifies the October 25 guild raid, Neo quest, map teleport, loot-command and Sentinel changes. All nine changed main bodies and all 205 added helper bodies remain upstream code; the existing presentation recipe is unchanged. Raw branches and exception relocations were reviewed. See [the October 25 review](../research/native-player/deployments/2026-10-25.json).

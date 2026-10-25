@@ -1,0 +1,135 @@
+{
+  "version": "0.32.4",
+  "reviewedAtUtc": "2026-10-25T23:08:20.401Z",
+  "previousSourceSha256": "a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c",
+  "sourceSha256": "b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c",
+  "sourceBytes": 1023006,
+  "revision": "swf-eae765589aea",
+  "enhancedSha256": "5dbd84c65d4cea88e472b29192e3140a21ecac8b473222d868658eb646d40223",
+  "swfTags": 41,
+  "mainInterfaceUnchanged": true,
+  "constantPoolPrefixesUnchanged": true,
+  "changedMainMethods": [
+    {
+      "id": 290,
+      "name": "Game.method_668",
+      "bodySha256": "b5d3bf2ecafdd8ece358aa2d61b3a5dffbe80d7b46d17d6e0227dd6775770b61",
+      "codeSha256": "2399e05c334b85cfc868037901a9269a750cfa7fc8bfb1081e1b08c94bbfd4dc",
+      "change": "Six instructions delegate Neo interaction before the existing Mailbox and storefront hooks.",
+      "rawDeltaInstructionCount": 6,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 717,
+      "name": "Entity.method_961",
+      "bodySha256": "efd235fc889daf59a1867cd7282dfa844a70cf0828c625e052d16ba363bb9590",
+      "codeSha256": "bd2126059336449189a894c75eb21820efdab352bf364987d67d3a951df5dd47",
+      "change": "Adds the nine LegendsInn hard rooms to the existing level check.",
+      "rawDeltaInstructionCount": 27,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 728,
+      "name": "Entity.method_1086",
+      "bodySha256": "903687b5e892a78f6888b6f2e818509229c5292ac0fe458fe7ae36863f06a372",
+      "codeSha256": "22e5fc1ba7e78f1c54f5b94a8792250bf2e202d747ef2fc06105381b939dc4df",
+      "change": "Adds a bad-guy-only 1.15 adjustment in those nine hard rooms.",
+      "rawDeltaInstructionCount": 47,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 735,
+      "name": "Entity.method_986",
+      "bodySha256": "6e48b33e0dfd84d613aa5c2001356a68515f695d6207e5d82e5e69cae46afeb2",
+      "codeSha256": "b8a47091069494d9bbbbc1951346aee47be36139563b6f10a82f865eebb9c3b1",
+      "change": "Adds (value + 1) / 2 and changes one multiplier from 3 to 3.6.",
+      "rawDeltaInstructionCount": 4,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 828,
+      "name": "Entity.method_1442",
+      "bodySha256": "2da5b7ae7ce66efaee4495eafbddca579836ac6ece09eb5b7d33ec413b87112f",
+      "codeSha256": "f3ee3820c6d48a61cd07ab26f42001638b637840d421892db9aa36d773ba6707",
+      "change": "Adds the nine LegendsInn hard rooms to the existing level check.",
+      "rawDeltaInstructionCount": 27,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 2045,
+      "name": "class_119.method_738",
+      "bodySha256": "b80badbb563a591a48508d1c47ac69332e7b1cb4c844a534d9343055a2cfd94e",
+      "codeSha256": "fde0f3c8360f9252a220467bbaddf6a36fc450b0b785ae6a7276e3dae82abac4",
+      "change": "Three-instruction MapTeleport.Update prefix; prior map-update body retained.",
+      "rawDeltaInstructionCount": 3,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 3336,
+      "name": "CombatState.method_414",
+      "bodySha256": "0988476a70a772be05c111adb8b4f63d910782fa3a424c6de245d29286bcfcb1",
+      "codeSha256": "5a677010f4247a624abe91cf22d59aad90916ec572b08eca41c263b32b2ca34e",
+      "change": "Thirteen-instruction SentinelFormSkills.Gate prefix; NOT_OURS falls through to the old body.",
+      "rawDeltaInstructionCount": 13,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 3400,
+      "name": "LinkUpdater.method_1081",
+      "bodySha256": "a096495f30fbf46f03627043a7abbe52b5ebb2b4d08e6b3bdd868bda8a00fa48",
+      "codeSha256": "e297aed3cffc3734b60d8528378ff9711771d85d1083a5f0b9b015966d628bd5",
+      "change": "GuildRaid and NeoQuests packet dispatch prefixes; other packet cases retained.",
+      "rawDeltaInstructionCount": 12,
+      "preservedByAdapter": true
+    },
+    {
+      "id": 3631,
+      "name": "class_127.TryToProcessChatAsLocalCommand",
+      "bodySha256": "41980345253fee90917f0bfe2821ab7731b1f01aea7cc5844890e7180ee089c9",
+      "codeSha256": "f3d6ac6e983cc4129e812b41a984aea40c1da5584a23604c92aa740e4b0024a6",
+      "change": "Seven-instruction LootPick.Run prefix; unrelated local chat commands retained.",
+      "rawDeltaInstructionCount": 7,
+      "preservedByAdapter": true
+    }
+  ],
+  "otherMainMethodsByteIdentical": 3767,
+  "newHelpers": [
+    {
+      "name": "SentinelFormSkills",
+      "methodBodies": 6,
+      "preservedByAdapter": true
+    },
+    {
+      "name": "GuildRaid",
+      "methodBodies": 86,
+      "preservedByAdapter": true
+    },
+    {
+      "name": "NeoQuests",
+      "methodBodies": 88,
+      "preservedByAdapter": true
+    },
+    {
+      "name": "MapTeleport",
+      "methodBodies": 19,
+      "preservedByAdapter": true
+    },
+    {
+      "name": "LootPick",
+      "methodBodies": 6,
+      "preservedByAdapter": true
+    }
+  ],
+  "review": {
+    "raw": "All nine main deltas were compared as resolved ABC instructions. Removing inserted instructions, restoring the one numeric operand and relocating branch/exception instruction indices reproduces the previous bodies. All original pool prefixes, main interfaces and root bindings remain intact.",
+    "helpers": "All 205 added helper bodies have valid raw branch offsets and exception boundaries and remain byte-identical in the adapted client. Sentinel form gating, guild raid UI/packets, Neo quest UI/packets, map teleport and loot command handling remain upstream code. Existing helpers are unchanged.",
+    "clocks": "Guild gate motion, rest/quest deadlines and request cooldowns use elapsed time. The upstream cosmetic quest title, marker and prompt effects also contain frame-counted animations; this release leaves those instructions intact. Automatic native timelines retain the separately qualified ceiling.",
+    "preservation": "All nine changed main envelopes and every non-main input tag are retained. The complete existing presentation adapter passes unchanged. No game, packet, authentication or loot-award method is replaced by this release."
+  },
+  "exceptions": {
+    "allRawOffsetsValidated": true,
+    "mainExceptionRelocationsFullyAccounted": true,
+    "addedHelperBodies": 205
+  },
+  "evidence": "Ignored review workspace artifacts/client-oct25-fpCGH0"
+}

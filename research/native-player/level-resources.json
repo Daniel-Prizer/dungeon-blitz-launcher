@@ -1,5 +1,5 @@
 {
-  "checkedAtUtc": "2026-10-22T01:37:29.926Z",
+  "checkedAtUtc": "2026-10-25T23:10:21.869Z",
   "origin": "https://dungeonblitzr.theminesa.studio/",
   "inventory": "src/native-player-admission.json#levels",
   "hashes": "src/gpu/assets.json",
@@ -46,7 +46,51 @@
           ]
         }
       ]
+    },
+    {
+      "name": "LevelsHome.swf",
+      "oldHash": "cd3ed08c96c7163e84ffcbd523b202fd53bc997a6c5bbc1bb400c50e4a281fdc",
+      "newHash": "d874aa101a403b959b58ab739975db80b82f049930062c5d16c06fdb74c7b0ec",
+      "bytes": 6662297,
+      "tags": 3076,
+      "differences": [
+        {
+          "tag": 2680,
+          "type": 39,
+          "oldBytes": 3088,
+          "newBytes": 3041
+        }
+      ],
+      "sprite": 2643,
+      "placementChanges": [
+        {
+          "type": 26,
+          "flags": 6,
+          "depth": 355,
+          "characterId": 2901,
+          "bytes": "066301550bc58000c00045d3d62833"
+        },
+        {
+          "type": 26,
+          "flags": 6,
+          "depth": 356,
+          "characterId": 3032,
+          "bytes": "066401d80bc58000c00045d3d62833"
+        },
+        {
+          "type": 26,
+          "flags": 6,
+          "depth": 357,
+          "characterId": 2040,
+          "bytes": "066501f80722ded00bca80"
+        }
+      ],
+      "review": "Only DefineSprite 2643 changes: three PlaceObject2 entries with HasCharacter/HasMatrix flags are removed, retaining the order and bytes of every other subtag and its single frame. The removed placements have no clip actions. All 3,075 other tags, including all ABC pools, raw instructions, exception tables, shapes, bitmaps and bindings, are byte-identical. Both origins match; the other 72 assets are unchanged."
     }
   ],
-  "review": "Both changed files differ only in one dialogue string: offpring -> offspring. All non-ABC tags, class/interface contracts, constant pools other than that string, and 1341 raw method bodies including exception tables per file are unchanged."
+  "review": "Prior dialogue spelling corrections are retained. The October 25 home library review accounts for three removed placements; all other current artwork remains hash-identical to the preceding reviewed inventory.",
+  "origins": [
+    "https://dungeonblitzr.theminesa.studio",
+    "https://dungeonblitz.theminesa.studio"
+  ]
 }

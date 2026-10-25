@@ -12,7 +12,24 @@ package {
    var art:MovieClip=class_4.method_16(name);stop(art);art.x=80+i*150;art.y=120;addChild(art);
    var icon:Bitmap=class_4.method_639(game,name,1);var p:BitmapData=icon.bitmapData;icon.x=80+i*150;icon.y=300;addChild(icon);
    var bounds:Rectangle=art.getBounds(art);var raw:ByteArray=p.getPixels(p.rect);raw.compress();results.push({name:name,exists:true,width:p.width,height:p.height,bounds:{x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height},argb:base64(raw)});
-  }filterChecks();mapMaskChecks();ready=true;}catch(e:Error){failure=e.toString()+" "+e.getStackTrace();}}
+  }filterChecks();mapMaskChecks();upstreamChecks();ready=true;}catch(e:Error){failure=e.toString()+" "+e.getStackTrace();}}
+  private function upstreamChecks():void {
+   if(!ApplicationDomain.currentDomain.hasDefinition("NeoQuests"))return;
+   var domain:ApplicationDomain=ApplicationDomain.currentDomain;
+   var sentinel:Class=domain.getDefinition("SentinelFormSkills") as Class;
+   checks.push({name:"Sentinel gate leaves unrelated skills alone",actual:sentinel["Gate"](null,null),expected:0});
+   var raid:Class=domain.getDefinition("GuildRaid") as Class;var quests:Class=domain.getDefinition("NeoQuests") as Class;
+   checks.push({name:"Raid hook passes through an absent packet",actual:raid["HandlePacket"](null,null)?1:0,expected:0});
+   checks.push({name:"Quest hook passes through an absent packet",actual:quests["HandlePacket"](null,null)?1:0,expected:0});
+   var raidNet:Class=domain.getDefinition("GuildRaidNet") as Class;var questNet:Class=domain.getDefinition("NeoQuestsNet") as Class;
+   checks.push({name:"Raid request requires a game connection",actual:raidNet["Send"](1)?1:0,expected:0});
+   checks.push({name:"Quest request requires a game connection",actual:questNet["Send"](1)?1:0,expected:0});
+   checks.push({name:"Raid clock formats elapsed seconds",actual:raidNet["Clock"](61)=="1:01"?1:0,expected:1});
+   checks.push({name:"Quest clock formats elapsed milliseconds",actual:questNet["Clock"](61000)=="01:01"?1:0,expected:1});
+   var loot:Class=domain.getDefinition("LootPick") as Class;
+   checks.push({name:"Loot hook passes unrelated chat through",actual:loot["Run"](null,"not a command")?1:0,expected:0});
+   var teleport:Class=domain.getDefinition("MapTeleport") as Class;teleport["Update"](null);
+  }
   private function mapMaskChecks():void {
    if(!ApplicationDomain.currentDomain.hasDefinition("MapZoneMask"))return;
    var helper:Class=ApplicationDomain.currentDomain.getDefinition("MapZoneMask") as Class;

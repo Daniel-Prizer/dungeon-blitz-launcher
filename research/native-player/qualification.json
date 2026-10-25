@@ -1,9 +1,9 @@
 {
-  "version": "0.32.3",
-  "checkedAtUtc": "2026-10-24T20:44:38.968Z",
+  "version": "0.32.4",
+  "checkedAtUtc": "2026-10-25T23:33:34.046Z",
   "nativeSha256": "032e3640907d021f91b9764bd7fc83d4c6e22d9b94d84ed34b4c102a3998b5a3",
   "patchSha256": "c01ea9936d96552991d0acfa8c4e368500baedbc38246adbf7403dd216e796ec",
-  "clientSha256": "a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c",
+  "clientSha256": "b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c",
   "adaptedClients": [
     {
       "source": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
@@ -29,6 +29,11 @@
       "source": "a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c",
       "enhanced": "51e2fb0b23d670f8d5ed1bd3fd230f1bc918dd1b12259fe211a690527674d03d",
       "mode": "contract"
+    },
+    {
+      "source": "b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c",
+      "enhanced": "5dbd84c65d4cea88e472b29192e3140a21ecac8b473222d868658eb646d40223",
+      "mode": "contract"
     }
   ],
   "unitGroups": 112,
@@ -41,32 +46,32 @@
       "density": 1,
       "widescreen": true,
       "cap": 1000,
-      "wallMs": 40187,
-      "nativeSteps": 480.14400000001274,
-      "elapsedMs": 20006,
+      "wallMs": 40015,
+      "nativeSteps": 480.07200000001285,
+      "elapsedMs": 20004,
       "error": "",
       "level": "LevelsBT.swf",
-      "time": 39012,
+      "time": 38611,
       "width": 2364,
       "timerTicks": 200,
       "nativeTarget": 24,
       "room": "a_Room_BT12",
-      "nativeElapsed": 20006,
-      "frames": 2529,
-      "drawMs": 6851,
-      "distinctTimes": 2529,
+      "nativeElapsed": 20003,
+      "frames": 2625,
+      "drawMs": 7302,
+      "distinctTimes": 2625,
       "target": 1000,
-      "fps": 126.41207637708688,
+      "fps": 131.2237552489502,
       "height": 1157,
-      "completedGpuPerSecond": 127.08298513680239,
+      "completedGpuPerSecond": 130.77988404183614,
       "rolling": {
         "phase": "running",
         "cap": 1000,
-        "renderFPS": 76.14713759102439,
-        "averageFPS": 127.3123887589354,
-        "lowFPS": 76.14713759102439,
-        "highFPS": 151.38864722590762,
-        "sampleSeconds": 30.1620293
+        "renderFPS": 140.23642668036806,
+        "averageFPS": 134.22031320489316,
+        "lowFPS": 96.87949160039827,
+        "highFPS": 154.80231744062831,
+        "sampleSeconds": 30.12956759999999
       }
     },
     "reduced": {
@@ -77,32 +82,32 @@
       "density": 0.75,
       "widescreen": true,
       "cap": 240,
-      "wallMs": 38728,
-      "nativeSteps": 480.02400000001506,
-      "elapsedMs": 20002,
+      "wallMs": 39471,
+      "nativeSteps": 480.14400000001314,
+      "elapsedMs": 20005,
       "error": "",
       "level": "LevelsBT.swf",
-      "time": 37653,
+      "time": 38335,
       "width": 1776,
       "timerTicks": 200,
       "nativeTarget": 24,
       "room": "a_Room_BT12",
-      "nativeElapsed": 20001,
-      "frames": 3589,
-      "drawMs": 4835,
-      "distinctTimes": 3589,
+      "nativeElapsed": 20006,
+      "frames": 3082,
+      "drawMs": 4704,
+      "distinctTimes": 3082,
       "target": 240,
-      "fps": 179.43205679432057,
+      "fps": 154.06148462884278,
       "height": 869,
-      "completedGpuPerSecond": 179.70665722366965,
+      "completedGpuPerSecond": 153.79954938988385,
       "rolling": {
         "phase": "running",
         "cap": 240,
-        "renderFPS": 176.774206306285,
-        "averageFPS": 175.27035052774022,
-        "lowFPS": 54.9600605240172,
-        "highFPS": 192.81087181583584,
-        "sampleSeconds": 30.090657
+        "renderFPS": 163.3345586745042,
+        "averageFPS": 155.23425810221366,
+        "lowFPS": 37.599438145659036,
+        "highFPS": 182.1007863171658,
+        "sampleSeconds": 30.135100700000002
       }
     }
   },
@@ -112,33 +117,33 @@
       900
     ],
     "widescreen": false,
-    "completedGpuPerSecond": 120.0686061438158,
-    "wallMs": 39173,
-    "nativeSteps": 480.00000000001154,
+    "completedGpuPerSecond": 119.01683926027422,
+    "wallMs": 38937,
+    "nativeSteps": 479.97600000001154,
     "elapsedMs": 20000,
     "error": "",
     "level": "LevelsHome.swf",
-    "time": 37945,
+    "time": 37794,
     "width": 1248,
     "timerTicks": 200,
     "nativeTarget": 24,
     "room": "a_Room_Main",
-    "nativeElapsed": 20000,
-    "frames": 2400,
-    "drawMs": 2783,
-    "distinctTimes": 2400,
+    "nativeElapsed": 19999,
+    "frames": 2380,
+    "drawMs": 2723,
+    "distinctTimes": 2380,
     "target": 120,
-    "fps": 120,
+    "fps": 119,
     "height": 724
   },
   "automaticTimeline": {
     "automaticFrames": 151,
-    "elapsed": 2514,
-    "frames": 603,
+    "elapsed": 2508,
+    "frames": 565,
     "stageRate": 100,
     "timerTicks": 25,
     "totalFrames": 1000,
-    "hostElapsed": 2515,
+    "hostElapsed": 2509,
     "production": true
   },
   "publicStartup": {
@@ -151,101 +156,115 @@
     "runs": [
       {
         "completedRenderSamples": [
-          42.57481739884896,
-          80.41875023966259,
-          78.75147609174965,
-          73.45564227181625,
-          81.48940369433205,
-          78.85096379333422,
-          73.11660517626042,
-          76.76812188783778,
-          86.42740976754902,
-          41.70146899557106,
-          75.42076849793585,
-          72.98694845415122,
-          89.86265332815223,
-          119.97320998221097,
-          120.80182460673267,
-          119.36157076644152,
-          119.9768613220181,
-          120.80646803820278,
-          118.98543499290251,
-          120.06530361786527,
-          120.14072947465141,
-          119.86284095109966,
-          121.0489306567232,
-          118.97547915374642,
-          119.98910379940043,
-          120.03231150785483,
-          120.02622721857568,
-          121.05813142011209,
-          119.02290526381773,
-          120.96886261476297,
-          119.96393883998469,
-          119.02161849167473,
-          120.95155890066029,
-          119.98369421595605,
-          119.08846343797174,
-          119.8308228443084,
-          120.11475093812574,
-          120.822222182281,
-          120.25478112139074,
-          119.99390430966108,
-          118.99095668729177,
-          120.97512751378318,
-          118.99998810000119,
-          119.98785722884844,
-          108.90389320527821
+          42.284933737159676,
+          82.69172524827444,
+          74.42831610400513,
+          85.85712515802453,
+          70.10255411250711,
+          81.51116126366952,
+          76.73512569313246,
+          82.93448175941006,
+          83.51073565302958,
+          73.80328472489427,
+          84.32944597736638,
+          52.14543596745786,
+          113.82305068540447,
+          113.28066775972573,
+          120.04371972430422,
+          120.16508100069905,
+          119.88026359272358,
+          119.96884409118952,
+          119.93539347977676,
+          119.92446938873407,
+          120.1966297659702,
+          119.96733289525262,
+          119.90013517741073,
+          110.78129556629302,
+          119.99222133070975,
+          120.20571668585488,
+          119.72827667608364,
+          119.97905026963558,
+          120.28964155078599,
+          119.95042448955847,
+          119.93014069304631,
+          120.00738293354179,
+          120.14711169818807,
+          118.0558366408809,
+          120.08038836180877,
+          119.9768204782836,
+          120.065577635494,
+          119.8157712700951,
+          120.1897766774619,
+          119.93295747677048,
+          119.90339383558668,
+          120.21678762859966,
+          119.80279262306317,
+          119.34739650119182
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
       },
       {
         "completedRenderSamples": [
-          43.784973745335606,
-          83.54969222382127,
-          74.44796102218226,
-          86.48130244420017,
-          78.50549389396193,
-          76.9905070704782,
-          76.8399884081389,
-          85.79263171461702,
-          78.5272892767408,
-          75.74083757606597,
-          57.27487803507784,
-          76.21263959903838,
-          118.47487197744717,
-          119.9149802789822,
-          120.75068605849502,
-          119.27471510100695,
-          120.9099100260396,
-          118.97174421074996,
-          120.24528049696082,
-          120.07089144202163,
-          120.90563315332382,
-          119.85412554380063,
-          119.1088395731973,
-          120.01183455545385,
-          120.9790948124164,
-          118.97150632423535,
-          120.92555822635586,
-          118.99903610780751,
-          120.12691756315101,
-          119.91755222310293,
-          120.13142576543079,
-          119.84638090895089,
-          120.07293742005184,
-          120.11085537094549,
-          120.75199954333787,
-          119.99922000506996,
-          119.15591143895756,
-          120.0384678647101,
-          120.9202772612017,
-          119.88825216016151,
-          120.00540718578493,
-          119.24773757229892,
-          119.85644793231145,
-          120.83361725931924
+          40.749125893518915,
+          79.60536436668859,
+          78.37079225728317,
+          71.3133593197894,
+          79.57216434397176,
+          77.22016895772968,
+          73.69629021838102,
+          79.41666868517366,
+          87.3976900790512,
+          56.30839773565164,
+          75.36593134639651,
+          84.50636452227955,
+          99.87880705551885,
+          119.95311032917233,
+          57.5809391528988,
+          115.79315868064876,
+          119.94301507353856,
+          119.92692852245126,
+          107.40125945876926,
+          121.42377135067824,
+          119.90461587806901,
+          120.14300791027523,
+          119.84042049606742,
+          119.91316701079765,
+          119.94609622435678,
+          120.15925768986975,
+          119.94162441139898,
+          120.01717931856031,
+          108.42619771905102,
+          121.9701051272333,
+          119.7180878467385,
+          120.17292188243631,
+          120.21706233811058,
+          119.66028346631118,
+          119.9868014518403,
+          120.34834979038997,
+          119.97737226759034,
+          119.83669724516233,
+          108.34114499494227,
+          120.60182102769497,
+          119.99502020666142,
+          119.96094071770231,
+          119.7525791961229,
+          120.1893707699053,
+          119.88510211812998,
+          120.10918619871995,
+          120.1221950474711,
+          119.91251183136782,
+          107.17462676436229,
+          120.18490596772686,
+          120.03452629465421,
+          120.00864458963838,
+          120.15289803825074,
+          119.95917789176343,
+          120.10854238754538,
+          119.65972364387393,
+          119.94132589287398,
+          119.9998680001452,
+          112.81758524641508
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
@@ -292,20 +311,20 @@
       "bitmapWidth": 1110,
       "centeredCamera": true,
       "frameCounter": {
-        "fps": 239.15849691276276,
+        "fps": 119.93364071659151,
         "height": 64,
-        "highFPS": 239.15849691276276,
-        "lowFPS": 239.15849691276276,
+        "highFPS": 122.05489235205037,
+        "lowFPS": 119.93364071659151,
         "mouseEnabled": false,
         "rangeSamples": 3,
         "rangeSeconds": 30,
-        "sampleFrames": 222,
-        "sampleMs": 1003,
+        "sampleFrames": 216,
+        "sampleMs": 1000,
         "selectable": false,
         "shown": true,
         "source": "completed-game-renders",
-        "text": "122 FPS\nLow 122\nHigh 122",
-        "totalFrames": 504,
+        "text": "120 FPS\nLow 120\nHigh 122",
+        "totalFrames": 522,
         "updates": 3,
         "visible": true,
         "width": 76,
@@ -679,41 +698,49 @@
         "actual": 1,
         "expected": 1,
         "name": "Map helper restores mask ownership and visibility"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Sentinel gate leaves unrelated skills alone"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Raid hook passes through an absent packet"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Quest hook passes through an absent packet"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Raid request requires a game connection"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Quest request requires a game connection"
+      },
+      {
+        "actual": 1,
+        "expected": 1,
+        "name": "Raid clock formats elapsed seconds"
+      },
+      {
+        "actual": 1,
+        "expected": 1,
+        "name": "Quest clock formats elapsed milliseconds"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Loot hook passes unrelated chat through"
       }
     ],
-    "flashReference": "Fresh current-client Flash reference: four map-mask probes match. Four synthetic filter probes differ; the native runtime is unchanged from 0.32.2.",
-    "mapMaskComparison": {
-      "atUtc": "2026-10-24T20:43:38.446Z",
-      "native": "artifacts\\native-media-0rkHrV",
-      "flash": "artifacts\\native-media-k07lG6",
-      "mapMaskChecks": 4,
-      "maskAndUnmaskedPixelsMatch": true,
-      "maskOwnershipAndVisibilityRestored": true,
-      "otherFilterDifferences": [
-        {
-          "name": "Child filter survives offscreen draw, root filter excluded",
-          "native": 4278190335,
-          "flash": 4278190080
-        },
-        {
-          "name": "Direct source filter remains excluded",
-          "native": 4294901760,
-          "flash": 4278190335
-        },
-        {
-          "name": "Cached child retains filter at another density",
-          "native": 4278190335,
-          "flash": 4278190080
-        },
-        {
-          "name": "Mask retains filtered inside",
-          "native": 4278190335,
-          "flash": 4278190080
-        }
-      ],
-      "scope": "New map-mask helper matches on these synthetic pixels and restoration checks. Four existing filter probes differ from Flash; native runtime is unchanged from 0.32.2 and this release does not claim full filter parity."
-    },
-    "flashEvidence": "artifacts\\native-media-k07lG6"
+    "flashReference": "Unchanged renderer and UI artwork; retained 0.32.0 Flash reference"
   },
   "audio": {
     "clips": [
@@ -785,7 +812,7 @@
     },
     "scope": "Flash decoded PCM compared with owned CPAL postmix; no missing 5 ms windows in three effects. Separate callback scheduling, not physical endpoint recording or listening. Diagnostic recorder excluded from the shipped source patch/binary.",
     "qualifiedAtUtc": "2026-10-22T22:33:45.614Z",
-    "retainedReason": "Same native binary, BlitzAudio helper and SoundManager bodies; current media/startup audio helpers rechecked. PCM comparison and callback timing retained from 0.32.2."
+    "retainedReason": "Same native binary, BlitzAudio helper and SoundManager bodies; current media/startup audio helpers rechecked. PCM comparison and callback timing retained from 0.32.3."
   },
   "regression": {
     "cameraSamples": 121,
@@ -796,71 +823,122 @@
   },
   "performanceComparison": {
     "scope": "Fresh current-client fixture measurements under available background load; no new performance optimization. Physical scanout and live combat remain unmeasured.",
-    "priorVersion": "0.32.2",
-    "priorRecordedFull": 127.08586555195855,
-    "priorRecordedReduced": 153.5831139744536
+    "priorVersion": "0.32.3",
+    "priorRecordedFull": 127.08298513680239,
+    "priorRecordedReduced": 179.70665722366965
   },
   "sessionControlsReview": "session-controls.json",
-  "deploymentReview": "deployments/2026-10-24.json",
+  "deploymentReview": "deployments/2026-10-25.json",
   "resourceReview": "level-resources.json",
   "audioCursorReview": "audio-cursor-review.json",
   "evidence": {
     "cursor": {
-      "out": "artifacts\\native-game-cursor-xE8X16",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-cursor.log"
+      "out": "artifacts\\native-game-cursor-4S0H37",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-cursor.log"
     },
     "settings": {
-      "out": "artifacts\\native-settings-8cN12s",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-settings.log"
+      "out": "artifacts\\native-settings-54OMwh",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-settings.log"
     },
     "controls": {
-      "out": "artifacts\\refresh-controls-MMTBAV",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-controls.log"
+      "out": "artifacts\\refresh-controls-gnahqT",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-controls.log"
     },
     "media": {
-      "out": "artifacts\\native-media-0rkHrV",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq/artifacts/media-comparison-0323.log"
+      "out": "artifacts\\native-media-WD92SX",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-media.log"
     },
     "window": {
-      "out": "artifacts\\native-window-3l4qpv",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-window.log"
+      "out": "artifacts\\native-window-esMO5Q",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-window.log"
     },
     "animation": {
-      "out": "artifacts\\native-animation-uCdfBB",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-animation.log"
+      "out": "artifacts\\native-animation-8YeLR2",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-animation.log"
     },
     "primary": {
-      "out": "artifacts\\native-anonymous-w9XWMo",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-primary.log"
-    },
-    "secondary": {
-      "out": "artifacts\\native-anonymous-sdsv05",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-secondary.log"
+      "out": "artifacts\\native-anonymous-8gjGxL",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-primary.log"
     },
     "render120": {
-      "out": "artifacts\\ruffle-world-rate-Wlz3VE",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-render120.log"
+      "out": "artifacts\\ruffle-world-rate-VkrTaF",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-render120.log"
     },
     "full": {
-      "out": "artifacts\\ruffle-world-rate-obmKtN",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-full.log"
+      "out": "artifacts\\ruffle-world-rate-HAphFr",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-full.log"
     },
     "reduced": {
-      "out": "artifacts\\ruffle-world-rate-X3YINf",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq\\artifacts\\native-reduced.log"
+      "out": "artifacts\\ruffle-world-rate-wpu9rH",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-reduced.log"
+    },
+    "home": {
+      "out": "artifacts\\ruffle-world-rate-lZhJ0r",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-home.log"
+    },
+    "secondary": {
+      "out": "artifacts\\native-anonymous-HllUL9",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-secondary.log"
     }
   },
-  "scope": "Anonymous public startup, original-artwork fixtures and own inactive desktop. No account, physical OS cursor/input changes, human game session, endpoint capture or monitor scanout. Live combat, long sessions, NVIDIA overlay compatibility and speaker listening remain unmeasured. Four synthetic filter probes differ from Flash; complete filter parity is not established.",
+  "scope": "Anonymous public startup, original-artwork fixtures and own inactive desktop. No account, physical OS cursor/input changes, human game session, endpoint capture or monitor scanout. Live combat, long sessions, NVIDIA overlay compatibility and speaker listening remain unmeasured. Four synthetic filter probes differ from Flash; complete filter parity is not established. New upstream guild/quest transactions and cosmetic frame-counted effects remain outside authenticated QA; packet pass-through and disconnected helpers are exercised offline.",
   "packaging": {
     "status": "passed",
-    "checkedAtUtc": "2026-10-24T20:49:18.553Z",
+    "checkedAtUtc": "2026-10-25T23:39:07.496Z",
     "signedFiles": 442,
     "nativeAndSingleplayer": true,
     "integrityPositiveAndNegative": true,
     "updater": true,
     "installer": true,
-    "previousUpdater": "0.32.2",
+    "previousUpdater": "0.32.3",
     "installerReceipt": ".test-tools/installer-test-result.json",
-    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.3-HNvObq"
-  }
+    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh"
+  },
+  "homeArtwork": {
+    "wallMs": 39516,
+    "nativeSteps": 480.16800000001155,
+    "elapsedMs": 20007,
+    "error": "",
+    "level": "LevelsHome.swf",
+    "time": 38364,
+    "width": 2364,
+    "timerTicks": 200,
+    "nativeTarget": 24,
+    "room": "a_Room_Main",
+    "nativeElapsed": 20007,
+    "frames": 2358,
+    "drawMs": 6490,
+    "distinctTimes": 2358,
+    "target": 120,
+    "fps": 117.8587494376968,
+    "height": 1157,
+    "completedGpuPerSecond": 117.91244336710857,
+    "source": "Fresh reviewed October 25 LevelsHome.swf through the production resource broker"
+  },
+  "diagnostics": {
+    "titleMeasurement": {
+      "logLevel": "warn,avm_trace=info for the secondary final run; primary retains verbose profiling",
+      "warmupMs": {
+        "primary": 45000,
+        "secondary": 60000
+      },
+      "gate": "Existing eight rolling samples, indices -10 through -3, each 118–123 renders/s; all samples retained",
+      "secondaryFinalSample": 112.81758524641508,
+      "limit": "Brief rolling-rate dips remain in the full sample record; no guarantee of a fixed frame time or live-combat rate."
+    },
+    "priorAnonymousRun": "artifacts/native-anonymous-fI7I9B",
+    "priorSteadyDip": {
+      "evidence": "artifacts/native-anonymous-t1jZM4/steady-render-samples.json",
+      "fps": 113.62926180750065,
+      "scope": "One earlier secondary-origin rolling interval fell below the gate. The fresh check uses a longer 60-second startup warmup; threshold unchanged."
+    },
+    "priorFailure": "The prior counter gate failed after captures/resize. Fresh qualification samples the unchanged 118–123 steady-state gate before those operations and retains their render samples separately.",
+    "priorLongWarmRun": {
+      "evidence": "artifacts/native-anonymous-icynYf/steady-render-samples.json",
+      "lowestLast15": 109.38511346169776,
+      "logLevel": "Verbose core/graphics profiling"
+    },
+    "productionLogging": "Final secondary qualification uses warn,avm_trace=info, without verbose core/graphics profiling; all final rolling samples, including the ending dip, are retained."
+  },
+  "resourceUnitRecheck": 6
 }
