@@ -1412,7 +1412,7 @@ async function until(fn, message) {
           'Second Ö releases the exact held key'
         );
       }
-      for (const mode of ['login', 'typing', 'capture', 'run-map']) {
+      for (const mode of ['login', 'typing', 'capture']) {
         await control(mode);
         await run();
         assert.equal(
@@ -1448,7 +1448,7 @@ async function until(fn, message) {
       );
       await call('save-settings', { autorun: true });
       checks.push(
-        'Ö autorun uses actual facing and current native movement bindings; toggle/manual movement/Settings release paired input; typing, login, key capture, map and disabled cases do nothing; alias text/repeat/chord policy separately unit-tested'
+        'Ö autorun uses actual facing and current native movement bindings; toggle/manual movement/Settings release paired input; typing, login, key capture and disabled cases do nothing; map continuation and alias text/repeat/chord policy are checked separately'
       );
     }
     await call('save-settings', {

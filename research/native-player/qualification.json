@@ -1,42 +1,47 @@
 {
-  "version": "0.32.4",
-  "checkedAtUtc": "2026-10-25T23:33:34.046Z",
+  "version": "0.33.0",
+  "checkedAtUtc": "2026-10-26T16:03:04.579Z",
   "nativeSha256": "032e3640907d021f91b9764bd7fc83d4c6e22d9b94d84ed34b4c102a3998b5a3",
   "patchSha256": "c01ea9936d96552991d0acfa8c4e368500baedbc38246adbf7403dd216e796ec",
-  "clientSha256": "b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c",
+  "clientSha256": "f46631fdbf8d835931c3f8e73fb3e79e9d484b2b4965c66baf337222abc4a7ec",
   "adaptedClients": [
     {
       "source": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
-      "enhanced": "06e6c6cbd09803b33d83ef7374d2f516a731fb6e713d258db9780a3bc0dab0dd",
+      "enhanced": "122d056f67fbd84fe759adaf025b34f6caf95ad60db0fa2113aff1497b7fac0f",
       "mode": "contract"
     },
     {
       "source": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
-      "enhanced": "dc40e3e346a8b7762741ab1b1123a23d33a615daf79aff9de65609e861b98527",
+      "enhanced": "9d4d7ebe6d9f2713a9cfc4817695b5dfe97a8db0f68a32b6019f7149c296a640",
       "mode": "contract"
     },
     {
       "source": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
-      "enhanced": "b090e83fbce01a81525a293ba2ae0b35b69a5ccfe0d4b4fb9fe4c1b1f5a97752",
+      "enhanced": "a71246bb8efbd2035744523c49cf2db3d343016442768652f235ce9510163a83",
       "mode": "contract"
     },
     {
       "source": "2a0777535e552b56e904c350dc257f6591261992ad9f8edaabd6ea1fef38cc79",
-      "enhanced": "312e04010bf3a8eec0dc8316ef7077c5fff4df195c510ddec526c2e82f44fba7",
+      "enhanced": "10df303085741c9e5faad6409bee086197f80b13ceb3544e8557c907e62afd13",
       "mode": "contract"
     },
     {
       "source": "a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c",
-      "enhanced": "51e2fb0b23d670f8d5ed1bd3fd230f1bc918dd1b12259fe211a690527674d03d",
+      "enhanced": "8d79dc0c03790585d4876a6af74735b2cd4afe2864582d5860bfdbe68ab4394b",
       "mode": "contract"
     },
     {
       "source": "b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c",
-      "enhanced": "5dbd84c65d4cea88e472b29192e3140a21ecac8b473222d868658eb646d40223",
+      "enhanced": "92a53468d3fe10d8b35845fcf949a224ab076db27ed293b1739518b52a08c1d1",
+      "mode": "contract"
+    },
+    {
+      "source": "f46631fdbf8d835931c3f8e73fb3e79e9d484b2b4965c66baf337222abc4a7ec",
+      "enhanced": "e2cef1b67e030bb352c383fb6c83642a9f1a205e6056119d3db0bd496fbf00cc",
       "mode": "contract"
     }
   ],
-  "unitGroups": 112,
+  "unitGroups": 114,
   "dungeon": {
     "full": {
       "viewport": [
@@ -46,32 +51,32 @@
       "density": 1,
       "widescreen": true,
       "cap": 1000,
-      "wallMs": 40015,
-      "nativeSteps": 480.07200000001285,
-      "elapsedMs": 20004,
+      "wallMs": 39805,
+      "nativeSteps": 480.02400000001387,
+      "elapsedMs": 20000,
       "error": "",
       "level": "LevelsBT.swf",
-      "time": 38611,
+      "time": 38522,
       "width": 2364,
       "timerTicks": 200,
       "nativeTarget": 24,
       "room": "a_Room_BT12",
-      "nativeElapsed": 20003,
-      "frames": 2625,
-      "drawMs": 7302,
-      "distinctTimes": 2625,
+      "nativeElapsed": 20001,
+      "frames": 2849,
+      "drawMs": 7296,
+      "distinctTimes": 2849,
       "target": 1000,
-      "fps": 131.2237552489502,
+      "fps": 142.45,
       "height": 1157,
-      "completedGpuPerSecond": 130.77988404183614,
+      "completedGpuPerSecond": 142.9403287050765,
       "rolling": {
         "phase": "running",
         "cap": 1000,
-        "renderFPS": 140.23642668036806,
-        "averageFPS": 134.22031320489316,
-        "lowFPS": 96.87949160039827,
-        "highFPS": 154.80231744062831,
-        "sampleSeconds": 30.12956759999999
+        "renderFPS": 129.7277533368473,
+        "averageFPS": 142.02718791009397,
+        "lowFPS": 107.24777512522654,
+        "highFPS": 162.3777360399477,
+        "sampleSeconds": 30.156198
       }
     },
     "reduced": {
@@ -82,32 +87,32 @@
       "density": 0.75,
       "widescreen": true,
       "cap": 240,
-      "wallMs": 39471,
-      "nativeSteps": 480.14400000001314,
+      "wallMs": 39886,
+      "nativeSteps": 480.1440000000132,
       "elapsedMs": 20005,
       "error": "",
       "level": "LevelsBT.swf",
-      "time": 38335,
+      "time": 38556,
       "width": 1776,
       "timerTicks": 200,
       "nativeTarget": 24,
       "room": "a_Room_BT12",
       "nativeElapsed": 20006,
-      "frames": 3082,
-      "drawMs": 4704,
-      "distinctTimes": 3082,
+      "frames": 2697,
+      "drawMs": 4828,
+      "distinctTimes": 2697,
       "target": 240,
-      "fps": 154.06148462884278,
+      "fps": 134.81629592601848,
       "height": 869,
-      "completedGpuPerSecond": 153.79954938988385,
+      "completedGpuPerSecond": 135.2840574863981,
       "rolling": {
         "phase": "running",
         "cap": 240,
-        "renderFPS": 163.3345586745042,
-        "averageFPS": 155.23425810221366,
-        "lowFPS": 37.599438145659036,
-        "highFPS": 182.1007863171658,
-        "sampleSeconds": 30.135100700000002
+        "renderFPS": 133.25316928741177,
+        "averageFPS": 139.7267222177489,
+        "lowFPS": 112.27990406328055,
+        "highFPS": 165.112290282525,
+        "sampleSeconds": 30.123085500000006
       }
     }
   },
@@ -117,33 +122,33 @@
       900
     ],
     "widescreen": false,
-    "completedGpuPerSecond": 119.01683926027422,
-    "wallMs": 38937,
-    "nativeSteps": 479.97600000001154,
-    "elapsedMs": 20000,
+    "completedGpuPerSecond": 119.31756017397926,
+    "wallMs": 38950,
+    "nativeSteps": 480.14400000001166,
+    "elapsedMs": 20006,
     "error": "",
     "level": "LevelsHome.swf",
-    "time": 37794,
+    "time": 37824,
     "width": 1248,
     "timerTicks": 200,
     "nativeTarget": 24,
     "room": "a_Room_Main",
-    "nativeElapsed": 19999,
-    "frames": 2380,
-    "drawMs": 2723,
-    "distinctTimes": 2380,
+    "nativeElapsed": 20006,
+    "frames": 2387,
+    "drawMs": 2629,
+    "distinctTimes": 2387,
     "target": 120,
-    "fps": 119,
+    "fps": 119.31420573827852,
     "height": 724
   },
   "automaticTimeline": {
-    "automaticFrames": 151,
-    "elapsed": 2508,
-    "frames": 565,
+    "automaticFrames": 150,
+    "elapsed": 2506,
+    "frames": 601,
     "stageRate": 100,
     "timerTicks": 25,
     "totalFrames": 1000,
-    "hostElapsed": 2509,
+    "hostElapsed": 2507,
     "production": true
   },
   "publicStartup": {
@@ -156,115 +161,130 @@
     "runs": [
       {
         "completedRenderSamples": [
-          42.284933737159676,
-          82.69172524827444,
-          74.42831610400513,
-          85.85712515802453,
-          70.10255411250711,
-          81.51116126366952,
-          76.73512569313246,
-          82.93448175941006,
-          83.51073565302958,
-          73.80328472489427,
-          84.32944597736638,
-          52.14543596745786,
-          113.82305068540447,
-          113.28066775972573,
-          120.04371972430422,
-          120.16508100069905,
-          119.88026359272358,
-          119.96884409118952,
-          119.93539347977676,
-          119.92446938873407,
-          120.1966297659702,
-          119.96733289525262,
-          119.90013517741073,
-          110.78129556629302,
-          119.99222133070975,
-          120.20571668585488,
-          119.72827667608364,
-          119.97905026963558,
-          120.28964155078599,
-          119.95042448955847,
-          119.93014069304631,
-          120.00738293354179,
-          120.14711169818807,
-          118.0558366408809,
-          120.08038836180877,
-          119.9768204782836,
-          120.065577635494,
-          119.8157712700951,
-          120.1897766774619,
-          119.93295747677048,
-          119.90339383558668,
-          120.21678762859966,
-          119.80279262306317,
-          119.34739650119182
+          40.283266172976056,
+          80.83854413331025,
+          80.89907682314455,
+          72.28783471000398,
+          85.59874006525772,
+          81.95669408284661,
+          68.73017221689369,
+          79.96495757859002,
+          68.45799749642158,
+          45.96326884262439,
+          77.47482142798611,
+          79.95305780469575,
+          92.50639512624586,
+          120.05715514351145,
+          120.06589930995845,
+          119.92400415856471,
+          119.9784911286813,
+          107.94878948680851,
+          120.08527443901569,
+          119.91546059131998,
+          120.02846559379074,
+          119.93528292133566,
+          120.14974829124219,
+          119.94634799854025,
+          119.97360184152538,
+          120.04083769456909,
+          119.987161373733,
+          114.58025814035445,
+          120.23289011449152,
+          119.91354728751097,
+          119.98971063440048,
+          119.80571671294699,
+          120.15264748414755,
+          119.89352662151535,
+          120.18479853005053,
+          119.95873419543678,
+          119.9881043198395,
+          112.15961047066538,
+          120.97507913369847,
+          119.91748477872375,
+          119.25256072514303,
+          119.85219826909456,
+          119.94389401321367,
+          120.11551737624826,
+          119.86485237894274,
+          120.13037620664014,
+          120.86099776646878,
+          105.74187351256847,
+          120.20686309660232,
+          119.93901101289994,
+          119.99139661686259,
+          120.05775075475148,
+          120.00337199557673,
+          119.94977702835823,
+          119.99544612323473,
+          120.11359768317746,
+          119.9346683152232,
+          111.95349451837706,
+          119.95941207991281
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
       },
       {
         "completedRenderSamples": [
-          40.749125893518915,
-          79.60536436668859,
-          78.37079225728317,
-          71.3133593197894,
-          79.57216434397176,
-          77.22016895772968,
-          73.69629021838102,
-          79.41666868517366,
-          87.3976900790512,
-          56.30839773565164,
-          75.36593134639651,
-          84.50636452227955,
-          99.87880705551885,
-          119.95311032917233,
-          57.5809391528988,
-          115.79315868064876,
-          119.94301507353856,
-          119.92692852245126,
-          107.40125945876926,
-          121.42377135067824,
-          119.90461587806901,
-          120.14300791027523,
-          119.84042049606742,
-          119.91316701079765,
-          119.94609622435678,
-          120.15925768986975,
-          119.94162441139898,
-          120.01717931856031,
-          108.42619771905102,
-          121.9701051272333,
-          119.7180878467385,
-          120.17292188243631,
-          120.21706233811058,
-          119.66028346631118,
-          119.9868014518403,
-          120.34834979038997,
-          119.97737226759034,
-          119.83669724516233,
-          108.34114499494227,
-          120.60182102769497,
-          119.99502020666142,
-          119.96094071770231,
-          119.7525791961229,
-          120.1893707699053,
-          119.88510211812998,
-          120.10918619871995,
-          120.1221950474711,
-          119.91251183136782,
-          107.17462676436229,
-          120.18490596772686,
-          120.03452629465421,
-          120.00864458963838,
-          120.15289803825074,
-          119.95917789176343,
-          120.10854238754538,
-          119.65972364387393,
-          119.94132589287398,
-          119.9998680001452,
-          112.81758524641508
+          44.72089910473232,
+          89.73955785519266,
+          75.85949304697839,
+          95.62352063690047,
+          87.47347093639257,
+          80.22555066917023,
+          82.1876816112588,
+          90.37233700777988,
+          82.72634950846096,
+          46.64919340070734,
+          97.19051960035259,
+          120.0070139636591,
+          120.00897786171574,
+          119.81374952636128,
+          120.23480167517883,
+          119.94088113968624,
+          119.83736870692785,
+          120.10361865254856,
+          119.97915961997401,
+          119.90647295109814,
+          120.08131787757759,
+          119.95717528842204,
+          119.93658952511807,
+          120.15718148193129,
+          119.87870672453613,
+          119.79033098367925,
+          120.2964701536007,
+          120.01981021197979,
+          119.94535289722003,
+          119.97928820353722,
+          120.05222370948076,
+          120.03696741780047,
+          119.95826651907802,
+          119.98489390185776,
+          119.99427994209334,
+          119.11031739524795,
+          120.94565911535946,
+          119.99373255876222,
+          120.01262017007475,
+          119.93343694249691,
+          120.05024648498336,
+          119.98872304331861,
+          119.95833846904969,
+          120.05406997187757,
+          119.97623270830049,
+          115.4828783307927,
+          121.5312297406444,
+          120.93063458449622,
+          119.99493621369179,
+          120.14225637483749,
+          118.99355253267859,
+          120.88221237226446,
+          119.09864951063852,
+          119.8295884606285,
+          120.29535791149762,
+          119.63975274052302,
+          120.38631870178577,
+          119.87397648851761,
+          120.14442750286658
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
@@ -311,20 +331,20 @@
       "bitmapWidth": 1110,
       "centeredCamera": true,
       "frameCounter": {
-        "fps": 119.93364071659151,
+        "fps": 239.25233644859813,
         "height": 64,
-        "highFPS": 122.05489235205037,
-        "lowFPS": 119.93364071659151,
+        "highFPS": 239.25233644859813,
+        "lowFPS": 239.25233644859813,
         "mouseEnabled": false,
         "rangeSamples": 3,
         "rangeSeconds": 30,
-        "sampleFrames": 216,
+        "sampleFrames": 211,
         "sampleMs": 1000,
         "selectable": false,
         "shown": true,
         "source": "completed-game-renders",
-        "text": "120 FPS\nLow 120\nHigh 122",
-        "totalFrames": 522,
+        "text": "121 FPS\nLow 121\nHigh 122",
+        "totalFrames": 527,
         "updates": 3,
         "visible": true,
         "width": 76,
@@ -738,9 +758,24 @@
         "actual": 0,
         "expected": 0,
         "name": "Loot hook passes unrelated chat through"
+      },
+      {
+        "actual": 1,
+        "expected": 1,
+        "name": "Raid gold formats grouped digits"
+      },
+      {
+        "actual": 1,
+        "expected": 1,
+        "name": "Raid overlays tolerate an absent game"
+      },
+      {
+        "actual": 1,
+        "expected": 1,
+        "name": "Loot command outside a dungeon is consumed safely"
       }
     ],
-    "flashReference": "Unchanged renderer and UI artwork; retained 0.32.0 Flash reference"
+    "flashReference": "Unchanged native renderer and ability artwork; retained independent Flash reference. Four synthetic filter probes still differ."
   },
   "audio": {
     "clips": [
@@ -812,133 +847,388 @@
     },
     "scope": "Flash decoded PCM compared with owned CPAL postmix; no missing 5 ms windows in three effects. Separate callback scheduling, not physical endpoint recording or listening. Diagnostic recorder excluded from the shipped source patch/binary.",
     "qualifiedAtUtc": "2026-10-22T22:33:45.614Z",
-    "retainedReason": "Same native binary, BlitzAudio helper and SoundManager bodies; current media/startup audio helpers rechecked. PCM comparison and callback timing retained from 0.32.3."
+    "retainedReason": "Native binary, BlitzAudio helper and SoundManager methods are unchanged. Raw review removes exactly the three original sound-owner wrappers from the new TakeDamage body and reproduces every upstream instruction/exception range. Prior PCM and callback qualification retained."
   },
   "regression": {
     "cameraSamples": 121,
     "transitionSamples": 134,
     "originalMultiplayer": true,
     "originalSingleplayer": true,
-    "visualEvidenceInspected": true
+    "visualEvidenceInspected": true,
+    "settingsUI": {
+      "sizes": [
+        [
+          800,
+          600
+        ],
+        [
+          1440,
+          900
+        ]
+      ],
+      "draftSaveDiscard": true,
+      "autorunMapHint": true
+    }
   },
   "performanceComparison": {
-    "scope": "Fresh current-client fixture measurements under available background load; no new performance optimization. Physical scanout and live combat remain unmeasured.",
-    "priorVersion": "0.32.3",
-    "priorRecordedFull": 127.08298513680239,
-    "priorRecordedReduced": 179.70665722366965
+    "scope": "Current-client fixtures under available background load. This is a compatibility and map-autorun update; no renderer optimization or physical scanout/live-combat claim.",
+    "priorVersion": "0.32.4",
+    "priorRecordedFull": 130.77988404183614,
+    "priorRecordedReduced": 153.79954938988385
   },
   "sessionControlsReview": "session-controls.json",
-  "deploymentReview": "deployments/2026-10-25.json",
+  "deploymentReview": "deployments/2026-10-26.json",
   "resourceReview": "level-resources.json",
   "audioCursorReview": "audio-cursor-review.json",
   "evidence": {
     "cursor": {
-      "out": "artifacts\\native-game-cursor-4S0H37",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-cursor.log"
+      "out": "artifacts\\native-game-cursor-DIVdd5",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-cursor.log"
     },
     "settings": {
-      "out": "artifacts\\native-settings-54OMwh",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-settings.log"
+      "out": "artifacts\\native-settings-qNe9vo",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-settings.log"
     },
     "controls": {
-      "out": "artifacts\\refresh-controls-gnahqT",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-controls.log"
+      "out": "artifacts\\refresh-controls-ttQQ3s",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-controls.log"
     },
     "media": {
-      "out": "artifacts\\native-media-WD92SX",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-media.log"
+      "out": "artifacts\\native-media-0JIen1",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-media.log"
     },
     "window": {
-      "out": "artifacts\\native-window-esMO5Q",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-window.log"
+      "out": "artifacts\\native-window-dPnbO7",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-window.log"
     },
     "animation": {
-      "out": "artifacts\\native-animation-8YeLR2",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-animation.log"
+      "out": "artifacts\\native-animation-Z8HqyW",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-animation.log"
     },
     "primary": {
-      "out": "artifacts\\native-anonymous-8gjGxL",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-primary.log"
+      "out": "artifacts\\native-anonymous-kpUAoa",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-primary.log"
     },
     "render120": {
-      "out": "artifacts\\ruffle-world-rate-VkrTaF",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-render120.log"
+      "out": "artifacts\\ruffle-world-rate-riEHsw",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-render120.log"
     },
     "full": {
-      "out": "artifacts\\ruffle-world-rate-HAphFr",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-full.log"
+      "out": "artifacts\\ruffle-world-rate-QRexyk",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-full.log"
     },
     "reduced": {
-      "out": "artifacts\\ruffle-world-rate-wpu9rH",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-reduced.log"
+      "out": "artifacts\\ruffle-world-rate-zkpoMn",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-reduced.log"
     },
     "home": {
-      "out": "artifacts\\ruffle-world-rate-lZhJ0r",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-home.log"
+      "out": "artifacts\\ruffle-world-rate-88F42s",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-home.log"
     },
     "secondary": {
-      "out": "artifacts\\native-anonymous-HllUL9",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh\\artifacts\\native-secondary.log"
+      "out": "artifacts\\native-anonymous-j208PI",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-secondary.log"
+    },
+    "autorun": {
+      "out": "artifacts\\native-autorun-iwDkOw",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-autorun.log"
+    },
+    "currentArt": {
+      "out": "artifacts\\native-current-art-Sf0Toc",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-currentArt.log"
+    },
+    "currentMap": {
+      "out": "artifacts\\ruffle-world-rate-TLR45Z",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\current-map-0330.log"
     }
   },
-  "scope": "Anonymous public startup, original-artwork fixtures and own inactive desktop. No account, physical OS cursor/input changes, human game session, endpoint capture or monitor scanout. Live combat, long sessions, NVIDIA overlay compatibility and speaker listening remain unmeasured. Four synthetic filter probes differ from Flash; complete filter parity is not established. New upstream guild/quest transactions and cosmetic frame-counted effects remain outside authenticated QA; packet pass-through and disconnected helpers are exercised offline.",
+  "scope": "Anonymous public startup, owned artwork/input fixtures and inactive desktops. No account, physical cursor/input change, endpoint capture or human game session. Live combat, speaker listening, new authenticated raid transactions and frame-counted upstream cosmetics remain unverified. Four synthetic filter probes differ from Flash.",
   "packaging": {
     "status": "passed",
-    "checkedAtUtc": "2026-10-25T23:39:07.496Z",
+    "checkedAtUtc": "2026-10-26T16:09:56.514Z",
     "signedFiles": 442,
     "nativeAndSingleplayer": true,
     "integrityPositiveAndNegative": true,
     "updater": true,
     "installer": true,
-    "previousUpdater": "0.32.3",
+    "previousUpdater": "0.32.4",
     "installerReceipt": ".test-tools/installer-test-result.json",
-    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.32.4-27khEh"
+    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm"
   },
   "homeArtwork": {
-    "wallMs": 39516,
-    "nativeSteps": 480.16800000001155,
-    "elapsedMs": 20007,
+    "wallMs": 39613,
+    "nativeSteps": 480.1200000000117,
+    "elapsedMs": 20001,
     "error": "",
     "level": "LevelsHome.swf",
-    "time": 38364,
+    "time": 38404,
     "width": 2364,
     "timerTicks": 200,
     "nativeTarget": 24,
     "room": "a_Room_Main",
-    "nativeElapsed": 20007,
-    "frames": 2358,
-    "drawMs": 6490,
-    "distinctTimes": 2358,
+    "nativeElapsed": 20005,
+    "frames": 2302,
+    "drawMs": 6773,
+    "distinctTimes": 2302,
     "target": 120,
-    "fps": 117.8587494376968,
+    "fps": 115.09424528773562,
     "height": 1157,
-    "completedGpuPerSecond": 117.91244336710857,
-    "source": "Fresh reviewed October 25 LevelsHome.swf through the production resource broker"
+    "completedGpuPerSecond": 115.55284786197912,
+    "source": "Current reviewed LevelsHome.swf through the production resource broker"
   },
   "diagnostics": {
-    "titleMeasurement": {
-      "logLevel": "warn,avm_trace=info for the secondary final run; primary retains verbose profiling",
-      "warmupMs": {
-        "primary": 45000,
-        "secondary": 60000
-      },
-      "gate": "Existing eight rolling samples, indices -10 through -3, each 118–123 renders/s; all samples retained",
-      "secondaryFinalSample": 112.81758524641508,
-      "limit": "Brief rolling-rate dips remain in the full sample record; no guarantee of a fixed frame time or live-combat rate."
-    },
-    "priorAnonymousRun": "artifacts/native-anonymous-fI7I9B",
-    "priorSteadyDip": {
-      "evidence": "artifacts/native-anonymous-t1jZM4/steady-render-samples.json",
-      "fps": 113.62926180750065,
-      "scope": "One earlier secondary-origin rolling interval fell below the gate. The fresh check uses a longer 60-second startup warmup; threshold unchanged."
-    },
-    "priorFailure": "The prior counter gate failed after captures/resize. Fresh qualification samples the unchanged 118–123 steady-state gate before those operations and retains their render samples separately.",
-    "priorLongWarmRun": {
-      "evidence": "artifacts/native-anonymous-icynYf/steady-render-samples.json",
-      "lowestLast15": 109.38511346169776,
-      "logLevel": "Verbose core/graphics profiling"
-    },
-    "productionLogging": "Final secondary qualification uses warn,avm_trace=info, without verbose core/graphics profiling; all final rolling samples, including the ending dip, are retained."
+    "priorConcurrentTitleRun": "artifacts/native-anonymous-vSDrei/steady-render-samples.json",
+    "scope": "One secondary-origin run failed the unchanged 118–123 gate while other visual tests were running. The isolated rerun passed the same gate; complete samples and failure remain available. No fixed frame-time or live-combat guarantee.",
+    "priorAutorunFixtures": [
+      "artifacts/native-autorun-Er04p9",
+      "artifacts/native-autorun-dVyFDI"
+    ],
+    "autorunFixtureRepair": "The unbound negative control initially retained original hardcoded arrows. It now creates an empty key-manager context; product behavior was unchanged.",
+    "priorMapFixture": "artifacts/ruffle-world-rate-cVdiy7",
+    "mapFixtureRepair": "Removed a duplicate fixture-only CLI flag, then moved the map case last so later synthetic Game replacements cannot leave stale map-probe state. Full failed and passing records remain in artifacts.",
+    "additionalMapFixture": "artifacts/ruffle-world-rate-4QmI3L"
   },
-  "resourceUnitRecheck": 6
+  "resourceUnitRecheck": 6,
+  "autorun": {
+    "checks": [
+      "run-play starts and survives map/focus transitions; toggle releases",
+      "run-map starts and survives map/focus transitions; toggle releases",
+      "left starts and survives map/focus transitions; toggle releases",
+      "run-rebind starts and survives map/focus transitions; toggle releases",
+      "run-open-forge releases map autorun",
+      "run-type releases map autorun",
+      "run-leave releases map autorun",
+      "run-manual-stop releases map autorun",
+      "login rejects activation",
+      "typing rejects activation",
+      "capture rejects activation",
+      "run-unbound rejects activation",
+      "Explicit host stop releases map autorun"
+    ],
+    "scope": "Actual native helper, original key manager/release; synthetic held-command sink and stage deactivation. No accounts or OS input."
+  },
+  "currentArtwork": {
+    "error": "",
+    "ready": true,
+    "records": [
+      {
+        "file": "GlobalMap01.swf",
+        "height": 718.75,
+        "room": "a_GlobalMap",
+        "width": 1186.4
+      },
+      {
+        "file": "LevelsAC.swf",
+        "height": 1922.5,
+        "room": "a_Room_ZDGC_R02",
+        "width": 2842
+      },
+      {
+        "file": "LevelsCH.swf",
+        "height": 1242.55,
+        "room": "a_Room_CH10",
+        "width": 3125
+      },
+      {
+        "file": "LevelsNR.swf",
+        "height": 1349.45,
+        "room": "a_Room_NR06",
+        "width": 2318.45
+      },
+      {
+        "file": "LevelsOMM.swf",
+        "height": 1199.2,
+        "room": "a_Room_MtnSlopeUp1",
+        "width": 2684.65
+      },
+      {
+        "file": "LevelsSRN.swf",
+        "height": 1382.35,
+        "room": "a_Room_SRN12",
+        "width": 2262.55
+      }
+    ],
+    "scope": "Direct authoring-clip construction and GPU capture, including editor markers; independent of the game presentation path."
+  },
+  "currentMap": {
+    "cases": [
+      {
+        "name": "home",
+        "error": "",
+        "loadError": "",
+        "fixtureLoading": 10,
+        "widescreen": {
+          "hudRaster": {
+            "inspection": false,
+            "scale": 1.0810546875,
+            "height": 133,
+            "width": 1507,
+            "builds": 1
+          },
+          "roomWings": null,
+          "interiorLimited": false,
+          "uiOffset": 0,
+          "requested": true,
+          "frameAttached": true,
+          "interiorSceneWidth": null,
+          "decorationAnimating": false,
+          "frameStyle": "original-vector-three-slice",
+          "centeredHotbar": false,
+          "logicalHeight": 768,
+          "logicalWidth": 1365.3333333333333,
+          "frameInteractive": false,
+          "active": true
+        }
+      },
+      {
+        "name": "dungeon",
+        "error": "",
+        "loadError": "",
+        "fixtureLoading": 10,
+        "widescreen": {
+          "hudRaster": {
+            "inspection": false,
+            "scale": 1.0810546875,
+            "height": 133,
+            "width": 1507,
+            "builds": 1
+          },
+          "roomWings": null,
+          "interiorLimited": false,
+          "uiOffset": 0,
+          "requested": true,
+          "frameAttached": true,
+          "interiorSceneWidth": null,
+          "decorationAnimating": false,
+          "frameStyle": "original-vector-three-slice",
+          "centeredHotbar": false,
+          "logicalHeight": 768,
+          "logicalWidth": 1365.3333333333333,
+          "frameInteractive": false,
+          "active": true
+        }
+      },
+      {
+        "name": "dialogue",
+        "error": "",
+        "loadError": "",
+        "fixtureLoading": 10,
+        "widescreen": {
+          "hudRaster": {
+            "inspection": false,
+            "scale": 1.0810546875,
+            "height": 133,
+            "width": 1507,
+            "builds": 1
+          },
+          "roomWings": null,
+          "interiorLimited": false,
+          "uiOffset": 0,
+          "requested": true,
+          "frameAttached": true,
+          "interiorSceneWidth": null,
+          "decorationAnimating": false,
+          "frameStyle": "original-vector-three-slice",
+          "centeredHotbar": false,
+          "logicalHeight": 768,
+          "logicalWidth": 1365.3333333333333,
+          "frameInteractive": false,
+          "active": true
+        }
+      },
+      {
+        "name": "loading",
+        "error": "",
+        "loadError": "",
+        "fixtureLoading": 10,
+        "widescreen": {
+          "hudRaster": {
+            "inspection": false,
+            "scale": 1.0810546875,
+            "height": 133,
+            "width": 1507,
+            "builds": 1
+          },
+          "roomWings": null,
+          "interiorLimited": false,
+          "uiOffset": 0,
+          "requested": true,
+          "frameAttached": true,
+          "interiorSceneWidth": null,
+          "decorationAnimating": false,
+          "frameStyle": "original-vector-three-slice",
+          "centeredHotbar": false,
+          "logicalHeight": 768,
+          "logicalWidth": 1365.3333333333333,
+          "frameInteractive": false,
+          "active": true
+        }
+      },
+      {
+        "name": "canvas-recovery",
+        "error": "",
+        "loadError": "",
+        "fixtureLoading": 10,
+        "widescreen": {
+          "hudRaster": {
+            "inspection": false,
+            "scale": 1.0810546875,
+            "height": 133,
+            "width": 1507,
+            "builds": 1
+          },
+          "roomWings": null,
+          "interiorLimited": false,
+          "uiOffset": 0,
+          "requested": true,
+          "frameAttached": true,
+          "interiorSceneWidth": null,
+          "decorationAnimating": false,
+          "frameStyle": "original-vector-three-slice",
+          "centeredHotbar": false,
+          "logicalHeight": 768,
+          "logicalWidth": 1365.3333333333333,
+          "frameInteractive": false,
+          "active": true
+        }
+      },
+      {
+        "name": "map",
+        "error": "",
+        "loadError": "",
+        "fixtureLoading": 10,
+        "widescreen": {
+          "hudRaster": {
+            "inspection": false,
+            "scale": 1.0810546875,
+            "height": 133,
+            "width": 1507,
+            "builds": 1
+          },
+          "roomWings": null,
+          "interiorLimited": false,
+          "uiOffset": 0,
+          "requested": true,
+          "frameAttached": true,
+          "interiorSceneWidth": null,
+          "decorationAnimating": false,
+          "frameStyle": "original-vector-three-slice",
+          "centeredHotbar": false,
+          "logicalHeight": 768,
+          "logicalWidth": 1365.3333333333333,
+          "frameInteractive": false,
+          "active": true
+        },
+        "map": {
+          "kind": 0,
+          "bitmapWidth": 1113,
+          "displayWidth": 1151.5,
+          "scale": 3.636937647987372,
+          "globalScale": 1.0001302252897513,
+          "hitRegions": 7
+        }
+      }
+    ],
+    "scope": "Current public assets through the production broker; original map, terrain, menus and canvas methods in an account-free fixture."
+  }
 }

@@ -55,13 +55,15 @@ package {
    if(mode=="run-release"){game.method_885(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,39));return true;}
    if(mode=="run-deactivate"){game.method_885(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,37));game.method_885(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,39));stage.dispatchEvent(new Event(Event.DEACTIVATE));return true;}
    if(mode=="run-open-map"){game.screenMap.mbVisible=true;return true;}
+   if(mode=="run-close-map"){game.screenMap.mbVisible=false;return true;}
+   if(mode=="run-open-forge"){game.screenForge.mbVisible=true;return true;}
    if(mode=="run-type"){stage.focus=field;return true;}
    if(mode=="run-leave"){game.gameState="Login";return true;}
    if(mode=="run-manual-stop"){stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_DOWN,true,false,0,39));stage.dispatchEvent(new KeyboardEvent(KeyboardEvent.KEY_UP,true,false,0,39));return true;}
    if(mode=="run-face-left"){game.clientEnt.bLeftFacing=true;return true;}
    BlitzInput.StopAutorun();
    events=[];stage.focus=null;game.gameState=Game.STATE_PLAY;game.mKeybindManager.mbStatePickKey=false;
-   game.mKeybindManager=new class_108(40);game.method_1880();
+   game.mKeybindManager=new class_108(40);if(mode!="run-unbound")game.method_1880();
    game.clientEnt=null;game.screenMap=null;game.screenForge=null;
    if(mode=="left"||mode.indexOf("run-")==0){
     game.var_406=new Vector.<int>();
@@ -70,7 +72,7 @@ package {
     game.screenMap=new class_119(game);game.screenForge=new class_75(game);
     game.CONTEXT_NORMAL=game.mKeybindManager.method_794();game.mKeybindManager.SetContext(game.CONTEXT_NORMAL);
     game.mKeybindManager.method_32(Game.const_153,37);
-    if(mode!="run-unbound")game.mKeybindManager.method_32(Game.const_151,mode=="run-rebind"?68:39);
+    game.mKeybindManager.method_32(Game.const_151,mode=="run-unbound"?255:mode=="run-rebind"?68:39);
    }
    game.mKeybindManager.method_32(Game.const_274,56);
    if(mode=="login")game.gameState="Login";

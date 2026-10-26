@@ -146,7 +146,19 @@ async function until(fn) {
     );
     await run();
     assert.equal((await probe()).geometry.inputProbe.held, '', 'Toggle still releases movement');
-    for (const mode of ['login', 'typing', 'capture', 'run-map']) {
+    for (const mode of ['run-play', 'run-map']) {
+      await control(mode);
+      await run();
+      await control('run-open-map');
+      await wait(150);
+      assert.equal((await probe()).geometry.inputProbe.held, '2', 'Map preserves autorun');
+      await control('run-close-map');
+      await wait(150);
+      assert.equal((await probe()).geometry.inputProbe.held, '2', 'Closing map preserves autorun');
+      await run();
+      assert.equal((await probe()).geometry.inputProbe.held, '', 'Toggle releases map autorun');
+    }
+    for (const mode of ['login', 'typing', 'capture']) {
       await control(mode);
       await run();
       assert.equal(
@@ -237,7 +249,7 @@ async function until(fn) {
             'Physical movement key-up through native release retains autorun; no repeated pulses',
             'Facing changes retain the activated direction',
             'Manual movement and Settings release',
-            'Login/text/capture/map/disabled guards',
+            'Map open/close retains movement; login/text/capture/disabled guards',
             'Rendered key capture, save/persistence, Escape, Default/discard, R native input and old Ö rejection',
           ],
           limits:

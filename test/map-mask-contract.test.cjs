@@ -38,7 +38,7 @@ test(
     for (const t of before.tags) if (t !== tag) assert(after.tags.some((p) => p.raw.equals(t.raw)));
     assert.equal(
       hash(patchAdaptiveClient(fs.readFileSync(prior), recipe)),
-      '312e04010bf3a8eec0dc8316ef7077c5fff4df195c510ddec526c2e82f44fba7'
+      require('../src/native-player-admission.json').enhanced[hash(fs.readFileSync(prior))]
     );
     const damaged = Buffer.from(body.bytes);
     damaged[body.codeOffset] ^= 1;

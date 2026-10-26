@@ -29,6 +29,14 @@ package {
    var loot:Class=domain.getDefinition("LootPick") as Class;
    checks.push({name:"Loot hook passes unrelated chat through",actual:loot["Run"](null,"not a command")?1:0,expected:0});
    var teleport:Class=domain.getDefinition("MapTeleport") as Class;teleport["Update"](null);
+   if(domain.hasDefinition("GuildRaidGold")){
+    var gold:Class=domain.getDefinition("GuildRaidGold") as Class;
+    checks.push({name:"Raid gold formats grouped digits",actual:gold["Dotted"](1234567)=="1.234.567"?1:0,expected:1});
+    gold["Show"](100);gold["Close"]();
+    var enemies:Class=domain.getDefinition("GuildRaidEnemies") as Class;enemies["Show"](0,0);enemies["Close"]();
+    checks.push({name:"Raid overlays tolerate an absent game",actual:1,expected:1});
+    checks.push({name:"Loot command outside a dungeon is consumed safely",actual:loot["Run"](null,"/pick")?1:0,expected:1});
+   }
   }
   private function mapMaskChecks():void {
    if(!ApplicationDomain.currentDomain.hasDefinition("MapZoneMask"))return;

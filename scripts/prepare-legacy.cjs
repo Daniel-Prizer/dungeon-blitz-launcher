@@ -113,6 +113,10 @@ const target = path.join(root, 'runtime/game');
     stdio: 'inherit',
     windowsHide: true,
   });
+  execFileSync(process.execPath, [path.join(__dirname, 'prepare-damage-contract.cjs')], {
+    stdio: 'inherit',
+    windowsHide: true,
+  });
   execFileSync(process.execPath, [path.join(__dirname, 'prepare-singleplayer.cjs')], {
     stdio: 'inherit',
     windowsHide: true,

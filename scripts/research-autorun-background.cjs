@@ -26,13 +26,20 @@ window.checkBackgroundAutorun=async()=>{
   assert(call('BlitzAutorun')===true,'Stop toggle failed');await wait();assert(call('BlitzInputProbe').held==='','Toggle did not release movement');checks.push(mode+' persists on stage deactivation and native key release');
  }
  call('BlitzInputFixtureControl','run-play');call('BlitzAutorun');await wait();call('BlitzStopAutorun');await wait();assert(call('BlitzInputProbe').held==='','Explicit stop did not release');
- for(const mode of ['run-open-map','run-type','run-leave','run-manual-stop']){
+ for(const initial of ['run-play','run-map']){
+  assert(call('BlitzInputFixtureControl',initial)===true,'Map reset failed');assert(call('BlitzAutorun')===true,'Map activation failed');await wait();
+  for(const mode of ['run-open-map','run-deactivate','run-close-map']){
+   assert(call('BlitzInputFixtureControl',mode)===true,'Map/focus transition failed');for(let i=0;i<30&&call('BlitzInputProbe').held!=='2';i++)await wait();assert(call('BlitzInputProbe').held==='2','Map interrupted autorun: '+mode);
+  }
+  call('BlitzStopAutorun');await wait();assert(call('BlitzInputProbe').held==='','Map run did not release');checks.push(initial+' starts and persists with map open, blur and map close');
+ }
+ for(const mode of ['run-open-forge','run-type','run-leave','run-manual-stop']){
   assert(call('BlitzInputFixtureControl','run-play')===true,'Reset failed');assert(call('BlitzAutorun')===true,'Background activation failed');
   call('BlitzInputFixtureControl','run-deactivate');for(let i=0;i<30&&call('BlitzInputProbe').held!=='2';i++)await wait();assert(call('BlitzInputProbe').held==='2','Background direction absent');
   assert(call('BlitzInputFixtureControl',mode)===true,'Stop context failed');for(let i=0;i<30&&call('BlitzInputProbe').held!=='';i++)await wait();assert(call('BlitzInputProbe').held==='','Context did not stop background autorun: '+mode);
   for(let i=0;i<5;i++)await wait();assert(call('BlitzInputProbe').held==='','Movement restarted after '+mode);checks.push(mode+' stops active background movement');
  }
- return {passed:true,checks,scope:'Original key manager/release; synthetic held-command sink and stage deactivation',limits:['Not an OS Alt+Tab/minimize or authenticated movement test','Prepared helper remains unshipped'],noAccounts:true,noOSInput:true};
+ return {passed:true,checks,scope:'Original key manager/release; synthetic held-command sink and stage deactivation',limits:['Not an OS Alt+Tab/minimize or authenticated movement test'],noAccounts:true,noOSInput:true};
 };</script>`;
 (async () => {
   if (!fs.existsSync(original)) throw Error('Prepare the reviewed shortcut fixture first');

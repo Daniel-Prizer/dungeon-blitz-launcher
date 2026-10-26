@@ -119,7 +119,7 @@ package {
    var field:TextField=main.stage.focus as TextField;if(field&&field.type==TextFieldType.INPUT)return null;
    var game:Game=main.var_523[0];
    if(game.gameState!=Game.STATE_PLAY||!game.clientEnt||!game.mKeybindManager||game.mKeybindManager.mbStatePickKey)return null;
-   if(game.screenMap&&game.screenMap.mbVisible||game.screenForge&&game.screenForge.mbVisible)return null;
+   if(game.screenForge&&game.screenForge.mbVisible)return null;
    return game;
   }
   private static function MovementKey(game:Game,command:int):int {

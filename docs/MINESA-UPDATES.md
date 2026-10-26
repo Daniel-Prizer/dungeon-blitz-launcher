@@ -2,9 +2,9 @@
 
 ## Deployment status
 
-On 25 October, both official origins served **swf-eae765589aea**, 1,023,006 bytes, SHA-256 `b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c`. The complete Original contract and separate High FPS admission accept it.
+On 26 October, both official origins served **swf-7dc52b52a2c9**, 1,026,189 bytes, SHA-256 `f46631fdbf8d835931c3f8e73fb3e79e9d484b2b4965c66baf337222abc4a7ec`. The updated Original contract and separate High FPS admission accept it.
 
-All 73 SWF assets match the reviewed inventory: 52 master-list assets and 21 level libraries. The October 25 home library removes three placements from one sprite; all other tags and the other 72 assets are unchanged. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
+All 73 SWF assets match the reviewed inventory: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Existing level method bodies are unchanged. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `5dbd84c65d4cea88e472b29192e3140a21ecac8b473222d868658eb646d40223`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `e2cef1b67e030bb352c383fb6c83642a9f1a205e6056119d3db0bd496fbf00cc`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. That deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
@@ -69,3 +69,5 @@ The 0.32.2 compatibility patch qualifies Minesa's AIR loading helper, Rankings n
 The 0.32.3 compatibility patch preserves Minesa's new map-mask drawing and non-interactive repaint cover. An exact map-refresh envelope variant retains the authored map width correction; older reviewed envelopes remain unchanged. Each method permits at most eight distinct, hash-checked replacements and rejects ambiguous or unfamiliar bytes. See [the October 24 review](../research/native-player/deployments/2026-10-24.json).
 
 The 0.32.4 compatibility patch qualifies the October 25 guild raid, Neo quest, map teleport, loot-command and Sentinel changes. All nine changed main bodies and all 205 added helper bodies remain upstream code; the existing presentation recipe is unchanged. Raw branches and exception relocations were reviewed. See [the October 25 review](../research/native-player/deployments/2026-10-25.json).
+
+The 0.33.0 update retains October 26 combat, loot-command and guild changes. A new exact `TakeDamage` envelope reapplies the three existing sound-owner wrappers while preserving the group-damage floater, branches and exception ranges. Other changed game methods and every upstream helper remain untouched. Autorun now permits the map without changing native movement handlers. Six earlier native admissions retain the same game code with only the updated launcher input helper. See [the October 26 review](../research/native-player/deployments/2026-10-26.json).

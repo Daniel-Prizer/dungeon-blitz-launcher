@@ -1,0 +1,13 @@
+package {
+ import flash.display.*;import flash.events.*;import flash.net.URLRequest;import flash.system.*;import flash.geom.Rectangle;import flash.external.ExternalInterface;import flash.text.TextField;
+ public class DungeonBlitz extends Sprite {
+  private var entries:Array=[['GlobalMap01.swf','a_GlobalMap'],['LevelsAC.swf','a_Room_ZDGC_R02'],['LevelsCH.swf','a_Room_CH10'],['LevelsNR.swf','a_Room_NR06'],['LevelsOMM.swf','a_Room_MtnSlopeUp1'],['LevelsSRN.swf','a_Room_SRN12']];
+  private var records:Array=[];private var failure:String='';private var index:int=0;
+  public function DungeonBlitz(){if(stage)start();else addEventListener(Event.ADDED_TO_STAGE,start);}
+  private function start(e:Event=null):void {stage.scaleMode=StageScaleMode.NO_SCALE;stage.align=StageAlign.TOP_LEFT;graphics.beginFill(0x292d38);graphics.drawRect(0,0,1600,900);graphics.endFill();ExternalInterface.addCallback('BlitzArtworkState',state);loadNext();}
+  private function loadNext():void {if(index==entries.length)return;var loader:Loader=new Loader();loader.contentLoaderInfo.addEventListener(Event.COMPLETE,complete);loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR,function(e:IOErrorEvent):void{failure=e.toString();});loader.load(new URLRequest('/assets/'+entries[index][0]),new LoaderContext(false,new ApplicationDomain(ApplicationDomain.currentDomain)));}
+  private function stopTree(d:DisplayObject):void {if(d is MovieClip)MovieClip(d).stop();var c:DisplayObjectContainer=d as DisplayObjectContainer;if(c)for(var i:int=0;i<c.numChildren;i++)stopTree(c.getChildAt(i));}
+  private function complete(e:Event):void {try{var info:LoaderInfo=e.target as LoaderInfo;var name:String=entries[index][1];var art:DisplayObject;if(name){var type:Class=info.applicationDomain.getDefinition(name) as Class;art=new type();}else art=info.content;stopTree(art);var bounds:Rectangle=art.getBounds(art);if(bounds.width<=0||bounds.height<=0)throw new Error('Empty room artwork');var scale:Number=Math.min(510/bounds.width,400/bounds.height);art.scaleX=art.scaleY=scale;var holder:Sprite=new Sprite();holder.x=15+(index%3)*530;holder.y=30+int(index/3)*440;art.x=-bounds.x*scale;art.y=25-bounds.y*scale;holder.addChild(art);var label:TextField=new TextField();label.text=entries[index][0]+' '+name;label.textColor=0xffffff;label.width=515;holder.addChild(label);addChild(holder);records.push({file:entries[index][0],room:name,width:bounds.width,height:bounds.height});index++;loadNext();}catch(error:Error){failure=error.toString()+' '+error.getStackTrace();}}
+  private function state():Object{return {ready:index==entries.length,error:failure,records:records};}
+ }
+}

@@ -20,7 +20,7 @@ The tutorial keeps its authored 3:2 viewport so scripted targets and backgrounds
 
 ## Controls
 
-- Autorun defaults to typed Ö and can be rebound to a validated physical key. It holds the direction selected when activated. Toggle, manual movement, text/menu context, Settings, hide and disabling stop it. An active run survives ordinary focus loss; it never sends input to another application.
+- Autorun defaults to typed Ö and can be rebound to a validated physical key. It holds the direction selected when activated, including while the map is open or the game is tabbed out. Toggle, manual movement, typing, the forge, Settings, hide and disabling stop it. It never sends input to another application.
 - Optional Left Shift mounting forwards the current native mount binding. Original Shift typing, right Shift and existing bindings remain. Game/server restrictions still apply.
 - Cursor lock is opt-in and uses its saved shortcut. Settings, blur, hiding and close release it. Escape and F11 remain reserved; Alt+Tab and Alt+F4 retain their Windows behavior.
 - Crosshairs are optional game-window cursors. Original recoloring preserves cursor geometry and alpha; system cursors are not changed.

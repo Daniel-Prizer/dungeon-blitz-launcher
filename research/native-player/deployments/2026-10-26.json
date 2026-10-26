@@ -1,0 +1,536 @@
+{
+  "version": "0.33.0",
+  "reviewedAtUtc": "2026-10-26T15:47:09.555Z",
+  "previousSourceSha256": "b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c",
+  "sourceSha256": "f46631fdbf8d835931c3f8e73fb3e79e9d484b2b4965c66baf337222abc4a7ec",
+  "sourceBytes": 1026189,
+  "revision": "swf-7dc52b52a2c9",
+  "enhancedSha256": "e2cef1b67e030bb352c383fb6c83642a9f1a205e6056119d3db0bd496fbf00cc",
+  "swfTags": 41,
+  "mainInterfaceUnchanged": true,
+  "constantPoolPrefixesUnchanged": true,
+  "changedMainMethods": [
+    {
+      "id": 757,
+      "name": "Entity.TakeDamage",
+      "bodySha256": "bf047b8ba19533c98fcfd5eb460c99a4a3a06ae7bdbb4a1091445315b88f7715",
+      "codeSha256": "94d5a2941bd410b50ede6b275ddeb5d282f922ff186b08843e26ba85bf7c3015",
+      "change": "Adds group damage floaters before the original remote-player early return; retains its new instructions around the three original audio-context wrappers.",
+      "launcherEdit": "Existing three sound-owner wrappers only"
+    },
+    {
+      "id": 3348,
+      "name": "CombatState.shadowLegionRotationSlot",
+      "bodySha256": "c60e8c5aa948c5a7a061677142919bb62a01d3dfa42e2fddf376ec5c986a7afd",
+      "codeSha256": "45c69c1406586556d564d182fe21f7c7fc43042c2d0ec04179d4c476c7b9e7f4",
+      "change": "Excludes FalseScorpionSting from Shadow Legion rotation and renumbers the remaining slots.",
+      "launcherEdit": "None"
+    },
+    {
+      "id": 3349,
+      "name": "CombatState.shadowLegionRotate",
+      "bodySha256": "5bd426122b2dd1d159f37c1d92f53bfdf835a7e234e59565e8778c0d3e0d3c7b",
+      "codeSha256": "fae9587e2f6b584377ca555879d5046a36d1e5bf8b7d7880e59c0fc8fb497ea6",
+      "change": "Updates the two-skill rotation and its existing cooldown values.",
+      "launcherEdit": "None"
+    },
+    {
+      "id": 3355,
+      "name": "CombatState.method_960",
+      "bodySha256": "9747eaed2e3a78f329c61fad2f9c7a27715dd150993cdef45c125502e8a79f1c",
+      "codeSha256": "729f5513bdf4e5bde8725cb9676e61475accd59983c596f5a875531706b0d4fc",
+      "change": "Adds a 9000-status exclusion to the existing 5000-status Shadow Armor condition.",
+      "launcherEdit": "None"
+    },
+    {
+      "id": 3488,
+      "name": "LinkUpdater.method_1473",
+      "bodySha256": "d53855840e419e1bfc39d6e0e138c952de57a7537644d6d7ebd247a587f692a7",
+      "codeSha256": "882ca90de733336cf021273d6a0ffa4c427e114db2b2582292c0bea4efddfd1f",
+      "change": "Adds the local-target effect notification and skips further processing for effect code 31.",
+      "launcherEdit": "None"
+    }
+  ],
+  "otherMainMethodsByteIdentical": 3771,
+  "helperChanges": [
+    {
+      "name": "LootPick",
+      "methodBodies": 7,
+      "change": "Restricts /pick to instanced dungeons outside CraftTown; original loot processing retained."
+    },
+    {
+      "name": "GuildRaid",
+      "methodBodies": 110,
+      "change": "Adds reward, gold and enemy overlays; updates gate state tracking and scheduled-open text. Packet dispatch remains upstream code."
+    }
+  ],
+  "rawReview": {
+    "atUtc": "2026-10-26T15:39:17.250Z",
+    "rawOffsetsAndExceptionsValidated": true,
+    "mainChanges": 5,
+    "otherMainMethodsByteIdentical": 3771,
+    "damageFloaterInsertionInstructions": 32,
+    "damageWrapperInstructions": 15,
+    "existingSoundCalls": 3,
+    "allUpstreamGameplayAndHandlersPreserved": true,
+    "constantPoolPrefixesUnchanged": true,
+    "allNonMainTagsPreserved": true,
+    "helperBodiesValidated": 117,
+    "damageWrapper": "Removing the 15 audio-context instructions and reversing branch/handler relocation reproduces the complete new upstream method.",
+    "clocks": "Gate and gold effects use elapsed time. Reward opening and enemy-label placement retain upstream frame-counted cosmetics; no authenticated timing claim."
+  },
+  "artwork": [
+    {
+      "name": "GlobalMap01.swf",
+      "previousSha256": "a1441952b6f3caeef1f2574d3f5fa5765256c3a970bf5dd62b34ea26b2fe2b5c",
+      "sha256": "a5d558a53a50a867d009972d44ce4b572c2f4d81939db0d892079bf9ed0872cb",
+      "bytes": 906641,
+      "oldTags": 408,
+      "newTags": 408,
+      "changes": {
+        "name": "GlobalMap01.swf",
+        "addedDefinitions": 0,
+        "addedSpritesHaveNoActions": true,
+        "changes": [
+          {
+            "key": "39:320",
+            "frames": 1,
+            "removed": [],
+            "added": [
+              {
+                "type": 26,
+                "bytes": 15,
+                "sha256": "7bd9b95983c1a02d78bdbc097f87985c85f686c23de24222081ff43857e9283f",
+                "flags": 6,
+                "depth": 713,
+                "character": 178,
+                "hex": "06c902b200c5af8ae00039e8178900"
+              },
+              {
+                "type": 26,
+                "bytes": 15,
+                "sha256": "46c4a2035cdcdd7ebe40d618f7c8c5f2a0e1f785d2bf02c56ce0cd244b649767",
+                "flags": 6,
+                "depth": 714,
+                "character": 178,
+                "hex": "06ca02b200c5af8ae0003d45221b80"
+              },
+              {
+                "type": 26,
+                "bytes": 15,
+                "sha256": "7ee532f414208ce6d3d5857ce0a1272ad2c09a400cef1de1d421624f4598badc",
+                "flags": 6,
+                "depth": 715,
+                "character": 178,
+                "hex": "06cb02b200c5af8ae0003de88982f0"
+              },
+              {
+                "type": 26,
+                "bytes": 15,
+                "sha256": "fb8c6085d6b0e9256c776fb12fa41342c0074d4263e7cda3c38e25b0f9df7ce9",
+                "flags": 6,
+                "depth": 716,
+                "character": 178,
+                "hex": "06cc02b200c5af8ae0003d2a291ae0"
+              },
+              {
+                "type": 26,
+                "bytes": 15,
+                "sha256": "93616fa48bd8132ac9e88aa02034a6c68c660d960b6385680f75432153f3a82b",
+                "flags": 6,
+                "depth": 717,
+                "character": 178,
+                "hex": "06cd02b200c5af8ae0003d7dd0eff0"
+              }
+            ]
+          }
+        ]
+      },
+      "code": "No code changes"
+    },
+    {
+      "name": "LevelsAC.swf",
+      "previousSha256": "f46b6b9041c9d145c4aa366c839e25be2b0bed3f02dab2b6a3e912c9ae0d7f68",
+      "sha256": "10b07b7c54566759f5a15b719e10fd7d3b94ed3f2c3ca22abb9f0949b0b83470",
+      "bytes": 3436701,
+      "oldTags": 1746,
+      "newTags": 1815,
+      "changes": {
+        "name": "LevelsAC.swf",
+        "addedDefinitions": 68,
+        "addedSpritesHaveNoActions": true,
+        "changes": [
+          {
+            "key": "39:1674",
+            "frames": 1,
+            "removed": [],
+            "added": [
+              {
+                "type": 26,
+                "bytes": 11,
+                "sha256": "567371d6c6a68e0cbc8d1cdde1483d7b6d61c3fe13f4704bd976b29b13526973",
+                "flags": 6,
+                "depth": 204,
+                "character": 1721,
+                "hex": "06cc00b90622860bd5ee80"
+              },
+              {
+                "type": 26,
+                "bytes": 11,
+                "sha256": "af402142ce29cfa82390e5af687536766d99a0210bf4ac6d450f0497d253ae49",
+                "flags": 6,
+                "depth": 205,
+                "character": 1723,
+                "hex": "06cd00bb06228b60e19500"
+              },
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "d104f5e9562223fe46b9875ae6c7284e8fe5a2960321b2a12efea757bc9b752b",
+                "flags": 6,
+                "depth": 206,
+                "character": 142,
+                "hex": "06ce008e0020f2012b54"
+              },
+              {
+                "type": 26,
+                "bytes": 16,
+                "sha256": "e28fd4665e6ca77d2ff30c5e2c772e644f2f1510f0f604ba408112cc5f6d33ec",
+                "flags": 6,
+                "depth": 207,
+                "character": 1781,
+                "hex": "06cf00f506cd26a024d40450271a8c70"
+              }
+            ]
+          },
+          {
+            "key": "76:",
+            "removed": [
+              {
+                "id": 2,
+                "name": "_CH_Sky"
+              }
+            ],
+            "added": [
+              {
+                "id": 1723,
+                "name": "a_Door_300"
+              },
+              {
+                "id": 1781,
+                "name": "a_Animation_DreadGateGlow"
+              }
+            ]
+          }
+        ]
+      },
+      "code": "Existing raw method bodies unchanged; one exported class is renamed a_Door_300. Adds a three-body MovieClip definition for the glow, with no gameplay instructions."
+    },
+    {
+      "name": "LevelsCH.swf",
+      "previousSha256": "0fd051a304ddce3d55342f0abf90538e18c1d485666642ab1cd59dd90fc2e74e",
+      "sha256": "ff0e777a4ef10474dcffcb912b4bbabb45dfe3535b6e43f42bf9e8b3ca7e25f9",
+      "bytes": 2860275,
+      "oldTags": 1940,
+      "newTags": 2010,
+      "changes": {
+        "name": "LevelsCH.swf",
+        "addedDefinitions": 69,
+        "addedSpritesHaveNoActions": true,
+        "changes": [
+          {
+            "key": "39:229",
+            "frames": 1,
+            "removed": [],
+            "added": [
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "250218b6e31cff617bee9ff7142167808f266344647a27c792f29c0c1a31f713",
+                "flags": 6,
+                "depth": 137,
+                "character": 1916,
+                "hex": "0689007c07208e77cdfa"
+              },
+              {
+                "type": 26,
+                "bytes": 7,
+                "sha256": "6ebc078cc128969dba498f0322b4e5b2f45efe82f347de5aaefa5e8e84f3dc43",
+                "flags": 6,
+                "depth": 138,
+                "character": 1977,
+                "hex": "068a00b9070200"
+              },
+              {
+                "type": 26,
+                "bytes": 16,
+                "sha256": "5883d793280fd034f9ad97fdb87052a36c200629432dc136f686d0d15b9ddf1d",
+                "flags": 6,
+                "depth": 140,
+                "character": 1976,
+                "hex": "068c00b807cd26a024d404109a38f9c0"
+              }
+            ]
+          },
+          {
+            "key": "76:",
+            "removed": [
+              {
+                "id": 604,
+                "name": "a_Level_Junk"
+              }
+            ],
+            "added": [
+              {
+                "id": 1918,
+                "name": "a_Door_300"
+              },
+              {
+                "id": 1976,
+                "name": "a_Animation_DreadGateGlow"
+              }
+            ]
+          }
+        ]
+      },
+      "code": "Existing raw method bodies unchanged; one exported class is renamed a_Door_300. Adds a three-body MovieClip definition for the glow, with no gameplay instructions."
+    },
+    {
+      "name": "LevelsNR.swf",
+      "previousSha256": "e65f8bb4d8d571dce855c1084a7c6a9cb38b83a0e2c8cbc542afd424666203fa",
+      "sha256": "e07cf3f18cc0b81cdd6d08702d360127ee677462a6ef35bec521c7ed5aa080d0",
+      "bytes": 2730296,
+      "oldTags": 1647,
+      "newTags": 1716,
+      "changes": {
+        "name": "LevelsNR.swf",
+        "addedDefinitions": 68,
+        "addedSpritesHaveNoActions": true,
+        "changes": [
+          {
+            "key": "39:261",
+            "frames": 1,
+            "removed": [],
+            "added": [
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "dc87ca3ebada1ea3fc810f68389d5508ceaab89de9a37a8d5da601d69ba3ccdf",
+                "flags": 6,
+                "depth": 7,
+                "character": 1608,
+                "hex": "06070048061c269d8580"
+              },
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "160872e329494211f979b862979fde6c96da9c06825051ecfb4d3e4ece0b4f5b",
+                "flags": 6,
+                "depth": 96,
+                "character": 1610,
+                "hex": "0660004a061aa28faf00"
+              },
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "9964d8a099d24d2dc8ec07f9674d001e4f208f44802e4e6177574fcbf895271b",
+                "flags": 6,
+                "depth": 97,
+                "character": 89,
+                "hex": "06610059001fdf22b470"
+              },
+              {
+                "type": 26,
+                "bytes": 15,
+                "sha256": "18c216240b72a73b496548f2030719128319d3187d78ae1c4502b6e918a6334a",
+                "flags": 6,
+                "depth": 98,
+                "character": 1668,
+                "hex": "0662008406cd26a024d4038000a458"
+              }
+            ]
+          },
+          {
+            "key": "76:",
+            "removed": [
+              {
+                "id": 1581,
+                "name": "a_Filler_01"
+              }
+            ],
+            "added": [
+              {
+                "id": 1610,
+                "name": "a_Door_300"
+              },
+              {
+                "id": 1668,
+                "name": "a_Animation_DreadGateGlow"
+              }
+            ]
+          }
+        ]
+      },
+      "code": "Existing raw method bodies unchanged; one exported class is renamed a_Door_300. Adds a three-body MovieClip definition for the glow, with no gameplay instructions."
+    },
+    {
+      "name": "LevelsOMM.swf",
+      "previousSha256": "0a05ee0ed833869db9d6e4faeb410e84c11424caef92380dbc0514a5f8a21516",
+      "sha256": "311c3d7520345ddfcc79d306e0537579ff0d9f9147f665b2eb5a5879258e6303",
+      "bytes": 3389251,
+      "oldTags": 2376,
+      "newTags": 2445,
+      "changes": {
+        "name": "LevelsOMM.swf",
+        "addedDefinitions": 68,
+        "addedSpritesHaveNoActions": true,
+        "changes": [
+          {
+            "key": "39:480",
+            "frames": 1,
+            "removed": [],
+            "added": [
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "90237df9ed0276dbf105e44d154b7a738fdf7b15c5e7a3e32775cd2f4f8784e2",
+                "flags": 6,
+                "depth": 6,
+                "character": 2354,
+                "hex": "06060032091ea62f1228"
+              },
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "a89162e28ae8eff8f99ceee941d457a8431e708103f77e47cb5a2f86c8c82bb2",
+                "flags": 6,
+                "depth": 42,
+                "character": 2356,
+                "hex": "062a0034091ebb8384a0"
+              },
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "a895cb158d7f8421feca09d7c56685d1abba0e376807b5d85c7d4b24fb311ae5",
+                "flags": 6,
+                "depth": 43,
+                "character": 85,
+                "hex": "062b0055001e72025720"
+              },
+              {
+                "type": 26,
+                "bytes": 43,
+                "sha256": "037a8878b2ca4cda270cc9283c3625142b9fb171523019864af4ca24aa70dfc2",
+                "flags": 38,
+                "depth": 44,
+                "character": 2414,
+                "hex": "262c006e09cd26a024d403d25c5f2f616d5f4261636b67726f756e645f447265616447617465476c6f7700"
+              }
+            ]
+          },
+          {
+            "key": "76:",
+            "removed": [
+              {
+                "id": 615,
+                "name": "a_Scene_OMMParallax_Eye5copy"
+              }
+            ],
+            "added": [
+              {
+                "id": 2356,
+                "name": "a_Door_300"
+              },
+              {
+                "id": 2414,
+                "name": "a_Animation_DreadGateGlow"
+              }
+            ]
+          }
+        ]
+      },
+      "code": "Existing raw method bodies unchanged; one exported class is renamed a_Door_300. Adds a three-body MovieClip definition for the glow, with no gameplay instructions."
+    },
+    {
+      "name": "LevelsSRN.swf",
+      "previousSha256": "0e8d519320b33bac404c8a6072e94fbc89182ae993ee735a26823d34ce77ba48",
+      "sha256": "d08d5c5f616e0383688ff99291f1b1bc4dcf60fe1ec0cf93df2b796498463c86",
+      "bytes": 3322019,
+      "oldTags": 2221,
+      "newTags": 2290,
+      "changes": {
+        "name": "LevelsSRN.swf",
+        "addedDefinitions": 68,
+        "addedSpritesHaveNoActions": true,
+        "changes": [
+          {
+            "key": "39:370",
+            "frames": 1,
+            "removed": [],
+            "added": [
+              {
+                "type": 26,
+                "bytes": 21,
+                "sha256": "ec1d9a51b5dbba845b343f625c68cc3ce2dc257d9e4640c7962c77718e2cb7e1",
+                "flags": 14,
+                "depth": 55,
+                "character": 2317,
+                "hex": "0e37000d091ed82ed4c0e86c2009a400000180e000"
+              },
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "1c6ef734f6d4c3bd2928d7b5ebe43334963fcbfe43f93d9c0500f700ad5ab68a",
+                "flags": 6,
+                "depth": 216,
+                "character": 2319,
+                "hex": "06d8000f091eed838a70"
+              },
+              {
+                "type": 26,
+                "bytes": 10,
+                "sha256": "31d11477d735fe46356e9b92e5d6a9a061e6e97ba37c61658f6e295092a8a2ac",
+                "flags": 6,
+                "depth": 217,
+                "character": 85,
+                "hex": "06d90055001ea40227d0"
+              },
+              {
+                "type": 26,
+                "bytes": 15,
+                "sha256": "13209d5f6787726867485cba82392d1e4c128063c2a25c85b4fbcafd5b5df4b4",
+                "flags": 6,
+                "depth": 218,
+                "character": 2377,
+                "hex": "06da004909cd26a024d403d89c5782"
+              }
+            ]
+          },
+          {
+            "key": "76:",
+            "removed": [
+              {
+                "id": 1694,
+                "name": "a_Level_SRNDisciplines"
+              }
+            ],
+            "added": [
+              {
+                "id": 2319,
+                "name": "a_Door_300"
+              },
+              {
+                "id": 2377,
+                "name": "a_Animation_DreadGateGlow"
+              }
+            ]
+          }
+        ]
+      },
+      "code": "Existing raw method bodies unchanged; one exported class is renamed a_Door_300. Adds a three-body MovieClip definition for the glow, with no gameplay instructions."
+    }
+  ],
+  "artworkOtherFilesUnchanged": 67,
+  "scope": "Public anonymous bytes, full ABC/exception review and owned fixtures. No accounts, player sessions or server changes.",
+  "evidence": "artifacts/client-oct26-BrUFed"
+}

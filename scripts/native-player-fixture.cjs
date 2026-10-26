@@ -109,7 +109,13 @@ async function run(config, suite) {
   for (const name of config.assets) {
     if (!/^(UI_[A-Za-z0-9_]+|Levels[A-Za-z0-9]+|GlobalMap01|sounds\/Sound)\.swf$/.test(name))
       throw Error('Unexpected fixture asset');
-    files.set('/assets/' + name, path.join(config.root, '.test-tools/wide-live-assets', name));
+    files.set(
+      '/assets/' + name,
+      path.join(
+        config.assetDirectory || path.join(config.root, '.test-tools/wide-live-assets'),
+        name
+      )
+    );
   }
   const server = http.createServer((request, response) => {
     const file = files.get(request.url);
