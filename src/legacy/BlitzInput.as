@@ -94,7 +94,9 @@ package {
    if(!game||game.gameState!=Game.STATE_PLAY||!game.clientUserID||!ValidName(game.clientEntName))return;
    StopAutorun();refreshButton.mouseEnabled=false;
    var url:String=main.loaderInfo.url.split("#")[0]+"#blitz-refresh="+game.clientUserID+"/"+encodeURIComponent(game.clientEntName);
-   try{navigateToURL(new URLRequest(url),"_self");}catch(error:Error){refreshButton.mouseEnabled=true;}
+   // The host intercepts this new-window request and never opens a window.
+   // Flash reports its click gesture here; _self starts a document load first.
+   try{navigateToURL(new URLRequest(url),"_blank");}catch(error:Error){refreshButton.mouseEnabled=true;}
   }
   private static function Hint(event:MouseEvent):void {if(refreshHint)refreshHint.visible=event.type==MouseEvent.ROLL_OVER;}
   private static function UpdateRefresh(event:Event=null):void {

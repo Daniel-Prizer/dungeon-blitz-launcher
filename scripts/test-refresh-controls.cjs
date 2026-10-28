@@ -52,7 +52,7 @@ require('./native-player-fixture.cjs').privateRun(
     frameRate: 240,
     capture: true,
   },
-  async ({ rpc, delay, host }) => {
+  async ({ rpc, delay, host, config }) => {
     const assert = require('assert/strict'),
       checks = [];
     for (let i = 0; i < 100; i++) {
@@ -101,6 +101,27 @@ require('./native-player-fixture.cjs').privateRun(
         assert(state.keys > 0, mode + ' keeps native Enter routing');
       checks.push({ mode, presses: state.presses, keys: state.keys });
     }
+    await rpc('BlitzRefreshFixtureControl', ['playing']);
+    await delay(100);
+    const beforeClick = await rpc('BlitzRefreshFixtureState');
+    const x = beforeClick.refresh.x + beforeClick.refresh.width / 2;
+    const y = beforeClick.refresh.y + beforeClick.refresh.height / 2;
+    // Stamp a gesture through the same native control path as a physical key,
+    // then hit-test the actual button using owned stage mouse events.
+    await rpc('BlitzFixtureShortcut', ['a', 'KeyA', true, false, false, false]);
+    for (const kind of ['move', 'down', 'up']) await rpc('BlitzFixtureMouse', [kind, x, y]);
+    await delay(100);
+    const links = host.events.filter((e) => e.type === 'external-link');
+    assert.equal(links.length, 1, 'One actual click emits one launcher handoff');
+    assert.equal(links[0].userGesture, true);
+    assert.deepEqual(
+      require(require('node:path').join(config.root, 'src/legacy/refresh.cjs')).fromLink(
+        links[0].url,
+        links[0].url
+      ),
+      { userID: 123, name: 'FixtureHero' }
+    );
+    checks.push('Actual refresh-button click reaches the native host with its character identity');
     return {
       checks,
       scope:

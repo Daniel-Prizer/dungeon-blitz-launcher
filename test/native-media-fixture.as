@@ -12,7 +12,19 @@ package {
    var art:MovieClip=class_4.method_16(name);stop(art);art.x=80+i*150;art.y=120;addChild(art);
    var icon:Bitmap=class_4.method_639(game,name,1);var p:BitmapData=icon.bitmapData;icon.x=80+i*150;icon.y=300;addChild(icon);
    var bounds:Rectangle=art.getBounds(art);var raw:ByteArray=p.getPixels(p.rect);raw.compress();results.push({name:name,exists:true,width:p.width,height:p.height,bounds:{x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height},argb:base64(raw)});
-  }filterChecks();mapMaskChecks();upstreamChecks();ready=true;}catch(e:Error){failure=e.toString()+" "+e.getStackTrace();}}
+  }filterChecks();mapMaskChecks();upstreamChecks();guildChecks();ready=true;}catch(e:Error){failure=e.toString()+" "+e.getStackTrace();}}
+  private function guildChecks():void {
+   var domain:ApplicationDomain=ApplicationDomain.currentDomain;if(!domain.hasDefinition("GuildRaidFund"))return;
+   var fund:Class=domain.getDefinition("GuildRaidFund") as Class;var guildNet:Class=domain.getDefinition("GuildNet") as Class;
+   fund["Request"]();fund["OnFund"]({openDay:true,paidToday:false,canOpen:false,fund:0,cost:100,gold:0,wait:0,message:"",ok:true,donors:[]});
+   checks.push({name:"Guild fund cannot open from an unsolicited disconnected response",actual:fund["IsOpen"]()?1:0,expected:0});
+   checks.push({name:"Guild leave request requires a game connection",actual:guildNet["Send"](guildNet["REQ_LEAVE"])?1:0,expected:0});
+   var panel:Sprite=new fund() as Sprite;checks.push({name:"Current guild fund artwork constructs",actual:panel&&panel.width>400&&panel.height>500?1:0,expected:1});
+   var leave:Class=domain.getDefinition("GuildLeaveDialog") as Class;var dialog:Sprite=new leave("Fixture Guild") as Sprite;
+   checks.push({name:"Current guild leave artwork constructs",actual:dialog&&dialog.width>400&&dialog.height>100?1:0,expected:1});
+   var view:BitmapData=new BitmapData(500,540,true,0);view.draw(panel);var image:Bitmap=new Bitmap(view);image.x=1050;image.y=350;addChild(image);
+   fund["Close"]();checks.push({name:"Guild fund close remains safe without an open modal",actual:fund["IsOpen"]()?1:0,expected:0});
+  }
   private function upstreamChecks():void {
    if(!ApplicationDomain.currentDomain.hasDefinition("NeoQuests"))return;
    var domain:ApplicationDomain=ApplicationDomain.currentDomain;

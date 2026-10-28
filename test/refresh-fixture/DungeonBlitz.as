@@ -10,8 +10,11 @@ package {
    graphics.beginFill(0x484955);graphics.drawRect(0,0,10000,10000);graphics.endFill();
    main=new Main();addChild(main);main.method_1634();trace("REFRESH_MAIN_READY");main.method_561(stage.stageWidth,stage.stageHeight);trace("REFRESH_LAYOUT_READY");
    ExternalInterface.addCallback("BlitzRefreshFixtureControl",control);ExternalInterface.addCallback("BlitzRefreshFixtureState",snapshot);
+   // Reuse the host's isolated-fixture integration switch after validating the
+   // complete source before building this constructor/packet-free fixture.
+   ExternalInterface.addCallback("BlitzTransitionFixtureControl",control);
    input=new TextField();input.type=TextFieldType.INPUT;input.width=200;input.height=24;input.y=50;addChild(input);
-   stage.addEventListener(KeyboardEvent.KEY_DOWN,function(event:KeyboardEvent):void{keys++;});control("playing");
+   stage.addEventListener(KeyboardEvent.KEY_DOWN,function(event:KeyboardEvent):void{keys++;});control(loaderInfo.parameters.phase=="resume"?"cached":"playing");
   }
   private function control(mode:String):Boolean {
    stage.focus=null;presses=0;keys=0;game=new Game(main);main.var_523=new Vector.<Game>();main.var_523.push(game);

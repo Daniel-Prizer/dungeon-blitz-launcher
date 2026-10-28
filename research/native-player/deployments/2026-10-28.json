@@ -1,0 +1,36 @@
+{
+  "version": "0.33.1",
+  "reviewedAtUtc": "2026-10-28T08:17:46.028Z",
+  "previousSourceSha256": "4c4b4b22bc2fa0679cc56b90b6f21c7bbaa2a1771351e9d764e3686aea7b1304",
+  "sourceSha256": "0b80841584e16000033ba2bd5e372b50c781f2ae7585afadb05faa3f6b45a75d",
+  "sourceBytes": 1029070,
+  "revision": "swf-5b067d77b6db",
+  "enhancedSha256": "77e8786d5a623b3f8c7ccc025a43cc3eb839a43f940196ec05fc9a91ac7b6710",
+  "mainInterfaceUnchanged": true,
+  "constantPoolPrefixesUnchanged": true,
+  "otherMainMethodsByteIdentical": 3775,
+  "changedMainMethods": [
+    {
+      "id": 728,
+      "name": "Entity.method_1086",
+      "bodySha256": "de792d8cdd82d79dd0d749cbe88797c21cfbb23ea078853a3e44392b9b45de56",
+      "codeSha256": "3e51a1ff95b3154e501862dbf64ce6aae5404ea411408d36701d314cebac3a99",
+      "change": "Adds an armor-scale local initialized to 1000; the existing Legends Inn hard-enemy branch selects 750, or 1500 for its existing type check. The armor calculation multiplies by that value and divides by 1000.",
+      "launcherEdit": "None; byte-identical to upstream"
+    }
+  ],
+  "rawReview": {
+    "offsetsAndExceptionBoundariesValidated": true,
+    "insertedInstructions": 15,
+    "reconstruction": "Removing the reviewed prefix, branch-local assignments and armor expression, reversing branch relocation and restoring the prior register count reproduces the complete preceding body.",
+    "allNonMainTagsPreserved": true
+  },
+  "refresh": {
+    "fix": "Uses intercepted _blank navigation so the original Flash host receives the real click gesture and never begins a same-window load.",
+    "beforeEvidence": "artifacts/refresh-click-HrxcmL",
+    "afterEvidence": "artifacts/refresh-click-1W6hem",
+    "priorNativeAdmissions": 8,
+    "preservation": "Only the launcher BlitzInput helper changes for prior sources; original main bodies and other helper tags remain unchanged."
+  },
+  "scope": "Raw public client review and account-free fixtures; no live combat or account data."
+}

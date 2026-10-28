@@ -25,7 +25,7 @@ The tutorial keeps its authored 3:2 viewport so scripted targets and backgrounds
 - Cursor lock is opt-in and uses its saved shortcut. Settings, blur, hiding and close release it. Escape and F11 remain reserved; Alt+Tab and Alt+F4 retain their Windows behavior.
 - Crosshairs are optional game-window cursors. Original recoloring preserves cursor geometry and alpha; system cursors are not changed.
 - Enter activates the existing revive button when it is available. Chat, native cooldowns and held-key suppression still apply.
-- The top-right refresh arrow restarts the current game and requests the same character through its normal Play handler. Resume expires after 60 seconds and cancels on manual input, a different account or a missing character. It requires the game's normal remembered session; no credentials are captured.
+- The top-right refresh arrow restarts the current game and requests the same character through its normal Play handler, retaining fullscreen, zoom and rendering resolution. Resume expires after 60 seconds and cancels on manual input, a different account or a missing character. It requires the game's normal remembered session; no credentials are captured.
 
 ## Audio and links
 

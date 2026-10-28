@@ -1,0 +1,79 @@
+{
+  "version": "0.33.1",
+  "reviewedAtUtc": "2026-10-27T21:06:00.731Z",
+  "previousSourceSha256": "f46631fdbf8d835931c3f8e73fb3e79e9d484b2b4965c66baf337222abc4a7ec",
+  "sourceSha256": "4c4b4b22bc2fa0679cc56b90b6f21c7bbaa2a1771351e9d764e3686aea7b1304",
+  "sourceBytes": 1029011,
+  "revision": "swf-49a6d48931bd",
+  "enhancedSha256": "c531059e0f9665af097acbb2e43f8d44e79085224c424f8526813ee3b6454717",
+  "swfTags": 41,
+  "mainInterfaceUnchanged": true,
+  "constantPoolPrefixesUnchanged": true,
+  "changedMainMethods": [
+    {
+      "id": 660,
+      "name": "Buff.method_1095",
+      "bodySha256": "4354303845da88812ba9abc2115a3112c4fd4d3446d972c66d0e1bf3a64bf4be",
+      "codeSha256": "ffda6e4fd4e01f9bc9e2b0bf172e924b79c2a6ca6d49e0460ef84edf592ea6f0",
+      "change": "Adds a guarded 10% adjustment for buff 763 when its owner and combat flag are present; 20 inserted instructions. Removing them and reversing branch relocation reproduces the previous body.",
+      "launcherEdit": "None; complete upstream body preserved"
+    },
+    {
+      "id": 735,
+      "name": "Entity.method_986",
+      "bodySha256": "3fc3a35a745f396fe495231f4fc56709ee89ede8ddc74adad23e917c1fbf42f4",
+      "codeSha256": "3e03202fe1f60588dd4c204e2ebaaf979ba30bc0ee5188a606a8567b9eb32bb0",
+      "change": "Changes the existing multiplier from 3.6 to 5; the remaining instructions and exception data match.",
+      "launcherEdit": "None; complete upstream body preserved"
+    },
+    {
+      "id": 1535,
+      "name": "class_86.GetTimeAfterBonuses",
+      "bodySha256": "74fccbddf0f4776b05f45c89e449f86248f1b39d0fdd22af7b2f0d2df2238466",
+      "codeSha256": "0f2b69be4d3de1cd1a3756fe811a3ddecb4308c2661fb31a301c5c3e3bcf33ee",
+      "change": "Replaces two upstream crafting-time constants (180 and 86400) with zero and padding; normalized branches and remaining instructions match.",
+      "launcherEdit": "None; complete upstream body preserved"
+    }
+  ],
+  "otherMainMethodsByteIdentical": 3773,
+  "helperChanges": [
+    {
+      "name": "GuildHall",
+      "previousMethodBodies": 193,
+      "methodBodies": 213,
+      "change": "Adds guild options and leave confirmation. Existing helpers are recompiled with typed QName references and Boolean/integer conversions; popup frame increments remain upstream code."
+    },
+    {
+      "name": "GuildRaid",
+      "previousMethodBodies": 110,
+      "methodBodies": 132,
+      "change": "Adds fund/donation state, its window and gate integration; enemy overlay closes on level change. Existing packet dispatch and all original/new helper bodies are preserved."
+    }
+  ],
+  "rawReview": {
+    "offsetsAndExceptionBoundariesValidated": true,
+    "mainMethods": 3,
+    "guildHelperMethods": 345,
+    "preservation": "Three changed main bodies match upstream after adaptation; every non-main input tag is retained byte-for-byte, including both changed guild ABC libraries.",
+    "normalization": "Raw instruction review resolves constant-pool operands, accounts for branch and exception relocation, and distinguishes script-private namespace/function-index renumbering from actual code changes.",
+    "clocks": "Existing renderer, simulation/timers and automatic timelines are unchanged. Upstream gate animation uses elapsed time; popup/enemy-label frame counters retain their original implementation."
+  },
+  "artwork": {
+    "origins": [
+      "https://dungeonblitzr.theminesa.studio",
+      "https://dungeonblitz.theminesa.studio"
+    ],
+    "verifiedSwfAssetsPerOrigin": 73,
+    "changed": [],
+    "masterInventory": 52,
+    "levelLibraries": 21
+  },
+  "contract": {
+    "mode": "contract",
+    "recipeChanged": false,
+    "guardsRelaxed": false,
+    "singleplayerChanged": false,
+    "previousNativeAdmissionsRetained": 8
+  },
+  "scope": "Anonymous public resources and inactive-desktop synthetic fixtures. No accounts, live guild transactions, donations, membership changes or authenticated combat were exercised."
+}

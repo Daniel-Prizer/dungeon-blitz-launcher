@@ -1,43 +1,53 @@
 {
-  "version": "0.33.0",
-  "checkedAtUtc": "2026-10-26T16:03:04.579Z",
+  "version": "0.33.1",
+  "checkedAtUtc": "2026-10-28T08:36:10.786Z",
   "nativeSha256": "032e3640907d021f91b9764bd7fc83d4c6e22d9b94d84ed34b4c102a3998b5a3",
   "patchSha256": "c01ea9936d96552991d0acfa8c4e368500baedbc38246adbf7403dd216e796ec",
-  "clientSha256": "f46631fdbf8d835931c3f8e73fb3e79e9d484b2b4965c66baf337222abc4a7ec",
+  "clientSha256": "0b80841584e16000033ba2bd5e372b50c781f2ae7585afadb05faa3f6b45a75d",
   "adaptedClients": [
     {
       "source": "c0ef52751ab04c696cff2c93f2cddfbf61323124c4e18fc6f1151fd91126994d",
-      "enhanced": "122d056f67fbd84fe759adaf025b34f6caf95ad60db0fa2113aff1497b7fac0f",
+      "enhanced": "db45554603fbf46e5c8679c9620ff4d362707e6a7ef5be544dfffcab4f65d821",
       "mode": "contract"
     },
     {
       "source": "9246aec1a65c23e5ed44dafdb8a9cff414afb1c3f8adf3bc2ff1341d79d4b59b",
-      "enhanced": "9d4d7ebe6d9f2713a9cfc4817695b5dfe97a8db0f68a32b6019f7149c296a640",
+      "enhanced": "687901e634ebc34f96a9e8dec659872cd87a716089c323cc436ddd9f679821c9",
       "mode": "contract"
     },
     {
       "source": "d6d84c6506848d547c6d7a0e0dec8548a2eb48d2c08c421afea7de042d941aa6",
-      "enhanced": "a71246bb8efbd2035744523c49cf2db3d343016442768652f235ce9510163a83",
+      "enhanced": "39788fe6470650a93e97bf6e50fd4be0787f976dbdbd5f3bcabba41bd71aee81",
       "mode": "contract"
     },
     {
       "source": "2a0777535e552b56e904c350dc257f6591261992ad9f8edaabd6ea1fef38cc79",
-      "enhanced": "10df303085741c9e5faad6409bee086197f80b13ceb3544e8557c907e62afd13",
+      "enhanced": "1058496d45e903498b79dec4ff6d28a1bcb8f0b7ac9ae658bd035f47e90f94f8",
       "mode": "contract"
     },
     {
       "source": "a2326bf2b9d4b7d4697bf9f2601d3be8a33cd6a017784ed92ea95d9f6020099c",
-      "enhanced": "8d79dc0c03790585d4876a6af74735b2cd4afe2864582d5860bfdbe68ab4394b",
+      "enhanced": "1dcc0cdafdeccb122c2d49a3730ada83e79adef7d7578ed48100f7b68b65565b",
       "mode": "contract"
     },
     {
       "source": "b238a8d462eb9f776262ce9d9f306941fb0c2fe3e026cc8687eba2aaa001307c",
-      "enhanced": "92a53468d3fe10d8b35845fcf949a224ab076db27ed293b1739518b52a08c1d1",
+      "enhanced": "6830dec607f4a8b8de17ad5f542d784fae4ada04cd2bb7e9a70b86ce47a46d26",
       "mode": "contract"
     },
     {
       "source": "f46631fdbf8d835931c3f8e73fb3e79e9d484b2b4965c66baf337222abc4a7ec",
-      "enhanced": "e2cef1b67e030bb352c383fb6c83642a9f1a205e6056119d3db0bd496fbf00cc",
+      "enhanced": "5c82b707a93592751dbebdae4e4d91ace6fdca918824b0bd20d1b0cd26077d35",
+      "mode": "contract"
+    },
+    {
+      "source": "4c4b4b22bc2fa0679cc56b90b6f21c7bbaa2a1771351e9d764e3686aea7b1304",
+      "enhanced": "c531059e0f9665af097acbb2e43f8d44e79085224c424f8526813ee3b6454717",
+      "mode": "contract"
+    },
+    {
+      "source": "0b80841584e16000033ba2bd5e372b50c781f2ae7585afadb05faa3f6b45a75d",
+      "enhanced": "77e8786d5a623b3f8c7ccc025a43cc3eb839a43f940196ec05fc9a91ac7b6710",
       "mode": "contract"
     }
   ],
@@ -51,32 +61,32 @@
       "density": 1,
       "widescreen": true,
       "cap": 1000,
-      "wallMs": 39805,
-      "nativeSteps": 480.02400000001387,
-      "elapsedMs": 20000,
+      "wallMs": 40101,
+      "nativeSteps": 480.04800000001245,
+      "elapsedMs": 20002,
       "error": "",
       "level": "LevelsBT.swf",
-      "time": 38522,
+      "time": 38909,
       "width": 2364,
-      "timerTicks": 200,
+      "timerTicks": 201,
       "nativeTarget": 24,
       "room": "a_Room_BT12",
-      "nativeElapsed": 20001,
-      "frames": 2849,
-      "drawMs": 7296,
-      "distinctTimes": 2849,
+      "nativeElapsed": 20002,
+      "frames": 2314,
+      "drawMs": 6774,
+      "distinctTimes": 2314,
       "target": 1000,
-      "fps": 142.45,
+      "fps": 115.6884311568843,
       "height": 1157,
-      "completedGpuPerSecond": 142.9403287050765,
+      "completedGpuPerSecond": 115.4705855972344,
       "rolling": {
         "phase": "running",
         "cap": 1000,
-        "renderFPS": 129.7277533368473,
-        "averageFPS": 142.02718791009397,
-        "lowFPS": 107.24777512522654,
-        "highFPS": 162.3777360399477,
-        "sampleSeconds": 30.156198
+        "renderFPS": 76.95224277311561,
+        "averageFPS": 116.86928724754206,
+        "lowFPS": 76.95224277311561,
+        "highFPS": 134.30521227585456,
+        "sampleSeconds": 30.187571799999997
       }
     },
     "reduced": {
@@ -87,32 +97,32 @@
       "density": 0.75,
       "widescreen": true,
       "cap": 240,
-      "wallMs": 39886,
-      "nativeSteps": 480.1440000000132,
+      "wallMs": 40102,
+      "nativeSteps": 480.1440000000122,
       "elapsedMs": 20005,
       "error": "",
       "level": "LevelsBT.swf",
-      "time": 38556,
+      "time": 38819,
       "width": 1776,
       "timerTicks": 200,
       "nativeTarget": 24,
       "room": "a_Room_BT12",
       "nativeElapsed": 20006,
-      "frames": 2697,
-      "drawMs": 4828,
-      "distinctTimes": 2697,
+      "frames": 2470,
+      "drawMs": 4587,
+      "distinctTimes": 2470,
       "target": 240,
-      "fps": 134.81629592601848,
+      "fps": 123.4691327168208,
       "height": 869,
-      "completedGpuPerSecond": 135.2840574863981,
+      "completedGpuPerSecond": 123.06797414305744,
       "rolling": {
         "phase": "running",
         "cap": 240,
-        "renderFPS": 133.25316928741177,
-        "averageFPS": 139.7267222177489,
-        "lowFPS": 112.27990406328055,
-        "highFPS": 165.112290282525,
-        "sampleSeconds": 30.123085500000006
+        "renderFPS": 131.34340120304586,
+        "averageFPS": 119.04630762755693,
+        "lowFPS": 100.80512353518178,
+        "highFPS": 144.28881486043443,
+        "sampleSeconds": 30.156332199999994
       }
     }
   },
@@ -122,33 +132,33 @@
       900
     ],
     "widescreen": false,
-    "completedGpuPerSecond": 119.31756017397926,
-    "wallMs": 38950,
-    "nativeSteps": 480.14400000001166,
-    "elapsedMs": 20006,
+    "completedGpuPerSecond": 119.99627702515454,
+    "wallMs": 39451,
+    "nativeSteps": 479.9760000000115,
+    "elapsedMs": 20000,
     "error": "",
     "level": "LevelsHome.swf",
-    "time": 37824,
+    "time": 38206,
     "width": 1248,
     "timerTicks": 200,
     "nativeTarget": 24,
     "room": "a_Room_Main",
-    "nativeElapsed": 20006,
-    "frames": 2387,
-    "drawMs": 2629,
-    "distinctTimes": 2387,
+    "nativeElapsed": 19999,
+    "frames": 2399,
+    "drawMs": 2867,
+    "distinctTimes": 2399,
     "target": 120,
-    "fps": 119.31420573827852,
+    "fps": 119.95,
     "height": 724
   },
   "automaticTimeline": {
-    "automaticFrames": 150,
-    "elapsed": 2506,
-    "frames": 601,
+    "automaticFrames": 151,
+    "elapsed": 2514,
+    "frames": 603,
     "stageRate": 100,
     "timerTicks": 25,
     "totalFrames": 1000,
-    "hostElapsed": 2507,
+    "hostElapsed": 2515,
     "production": true
   },
   "publicStartup": {
@@ -161,130 +171,130 @@
     "runs": [
       {
         "completedRenderSamples": [
-          40.283266172976056,
-          80.83854413331025,
-          80.89907682314455,
-          72.28783471000398,
-          85.59874006525772,
-          81.95669408284661,
-          68.73017221689369,
-          79.96495757859002,
-          68.45799749642158,
-          45.96326884262439,
-          77.47482142798611,
-          79.95305780469575,
-          92.50639512624586,
-          120.05715514351145,
-          120.06589930995845,
-          119.92400415856471,
-          119.9784911286813,
-          107.94878948680851,
-          120.08527443901569,
-          119.91546059131998,
-          120.02846559379074,
-          119.93528292133566,
-          120.14974829124219,
-          119.94634799854025,
-          119.97360184152538,
-          120.04083769456909,
-          119.987161373733,
-          114.58025814035445,
-          120.23289011449152,
-          119.91354728751097,
-          119.98971063440048,
-          119.80571671294699,
-          120.15264748414755,
-          119.89352662151535,
-          120.18479853005053,
-          119.95873419543678,
-          119.9881043198395,
-          112.15961047066538,
-          120.97507913369847,
-          119.91748477872375,
-          119.25256072514303,
-          119.85219826909456,
-          119.94389401321367,
-          120.11551737624826,
-          119.86485237894274,
-          120.13037620664014,
-          120.86099776646878,
-          105.74187351256847,
-          120.20686309660232,
-          119.93901101289994,
-          119.99139661686259,
-          120.05775075475148,
-          120.00337199557673,
-          119.94977702835823,
-          119.99544612323473,
-          120.11359768317746,
-          119.9346683152232,
-          111.95349451837706,
-          119.95941207991281
+          44.91633630545355,
+          46.54762688808812,
+          77.86469383158851,
+          61.635787965334046,
+          80.51726648593487,
+          75.9931910100855,
+          81.67721165952157,
+          73.53421954654826,
+          76.73179983191801,
+          77.05683468275457,
+          32.95006609691731,
+          69.52053080315679,
+          71.34967624093439,
+          79.54160965770363,
+          113.30194670634222,
+          120.9083635512645,
+          120.0225840842515,
+          119.06574131265354,
+          119.95784681263004,
+          120.05137802115246,
+          119.95782282949317,
+          119.73126317979296,
+          120.95550047137657,
+          118.97898831066432,
+          120.96904402163487,
+          119.85894998765451,
+          119.22238235682156,
+          120.95553674469267,
+          119.90449606888113,
+          118.98081232822146,
+          121.12793940028763,
+          119.91428526888981,
+          119.1512144090358,
+          120.91867010248907,
+          119.9572472370847,
+          119.06638570935719,
+          119.93680529728884,
+          120.17908073531324,
+          119.93758091450124,
+          120.02679871069397,
+          119.9788123366776,
+          120.01137033346696,
+          120.977619140459,
+          119.78999615773589,
+          119.26762522057057,
+          120.93224166499509,
+          120.01464377025309,
+          118.9591785630802,
+          119.95771490549582,
+          120.12271027160433,
+          119.1850483945923,
+          119.99851201845098,
+          119.88800280755903,
+          120.06663797636314,
+          119.17064382138943,
+          119.88910752963045,
+          120.93303937609745,
+          120.03689596888327,
+          119.98159482335409
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
       },
       {
         "completedRenderSamples": [
-          44.72089910473232,
-          89.73955785519266,
-          75.85949304697839,
-          95.62352063690047,
-          87.47347093639257,
-          80.22555066917023,
-          82.1876816112588,
-          90.37233700777988,
-          82.72634950846096,
-          46.64919340070734,
-          97.19051960035259,
-          120.0070139636591,
-          120.00897786171574,
-          119.81374952636128,
-          120.23480167517883,
-          119.94088113968624,
-          119.83736870692785,
-          120.10361865254856,
-          119.97915961997401,
-          119.90647295109814,
-          120.08131787757759,
-          119.95717528842204,
-          119.93658952511807,
-          120.15718148193129,
-          119.87870672453613,
-          119.79033098367925,
-          120.2964701536007,
-          120.01981021197979,
-          119.94535289722003,
-          119.97928820353722,
-          120.05222370948076,
-          120.03696741780047,
-          119.95826651907802,
-          119.98489390185776,
-          119.99427994209334,
-          119.11031739524795,
-          120.94565911535946,
-          119.99373255876222,
-          120.01262017007475,
-          119.93343694249691,
-          120.05024648498336,
-          119.98872304331861,
-          119.95833846904969,
-          120.05406997187757,
-          119.97623270830049,
-          115.4828783307927,
-          121.5312297406444,
-          120.93063458449622,
-          119.99493621369179,
-          120.14225637483749,
-          118.99355253267859,
-          120.88221237226446,
-          119.09864951063852,
-          119.8295884606285,
-          120.29535791149762,
-          119.63975274052302,
-          120.38631870178577,
-          119.87397648851761,
-          120.14442750286658
+          53.96561850445081,
+          40.97063634493159,
+          74.52555540915424,
+          58.966560063787824,
+          72.94484551513897,
+          80.42089550628633,
+          71.73867500800031,
+          71.23506363962498,
+          61.44134457445676,
+          68.13388209086096,
+          67.7834454484812,
+          71.63960977904553,
+          20.979725193572932,
+          67.10675540021877,
+          64.5215020883625,
+          69.85865625989152,
+          105.34892258861782,
+          119.87794245858761,
+          119.2812825600626,
+          120.01709598897907,
+          120.46881684588145,
+          120.29019163718728,
+          119.8695700199271,
+          120.21297765658014,
+          119.1632830914451,
+          119.97483899574914,
+          119.86698360828989,
+          120.10715940910057,
+          119.74507164911725,
+          120.20826031426611,
+          119.98457057918831,
+          121.03315088081875,
+          118.7687335220858,
+          120.22101590533975,
+          120.85877889441161,
+          120.12190884633331,
+          119.94185219005827,
+          119.04108832124585,
+          120.93740280031056,
+          119.06541980036103,
+          120.15961566400749,
+          119.92290156658285,
+          120.00158679784194,
+          119.89575064481433,
+          119.99203252904009,
+          120.16823155166882,
+          120.79965377421546,
+          118.96559415878934,
+          121.10327866281332,
+          118.79768753812257,
+          120.90574188362753,
+          118.78469086933025,
+          119.86430162413133,
+          120.05186637493071,
+          120.08339693488112,
+          119.95392569713972,
+          120.82420078785367,
+          119.91083786855611,
+          119.1272735936529
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
@@ -331,19 +341,19 @@
       "bitmapWidth": 1110,
       "centeredCamera": true,
       "frameCounter": {
-        "fps": 239.25233644859813,
+        "fps": 240.99968670040727,
         "height": 64,
-        "highFPS": 239.25233644859813,
-        "lowFPS": 239.25233644859813,
+        "highFPS": 240.99968670040727,
+        "lowFPS": 240.99968670040727,
         "mouseEnabled": false,
         "rangeSamples": 3,
         "rangeSeconds": 30,
-        "sampleFrames": 211,
-        "sampleMs": 1000,
+        "sampleFrames": 214,
+        "sampleMs": 1001,
         "selectable": false,
         "shown": true,
         "source": "completed-game-renders",
-        "text": "121 FPS\nLow 121\nHigh 122",
+        "text": "121 FPS\nLow 121\nHigh 121",
         "totalFrames": 527,
         "updates": 3,
         "visible": true,
@@ -618,7 +628,8 @@
         "mode": "modal",
         "presses": 0,
         "keys": 2
-      }
+      },
+      "Actual refresh-button click reaches the native host with its character identity"
     ],
     "scope": "Synthetic character selection and native stage key events on an inactive desktop. Selection authentication and packet callbacks are stubbed only in the fixture. No account, OS input or human game accessed."
   },
@@ -773,9 +784,34 @@
         "actual": 1,
         "expected": 1,
         "name": "Loot command outside a dungeon is consumed safely"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Guild fund cannot open from an unsolicited disconnected response"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Guild leave request requires a game connection"
+      },
+      {
+        "actual": 1,
+        "expected": 1,
+        "name": "Current guild fund artwork constructs"
+      },
+      {
+        "actual": 1,
+        "expected": 1,
+        "name": "Current guild leave artwork constructs"
+      },
+      {
+        "actual": 0,
+        "expected": 0,
+        "name": "Guild fund close remains safe without an open modal"
       }
     ],
-    "flashReference": "Unchanged native renderer and ability artwork; retained independent Flash reference. Four synthetic filter probes still differ."
+    "flashReference": "Unchanged renderer and ability artwork; retained independent Flash reference. Four synthetic filter probes still differ."
   },
   "audio": {
     "clips": [
@@ -847,7 +883,7 @@
     },
     "scope": "Flash decoded PCM compared with owned CPAL postmix; no missing 5 ms windows in three effects. Separate callback scheduling, not physical endpoint recording or listening. Diagnostic recorder excluded from the shipped source patch/binary.",
     "qualifiedAtUtc": "2026-10-22T22:33:45.614Z",
-    "retainedReason": "Native binary, BlitzAudio helper and SoundManager methods are unchanged. Raw review removes exactly the three original sound-owner wrappers from the new TakeDamage body and reproduces every upstream instruction/exception range. Prior PCM and callback qualification retained."
+    "retainedReason": "Native binary, BlitzAudio helper, SoundManager and existing sound-owner wrappers are unchanged; prior PCM/callback qualification retained. No new recording or listening claim."
   },
   "regression": {
     "cameraSamples": 121,
@@ -867,126 +903,119 @@
         ]
       ],
       "draftSaveDiscard": true,
-      "autorunMapHint": true
+      "autorunMapHint": true,
+      "qualifiedAtUtc": "2026-10-26T16:03:04.579Z",
+      "retainedReason": "Shell UI unchanged since 0.33.0."
     }
   },
   "performanceComparison": {
-    "scope": "Current-client fixtures under available background load. This is a compatibility and map-autorun update; no renderer optimization or physical scanout/live-combat claim.",
-    "priorVersion": "0.32.4",
-    "priorRecordedFull": 130.77988404183614,
-    "priorRecordedReduced": 153.79954938988385
+    "scope": "Compatibility qualification under current background load; no renderer optimization or authenticated combat claim.",
+    "priorVersion": "0.33.0",
+    "priorRecordedFull": 142.9403287050765,
+    "priorRecordedReduced": 135.2840574863981
   },
   "sessionControlsReview": "session-controls.json",
-  "deploymentReview": "deployments/2026-10-26.json",
+  "deploymentReview": "deployments/2026-10-28.json",
   "resourceReview": "level-resources.json",
   "audioCursorReview": "audio-cursor-review.json",
   "evidence": {
     "cursor": {
-      "out": "artifacts\\native-game-cursor-DIVdd5",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-cursor.log"
+      "out": "artifacts\\native-game-cursor-8aDsQo",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-cursor.log"
     },
     "settings": {
-      "out": "artifacts\\native-settings-qNe9vo",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-settings.log"
+      "out": "artifacts\\native-settings-Qnr8zT",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-settings.log"
     },
     "controls": {
-      "out": "artifacts\\refresh-controls-ttQQ3s",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-controls.log"
+      "out": "artifacts\\refresh-controls-9ftfOE",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\refresh-final-0331.log"
     },
     "media": {
-      "out": "artifacts\\native-media-0JIen1",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-media.log"
+      "out": "artifacts\\native-media-oWF1Vw",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-media.log"
     },
     "window": {
-      "out": "artifacts\\native-window-dPnbO7",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-window.log"
+      "out": "artifacts\\native-window-D9DcFP",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-window.log"
     },
     "animation": {
-      "out": "artifacts\\native-animation-Z8HqyW",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-animation.log"
+      "out": "artifacts\\native-animation-E4Yor0",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-animation.log"
     },
     "primary": {
-      "out": "artifacts\\native-anonymous-kpUAoa",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-primary.log"
+      "out": "artifacts\\native-anonymous-cRtQ6M",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-primary.log"
     },
     "render120": {
-      "out": "artifacts\\ruffle-world-rate-riEHsw",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-render120.log"
+      "out": "artifacts\\ruffle-world-rate-EThsn3",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-render120.log"
     },
     "full": {
-      "out": "artifacts\\ruffle-world-rate-QRexyk",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-full.log"
+      "out": "artifacts\\ruffle-world-rate-HB8Ndb",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-full.log"
     },
     "reduced": {
-      "out": "artifacts\\ruffle-world-rate-zkpoMn",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-reduced.log"
+      "out": "artifacts\\ruffle-world-rate-oNEyiZ",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-reduced.log"
     },
     "home": {
-      "out": "artifacts\\ruffle-world-rate-88F42s",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-home.log"
+      "out": "artifacts\\ruffle-world-rate-fv0LGb",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-home.log"
     },
     "secondary": {
-      "out": "artifacts\\native-anonymous-j208PI",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-secondary.log"
+      "out": "artifacts\\native-anonymous-ToUEgz",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-secondary.log"
     },
     "autorun": {
-      "out": "artifacts\\native-autorun-iwDkOw",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-autorun.log"
+      "out": "artifacts\\native-autorun-Olr1OA",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-autorun.log"
     },
     "currentArt": {
-      "out": "artifacts\\native-current-art-Sf0Toc",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\native-currentArt.log"
+      "out": "artifacts\\native-current-art-2Sdr7L",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\native-currentArt.log"
     },
     "currentMap": {
-      "out": "artifacts\\ruffle-world-rate-TLR45Z",
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm\\artifacts\\current-map-0330.log"
+      "out": "artifacts\\ruffle-world-rate-rKIUDG",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9\\artifacts\\current-map-0331.log"
     }
   },
-  "scope": "Anonymous public startup, owned artwork/input fixtures and inactive desktops. No account, physical cursor/input change, endpoint capture or human game session. Live combat, speaker listening, new authenticated raid transactions and frame-counted upstream cosmetics remain unverified. Four synthetic filter probes differ from Flash.",
+  "scope": "Anonymous public startup and owned fixtures on inactive desktops. No accounts, live guild transactions, human session, physical cursor/input change or endpoint capture. Four synthetic filter probes retain known differences.",
   "packaging": {
     "status": "passed",
-    "checkedAtUtc": "2026-10-26T16:09:56.514Z",
+    "checkedAtUtc": "2026-10-28T08:46:13.886Z",
     "signedFiles": 442,
     "nativeAndSingleplayer": true,
     "integrityPositiveAndNegative": true,
     "updater": true,
     "installer": true,
-    "previousUpdater": "0.32.4",
+    "previousUpdater": "0.33.0",
     "installerReceipt": ".test-tools/installer-test-result.json",
-    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.0-0f7yUm"
+    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.1-DLY4t9"
   },
   "homeArtwork": {
-    "wallMs": 39613,
-    "nativeSteps": 480.1200000000117,
-    "elapsedMs": 20001,
+    "wallMs": 40316,
+    "nativeSteps": 480.024000000012,
+    "elapsedMs": 20002,
     "error": "",
     "level": "LevelsHome.swf",
-    "time": 38404,
+    "time": 38854,
     "width": 2364,
     "timerTicks": 200,
     "nativeTarget": 24,
     "room": "a_Room_Main",
-    "nativeElapsed": 20005,
-    "frames": 2302,
-    "drawMs": 6773,
-    "distinctTimes": 2302,
+    "nativeElapsed": 20001,
+    "frames": 2045,
+    "drawMs": 6585,
+    "distinctTimes": 2045,
     "target": 120,
-    "fps": 115.09424528773562,
+    "fps": 102.23977602239776,
     "height": 1157,
-    "completedGpuPerSecond": 115.55284786197912,
-    "source": "Current reviewed LevelsHome.swf through the production resource broker"
+    "completedGpuPerSecond": 102.65538759135596,
+    "source": "Current reviewed LevelsHome.swf through production broker"
   },
   "diagnostics": {
-    "priorConcurrentTitleRun": "artifacts/native-anonymous-vSDrei/steady-render-samples.json",
-    "scope": "One secondary-origin run failed the unchanged 118–123 gate while other visual tests were running. The isolated rerun passed the same gate; complete samples and failure remain available. No fixed frame-time or live-combat guarantee.",
-    "priorAutorunFixtures": [
-      "artifacts/native-autorun-Er04p9",
-      "artifacts/native-autorun-dVyFDI"
-    ],
-    "autorunFixtureRepair": "The unbound negative control initially retained original hardcoded arrows. It now creates an empty key-manager context; product behavior was unchanged.",
-    "priorMapFixture": "artifacts/ruffle-world-rate-cVdiy7",
-    "mapFixtureRepair": "Removed a duplicate fixture-only CLI flag, then moved the map case last so later synthetic Game replacements cannot leave stale map-probe state. Full failed and passing records remain in artifacts.",
-    "additionalMapFixture": "artifacts/ruffle-world-rate-4QmI3L"
+    "scope": "All fresh runs and any failed attempts remain in ignored artifacts. No live-combat, physical scanout or frame-time guarantee."
   },
   "resourceUnitRecheck": 6,
   "autorun": {
@@ -1048,187 +1077,84 @@
         "width": 2262.55
       }
     ],
-    "scope": "Direct authoring-clip construction and GPU capture, including editor markers; independent of the game presentation path."
+    "scope": "Unchanged reviewed artwork with the October 28 source; direct authoring-clip construction includes editor markers."
   },
   "currentMap": {
     "cases": [
       {
         "name": "home",
         "error": "",
-        "loadError": "",
-        "fixtureLoading": 10,
-        "widescreen": {
-          "hudRaster": {
-            "inspection": false,
-            "scale": 1.0810546875,
-            "height": 133,
-            "width": 1507,
-            "builds": 1
-          },
-          "roomWings": null,
-          "interiorLimited": false,
-          "uiOffset": 0,
-          "requested": true,
-          "frameAttached": true,
-          "interiorSceneWidth": null,
-          "decorationAnimating": false,
-          "frameStyle": "original-vector-three-slice",
-          "centeredHotbar": false,
-          "logicalHeight": 768,
-          "logicalWidth": 1365.3333333333333,
-          "frameInteractive": false,
-          "active": true
+        "stage": {
+          "height": 900,
+          "width": 1600
         }
       },
       {
         "name": "dungeon",
         "error": "",
-        "loadError": "",
-        "fixtureLoading": 10,
-        "widescreen": {
-          "hudRaster": {
-            "inspection": false,
-            "scale": 1.0810546875,
-            "height": 133,
-            "width": 1507,
-            "builds": 1
-          },
-          "roomWings": null,
-          "interiorLimited": false,
-          "uiOffset": 0,
-          "requested": true,
-          "frameAttached": true,
-          "interiorSceneWidth": null,
-          "decorationAnimating": false,
-          "frameStyle": "original-vector-three-slice",
-          "centeredHotbar": false,
-          "logicalHeight": 768,
-          "logicalWidth": 1365.3333333333333,
-          "frameInteractive": false,
-          "active": true
+        "stage": {
+          "height": 900,
+          "width": 1600
         }
       },
       {
         "name": "dialogue",
         "error": "",
-        "loadError": "",
-        "fixtureLoading": 10,
-        "widescreen": {
-          "hudRaster": {
-            "inspection": false,
-            "scale": 1.0810546875,
-            "height": 133,
-            "width": 1507,
-            "builds": 1
-          },
-          "roomWings": null,
-          "interiorLimited": false,
-          "uiOffset": 0,
-          "requested": true,
-          "frameAttached": true,
-          "interiorSceneWidth": null,
-          "decorationAnimating": false,
-          "frameStyle": "original-vector-three-slice",
-          "centeredHotbar": false,
-          "logicalHeight": 768,
-          "logicalWidth": 1365.3333333333333,
-          "frameInteractive": false,
-          "active": true
+        "stage": {
+          "height": 900,
+          "width": 1600
         }
       },
       {
         "name": "loading",
         "error": "",
-        "loadError": "",
-        "fixtureLoading": 10,
-        "widescreen": {
-          "hudRaster": {
-            "inspection": false,
-            "scale": 1.0810546875,
-            "height": 133,
-            "width": 1507,
-            "builds": 1
-          },
-          "roomWings": null,
-          "interiorLimited": false,
-          "uiOffset": 0,
-          "requested": true,
-          "frameAttached": true,
-          "interiorSceneWidth": null,
-          "decorationAnimating": false,
-          "frameStyle": "original-vector-three-slice",
-          "centeredHotbar": false,
-          "logicalHeight": 768,
-          "logicalWidth": 1365.3333333333333,
-          "frameInteractive": false,
-          "active": true
+        "stage": {
+          "height": 900,
+          "width": 1600
         }
       },
       {
         "name": "canvas-recovery",
         "error": "",
-        "loadError": "",
-        "fixtureLoading": 10,
-        "widescreen": {
-          "hudRaster": {
-            "inspection": false,
-            "scale": 1.0810546875,
-            "height": 133,
-            "width": 1507,
-            "builds": 1
-          },
-          "roomWings": null,
-          "interiorLimited": false,
-          "uiOffset": 0,
-          "requested": true,
-          "frameAttached": true,
-          "interiorSceneWidth": null,
-          "decorationAnimating": false,
-          "frameStyle": "original-vector-three-slice",
-          "centeredHotbar": false,
-          "logicalHeight": 768,
-          "logicalWidth": 1365.3333333333333,
-          "frameInteractive": false,
-          "active": true
+        "stage": {
+          "height": 900,
+          "width": 1600
         }
       },
       {
         "name": "map",
         "error": "",
-        "loadError": "",
-        "fixtureLoading": 10,
-        "widescreen": {
-          "hudRaster": {
-            "inspection": false,
-            "scale": 1.0810546875,
-            "height": 133,
-            "width": 1507,
-            "builds": 1
-          },
-          "roomWings": null,
-          "interiorLimited": false,
-          "uiOffset": 0,
-          "requested": true,
-          "frameAttached": true,
-          "interiorSceneWidth": null,
-          "decorationAnimating": false,
-          "frameStyle": "original-vector-three-slice",
-          "centeredHotbar": false,
-          "logicalHeight": 768,
-          "logicalWidth": 1365.3333333333333,
-          "frameInteractive": false,
-          "active": true
+        "stage": {
+          "height": 900,
+          "width": 1600
         },
         "map": {
           "kind": 0,
           "bitmapWidth": 1113,
           "displayWidth": 1151.5,
           "scale": 3.636937647987372,
-          "globalScale": 1.0001302252897513,
-          "hitRegions": 7
+          "globalScale": 1.0001302252897513
         }
       }
     ],
-    "scope": "Current public assets through the production broker; original map, terrain, menus and canvas methods in an account-free fixture."
+    "scope": "Production resource broker and October 28 source, original controller methods in account-free fixtures."
+  },
+  "refreshEndToEnd": {
+    "ok": true,
+    "oldPid": 70704,
+    "newPid": 101668,
+    "visits": 2,
+    "selected": "FixtureHero",
+    "entries": 1,
+    "fullscreen": true,
+    "viewport": [
+      2560,
+      1439
+    ],
+    "renderResolution": 0.75,
+    "zoom": 1.25,
+    "browserScale": 1.3333333785759802,
+    "settingsPreserved": true,
+    "scope": "Actual Flash button click, host pipe and shell process replacement; synthetic remembered character and Play callback. Empty fixture profiles on an inactive desktop, no accounts or global input."
   }
 }
