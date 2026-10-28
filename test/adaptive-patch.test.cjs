@@ -50,12 +50,12 @@ test(
       a = main(output).abc,
       b = main(compiled).abc;
     assert(a.interfaceContract.equals(b.interfaceContract));
-    assert.deepEqual(a.pools, b.pools);
+    assert.equal(hash(JSON.stringify(a.pools)), hash(JSON.stringify(b.pools)), 'Constant pools');
     for (const body of a.bodies)
       assert(body.bytes.equals(b.bodies.find((other) => other.id === body.id).bytes));
     assert.deepEqual(
-      output.tags.filter((t) => t !== main(output)).map((t) => t.data),
-      compiled.tags.filter((t) => t !== main(compiled)).map((t) => t.data)
+      output.tags.filter((t) => t !== main(output)).map((t) => hash(t.data)),
+      compiled.tags.filter((t) => t !== main(compiled)).map((t) => hash(t.data))
     );
   }
 );
@@ -145,11 +145,7 @@ test(
       'class_95.method_1792',
       'class_33.method_286',
     ])
-      assert.equal(
-        patchAdaptiveClient(changeBody(name), recipe),
-        null,
-        name + ' must require review'
-      );
+      assert(patchAdaptiveClient(changeBody(name), recipe) === null, name + ' must require review');
     const changedPool = rewrite(current, (abc) => {
       const pools = { ...abc.pools, ints: [...abc.pools.ints] };
       pools.ints[1] ^= 1;
@@ -160,23 +156,22 @@ test(
         ...abc.bodies.map((body) => body.bytes),
       ]);
     });
-    assert.equal(patchAdaptiveClient(changedPool, recipe), null);
+    assert(patchAdaptiveClient(changedPool, recipe) === null);
     const changedBinding = readSWF(current);
     const binding = changedBinding.tags.find((tag) => tag.type === 76),
       data = Buffer.from(binding.data);
     data[data.length - 2] ^= 1;
-    assert.equal(
+    assert(
       patchAdaptiveClient(
         writeSWF(
           changedBinding,
           changedBinding.tags.map((tag) => (tag === binding ? encodeTag(76, data) : tag.raw))
         ),
         recipe
-      ),
-      null
+      ) === null
     );
     const output = patchAdaptiveClient(current, recipe);
-    assert.equal(patchAdaptiveClient(output, recipe), null, 'Never attach helpers twice');
+    assert(patchAdaptiveClient(output, recipe) === null, 'Never attach helpers twice');
   }
 );
 test(

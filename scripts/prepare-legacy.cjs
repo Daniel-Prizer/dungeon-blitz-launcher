@@ -5,6 +5,7 @@ const { execFileSync } = require('node:child_process');
 const asar = require('@electron/asar');
 const { verifyImported, inventorySource } = require('./runtime-import.cjs');
 const root = path.resolve(__dirname, '..');
+require('./build-storage.cjs').preflight(root);
 const source = path.join(process.env.LOCALAPPDATA, 'Programs/Dungeon Blitz R');
 const target = path.join(root, 'runtime/game');
 (async () => {

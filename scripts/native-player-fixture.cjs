@@ -6,6 +6,7 @@ const { spawn, execFileSync } = require('node:child_process');
 const { StringDecoder } = require('node:string_decoder');
 
 function privateRun(config, suite, environment = {}) {
+  require('./build-storage.cjs').preflight(config.root, 512 * 1024 ** 2);
   const runner = path.join(config.out, 'run.cjs');
   fs.writeFileSync(
     runner,
@@ -24,6 +25,7 @@ function privateRun(config, suite, environment = {}) {
 }
 
 function privateRunAsync(config, suite, environment = {}) {
+  require('./build-storage.cjs').preflight(config.root, 512 * 1024 ** 2);
   const runner = path.join(config.out, 'run.cjs');
   fs.writeFileSync(
     runner,

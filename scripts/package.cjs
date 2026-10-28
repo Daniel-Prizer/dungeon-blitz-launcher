@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 (async () => {
+  require('./build-storage.cjs').preflight(root, 4 * 1024 ** 3, true);
   if (process.argv.includes('--prepared-game')) {
     // Explicit build continuation after the complete game preparation passed.
     // Reject changed legacy source instead of packaging a stale ASAR.

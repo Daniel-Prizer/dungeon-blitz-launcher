@@ -7,6 +7,7 @@ const fs = require('node:fs'),
 const root = path.resolve(__dirname, '..'),
   version = require('../package.json').version;
 (async () => {
+  require('./build-storage.cjs').preflight(root);
   const out = fs.mkdtempSync(path.join(root, 'artifacts/packaged-local-world-')),
     source = path.join(out, 'source'),
     packaged = path.join(root, 'release', version, 'Dungeon Blitz Launcher-win32-x64/resources');

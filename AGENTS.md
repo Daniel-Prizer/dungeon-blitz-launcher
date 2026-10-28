@@ -6,6 +6,7 @@
 - Do not operate the user's input desktop, pointer, keyboard, clipboard or visible game. Use hidden synthetic tests or the guarded inactive desktop; never switch to it. No subagents unless requested.
 - Never access saved authentication or log into an account during automated testing. Separate human-authorized live QA needs an explicit account/character scope and must keep credentials/captures private.
 - Do not stop or restart games, farmers, servers or another agent's work. Branded production test processes can trigger process guards; use genuine independent fixtures. Read the local version hold before installation and honor update opt-out.
+- Daniel uses the installed launcher and its signed auto-updater. Do not put standalone installers or versioned installer backups in Downloads. Keep public installers in the repository's versioned release directory and on GitHub only.
 - Cursor tests never call ClipCursor, SetCursorPos or global input APIs. Test accessibility with fake APIs. Audio changes affect only the game's process tree, never endpoint master volume.
 
 ## Product behavior
@@ -36,6 +37,10 @@ High FPS uses the qualified native player. Keep presentation, automatic timeline
 - Do not promote the projector prototype while persistence fails. Do not ship an unverified game runtime migration.
 
 ## Changes and verification
+
+Run `npm run storage:check` before large builds or batches of native tests. Keep at least 20 GiB free, active artifacts plus test tools below 64 GiB, and lossless cold staging archives in `artifacts/archived-stages` below 32 GiB. Use `scripts/stage-release.cjs`; reuse a version's existing stage and never recursively copy the repository, artifacts, release history or test caches into it. After verifying a release, remove verified duplicate downloads and disposable packaged test copies, retaining small logs/screenshots/receipts and one canonical copy of each old release. Never delete unique releases, profiles, imported runtimes or active agent work. Do not bypass a storage failure by creating an ad hoc stage.
+
+Use `npm test` for serial, memory-limited tests. Direct Node diagnostics and cleanup must use `--max-old-space-size=768` or less; stream large files. Never deep-compare whole large buffers in an assertion that prints their contents: compare hashes or report the first changed offset. Stop a failing or stalled diagnostic instead of leaving it to exhaust RAM/pagefile space.
 
 Every committed change includes a semantic version bump in root package.json, package-lock.json and src/legacy/package.json. Maintenance uses patch, features minor, breaking contracts major. Mention the result in the final response. Keep source and canonical runnable artifacts aligned; stage builds when runtimes may be active and retain versioned backups before promotion.
 

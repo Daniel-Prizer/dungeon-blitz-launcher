@@ -64,6 +64,7 @@ async function probe(config) {
 }
 
 (async () => {
+  require('./build-storage.cjs').preflight(root);
   fs.mkdirSync(path.join(root, 'artifacts'), { recursive: true });
   const out = fs.mkdtempSync(path.join(root, 'artifacts/packaged-native-resources-')),
     source = path.join(out, 'source');

@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..'),
   version = require('../package.json').version;
 const identity = '{A9EAA7C2-5CDD-4C8F-B87E-EF061C6B2D72}';
 async function build({ test = false, probe } = {}) {
+  require('./build-storage.cjs').preflight(root);
   const compiler = await require('./prepare-inno.cjs')();
   const output = path.join(root, 'release', version),
     build = path.join(output, 'Dungeon Blitz Launcher-win32-x64');

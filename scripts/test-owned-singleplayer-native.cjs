@@ -17,6 +17,7 @@ async function until(fn, label) {
   throw Error('Timed out: ' + label);
 }
 async function build() {
+  require('./build-storage.cjs').preflight(root);
   require('../research/gpu/background.cjs').lowerSelf();
   const out = fs.mkdtempSync(path.join(root, 'artifacts/local-world-native-')),
     source = path.join(out, 'source');
