@@ -1,0 +1,176 @@
+{
+  "version": "0.33.3",
+  "reviewedAtUtc": "2026-10-28T20:24:02.196Z",
+  "sourceSha256": "de2316024db93cfd91dac032f76fdf61d9708c98887254bf6d756f2279814709",
+  "enhancedSha256": "a3bd72505464b9618a3443c133154976a797d1b34168604ce5ae5470803c4aff",
+  "previousSourceSha256": "1e7a5eb5e3dab774ea57a26c7211651e3a1c67d4bf1195f164c9d1915cd39c06",
+  "revision": "swf-8f3bc094ac10",
+  "sourceBytes": 1034258,
+  "mainInterfaceUnchanged": true,
+  "constantPoolPrefixesUnchanged": true,
+  "otherMainMethodsByteIdentical": 3768,
+  "changedMainMethods": [
+    {
+      "id": 660,
+      "name": "Buff.method_1095",
+      "bytes": 4402,
+      "bodyHash": "dd9f0dd0dc36ca88ac6d275a8984e76b7c694551d9e6b8db48a2c777dcd8ca2a",
+      "codeHash": "96ffba24462429b9c092ff13f67ea7eeb25327c9fd2aa403cba3e0861c5b0892"
+    },
+    {
+      "id": 727,
+      "name": "Entity.method_1457",
+      "bytes": 6209,
+      "bodyHash": "0582407fcc73796ef9878e4aafd8439753d2dcb44b27f2e4e197c3500520c209",
+      "codeHash": "44841f3bfc685a218bdc9e5538738bc5845284bdee98c566f574ea4feb8841b9"
+    },
+    {
+      "id": 3326,
+      "name": "CombatState.method_322",
+      "bytes": 5928,
+      "bodyHash": "036122a640b8fe1290720b97266f1e2038478d12c168ee2f02154d13b2fa2c8b",
+      "codeHash": "5a49d7608a4d360ac2e9aa702c76b94cc303b6643769984074d49b75cd083dad"
+    },
+    {
+      "id": 3338,
+      "name": "CombatState.method_1192",
+      "bytes": 6604,
+      "bodyHash": "37f21525d8fec79a03559a06bc5d4a71f91b6aa71f2ff8ef6a908c84ca5ce8dc",
+      "codeHash": "83d689bbcfc2b762453d7abde3936a0e00621960aaa2f962d6d7b252b26a8492"
+    },
+    {
+      "id": 3339,
+      "name": "CombatState.method_1393",
+      "bytes": 5194,
+      "bodyHash": "250e08808af8b005e163a4e5e907387b7ab65f139f79e328430d9719c63474f3",
+      "codeHash": "b2e8795dd57ac3f4b229920b8eca5d6075f3dbc84f64f319a3dc2fb14ed5992b"
+    },
+    {
+      "id": 3346,
+      "name": "CombatState.FireThisPower",
+      "bytes": 3540,
+      "bodyHash": "edd69bc8a8c0c593c1dc49b0b9194a6ec85051a5a3a7ad146b8c2e8e1163e984",
+      "codeHash": "59ad485877c3ae40bbbeb8c2d542f2e88fb259d800e7b3ba053ae988b51b63ef"
+    },
+    {
+      "id": 3348,
+      "name": "CombatState.shadowLegionRotationSlot",
+      "bytes": 68,
+      "bodyHash": "36eda4b46c09e3a6174b0a50c31a3413ab9e3b9e9fee86c7609b2ba5bb0f8ef8",
+      "codeHash": "7d492491f55e72af7fef445595c41b7af59624e73b8350cb2db2a9b3be0960c4"
+    },
+    {
+      "id": 3349,
+      "name": "CombatState.shadowLegionRotate",
+      "bytes": 310,
+      "bodyHash": "2800e1efba6053693e078a483117834f6bdec6f41571a7d71164837a47e5cf65",
+      "codeHash": "c53c18e1a453dc566a18deae7ca5473e8d6a556bc2fc98b3a58323b725d0f908"
+    },
+    {
+      "id": 3355,
+      "name": "CombatState.method_960",
+      "bytes": 3461,
+      "bodyHash": "4bd2ff1e4ec4d75a197b1f97e6bfe832628dd8cdb5e1c2c74150a59bcabc6691",
+      "codeHash": "792359050cb6fbbf84445417b77233ea23449b8fe54dab7bd3ed8899121f78e6"
+    }
+  ],
+  "behavior": "Minesa adds BalanceHooks for damage-over-time, Shroud hit/kill behavior, minion curses and derived stats. Combat changes remove the old Sentinel per-hit bonus, adjust Shadow Legion rotation and a 9000-to-5000 constant, and change a native flag. All nine changed main bodies are preserved byte-for-byte. No launcher gameplay edit.",
+  "helper": {
+    "name": "BalanceHooks",
+    "methods": [
+      {
+        "id": 0,
+        "name": "",
+        "bytes": 23,
+        "bodyHash": "3adf53eb7156078d529fa061c8787115122c2fe3f7c8c4e202c8f89eb74a763e",
+        "codeHash": "5910ebbb8edc395bda75246debf9c65b1246ed1ba6cd229be4ef3da6bdc410fc"
+      },
+      {
+        "id": 1,
+        "name": "BalanceHooks.AfterHit",
+        "bytes": 376,
+        "bodyHash": "3edc185821e1c4f6f85de75e396fef1e7a4cafebf555eeb9f79fdd73444b4b31",
+        "codeHash": "d8f58a02a8b7f4bf7c0160d75bfdae4080cbaf92a5db72c9d791e91a26790ff3"
+      },
+      {
+        "id": 2,
+        "name": "BalanceHooks.ShroudRank",
+        "bytes": 96,
+        "bodyHash": "bbdf970608018eac875b2a29335159bdd1ea8587fa0a31e1558422dcc2e1ca05",
+        "codeHash": "e566bd0d881f971bfb0d93771c022d8d8752566a06effd0eee87b9c7d7cedd22"
+      },
+      {
+        "id": 3,
+        "name": "BalanceHooks.DotTick",
+        "bytes": 295,
+        "bodyHash": "97a007a11981d757f53a783ee427b976824778c91f98ee00017de9480bf5ec3c",
+        "codeHash": "e8803435b0d3be6155dc08a8c83809e232f7778753a2482c6f8bd15838a474da"
+      },
+      {
+        "id": 4,
+        "name": "BalanceHooks.Caster",
+        "bytes": 113,
+        "bodyHash": "d5005fd7ee48e562ebcd30c03511011a7dd90b925bbfb9d9557520b52bff17ee",
+        "codeHash": "bd03c00971578850745e684829fd3e49cab4e5352707a71979773a9cac2dfc96"
+      },
+      {
+        "id": 5,
+        "name": "BalanceHooks.HoldsBarrier",
+        "bytes": 151,
+        "bodyHash": "b8741213a63bab59f0be28402fdbefbd530382508a695b2b9bc21183bfbb8668",
+        "codeHash": "a4f9206cebc138c310950ed62afad4a1c1c9b24f499c9ff29bbcc4666ffd2117"
+      },
+      {
+        "id": 6,
+        "name": "BalanceHooks.MinionCurse",
+        "bytes": 403,
+        "bodyHash": "78530cb613812e1bc92bda3cbbbde7398e04b6179e15b107526439a5d4d1d969",
+        "codeHash": "c0d37228ed9c1300a5ab82f32c18bad0fbf1b2cbcc39a70861d2cd5f55e76498"
+      },
+      {
+        "id": 7,
+        "name": "BalanceHooks.IsMinion",
+        "bytes": 48,
+        "bodyHash": "15ad57b61441149741c94a65fd23924195d00fc0eb607acc160f43cc73c4b1e3",
+        "codeHash": "15a6ae00cd6075fbd1651063fc2ae0be190a6942ec5de44ddbccf4a6e354bb81"
+      },
+      {
+        "id": 8,
+        "name": "BalanceHooks.SummonerCurseArmor",
+        "bytes": 66,
+        "bodyHash": "91fa2e79027833bce377b77c544a240bd724956d4349ce419d5aec434f29b4f8",
+        "codeHash": "2fa1d7c9dab2e6975ca868324e9ab40b07e41772326a8ff41e37fb8311835bd3"
+      },
+      {
+        "id": 9,
+        "name": "BalanceHooks.DerivedStats",
+        "bytes": 325,
+        "bodyHash": "a49bf0ca343369ee8b8930a05d495bcfb6f5c644fd200255bc3edf787686c050",
+        "codeHash": "c6c918fd39d469491100137ddea46263340e4358d687fe961fe9790800c7d113"
+      },
+      {
+        "id": 10,
+        "name": "BalanceHooks.iinit",
+        "bytes": 14,
+        "bodyHash": "d447a206a7d7dd2013a25766efe79f4f273ecf1ce38875e993292370a2de3e2c",
+        "codeHash": "8ff32749a852a1d83829c6a3fac8ec00822f06b5c7177f9ebb43a09287b2101a"
+      },
+      {
+        "id": 11,
+        "name": "BalanceHooks.cinit",
+        "bytes": 66,
+        "bodyHash": "3581fd925bbde5da1dfd55a0815cd00eb148a7548a1b251d778027f96eaa8d9f",
+        "codeHash": "94db965724dc44db2d36e5e614b1ec42da6df6ca6f652a5ea013d9e656bad338"
+      }
+    ],
+    "behavior": "Twelve new upstream bodies, including guarded AfterHit, DotTick, MinionCurse and DerivedStats. Raw branch offsets and Error exception ranges validated. Entire tag retained byte-for-byte."
+  },
+  "review": {
+    "rawInstructionsAndExceptionTables": true,
+    "allChangedMainBodiesPreserved": true,
+    "allNonMainTagsPreserved": true,
+    "priorEffectsInterfaceAndMethodEnvelopeUnchanged": true,
+    "artwork": "Both public origins retain all 73 reviewed assets including the new UI_4 own-effects row."
+  },
+  "scope": "Anonymous static and synthetic qualification; no account, live combat or guild transaction."
+}

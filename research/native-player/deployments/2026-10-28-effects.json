@@ -1,0 +1,445 @@
+{
+  "version": "0.33.3",
+  "reviewedAtUtc": "2026-10-28T20:13:16.762Z",
+  "sourceSha256": "1e7a5eb5e3dab774ea57a26c7211651e3a1c67d4bf1195f164c9d1915cd39c06",
+  "enhancedSha256": "15c7953cee1a4e667dcf67e0d6a7fd96bf9f0b284ce8252994a613caf110a160",
+  "sourceBytes": 1031880,
+  "revision": "swf-187f91b61155",
+  "previousSourceSha256": "0b80841584e16000033ba2bd5e372b50c781f2ae7585afadb05faa3f6b45a75d",
+  "main": {
+    "existingMethods": 3776,
+    "newMethods": 3777,
+    "unchangedExistingBodies": 3772,
+    "changes": [
+      {
+        "id": 2138,
+        "name": "class_124.OnCreateScreen",
+        "bytes": 377,
+        "bodyHash": "39247f1b124457802300ab461f28b7083d53a18c236e0f84ee76746233477854",
+        "codeHash": "2eaad552aa7ac3e350a0fe14a0355c4f8e257e222398a94b378057677bb07272"
+      },
+      {
+        "id": 3038,
+        "name": "ActivePower.method_750",
+        "bytes": 714,
+        "bodyHash": "97f799b443fac4f7fa45e4bfa981aebac2f597ce0f87ab20d1ecbfce01a74d4d",
+        "codeHash": "e1fd4b4a3042018dd533d1fd2c1d6e5709c6108324c73b28035fa2874375e0e8"
+      },
+      {
+        "id": 3040,
+        "name": "ActivePower.method_573",
+        "bytes": 1165,
+        "bodyHash": "e722d841f88ef4e12f7cb4c7d6933ea4945afbfe9d32f2c34e1f87c4dba70339",
+        "codeHash": "d8bfaed2163c68b853a71d4dba476522aa6a771c2f5d4b8e327cc33937cf30a8"
+      },
+      {
+        "id": 3345,
+        "name": "CombatState.method_884",
+        "bytes": 1129,
+        "bodyHash": "60d307a0966a70ad914220be8a2606e76ea026a42fea44ee07aa60dffe7130c8",
+        "codeHash": "87cb37efd780441f63d57d74740c162151e08fe9c994405c992d19b41de98ade"
+      },
+      {
+        "id": 3776,
+        "name": "",
+        "bytes": 76,
+        "bodyHash": "bcd1c2fcdcdedc1b705ff572cccd4d7d2a6432244bdda12100afffaa3e3eb95f",
+        "codeHash": "fcbaaeaa5ac0cfec44867d113e2adc30cf2d20195091deec8bd2e55b36afdef0"
+      }
+    ],
+    "interface": "Only an appended optional-argument closure and body count change. Removing those reproduces the complete prior semantic interface.",
+    "rawReconstruction": [
+      {
+        "id": 2138,
+        "insertionAt": 14,
+        "instructionCount": 23
+      },
+      {
+        "id": 3038,
+        "insertionAt": 2,
+        "instructionCount": 22
+      },
+      {
+        "id": 3040,
+        "insertionAt": 2,
+        "instructionCount": 22
+      },
+      {
+        "id": 3345,
+        "insertionAt": 2,
+        "instructionCount": 22
+      }
+    ],
+    "behavior": "Adds an own-effects checkbox and preserves its native saved option. Three effect paths skip non-local player effects only when the upstream option is enabled. The existing bodies reconstruct exactly after removing those insertions and reversing branch relocation.",
+    "launcherEdit": "Only CombatState.method_884 receives its pre-existing one-call sound-owner wrapper after the new guard. Other changed bodies and the new closure remain upstream bytes."
+  },
+  "guildRaid": {
+    "oldMethods": 132,
+    "newMethods": 143,
+    "normalizedUnchanged": 87,
+    "changes": [
+      {
+        "id": 1,
+        "name": "GuildRaidNet.Send",
+        "oldId": 1,
+        "added": false
+      },
+      {
+        "id": 2,
+        "name": "GuildRaidNet.SendName",
+        "added": true
+      },
+      {
+        "id": 3,
+        "name": "GuildRaidNet.Chat",
+        "oldId": 2,
+        "added": false
+      },
+      {
+        "id": 7,
+        "name": "GuildRaidNet.cinit",
+        "oldId": 6,
+        "added": false
+      },
+      {
+        "id": 13,
+        "name": "GuildRaidPrompt.OnFrame",
+        "oldId": 12,
+        "added": false
+      },
+      {
+        "id": 20,
+        "name": "GuildRaidPrompt.Close",
+        "oldId": 19,
+        "added": false
+      },
+      {
+        "id": 24,
+        "name": "GuildRaidPrompt.iinit",
+        "oldId": 23,
+        "added": false
+      },
+      {
+        "id": 30,
+        "name": "GuildRaidReward.Close",
+        "oldId": 29,
+        "added": false
+      },
+      {
+        "id": 32,
+        "name": "GuildRaidReward.iinit",
+        "oldId": 31,
+        "added": false
+      },
+      {
+        "id": 37,
+        "name": "GuildRaidGold.Close",
+        "oldId": 36,
+        "added": false
+      },
+      {
+        "id": 38,
+        "name": "GuildRaidGold.Dotted",
+        "oldId": 37,
+        "added": false
+      },
+      {
+        "id": 44,
+        "name": "GuildRaidEnemies.Place",
+        "oldId": 43,
+        "added": false
+      },
+      {
+        "id": 46,
+        "name": "GuildRaidEnemies.Show",
+        "oldId": 45,
+        "added": false
+      },
+      {
+        "id": 47,
+        "name": "GuildRaidEnemies.Close",
+        "oldId": 46,
+        "added": false
+      },
+      {
+        "id": 48,
+        "name": "GuildRaidEnemies.iinit",
+        "oldId": 47,
+        "added": false
+      },
+      {
+        "id": 53,
+        "name": "GuildRaidLobby.Render",
+        "oldId": 52,
+        "added": false
+      },
+      {
+        "id": 54,
+        "name": "GuildRaidLobby.AddCloseButton",
+        "added": true
+      },
+      {
+        "id": 55,
+        "name": "GuildRaidLobby.DrawRoom",
+        "oldId": 53,
+        "added": false
+      },
+      {
+        "id": 56,
+        "name": "GuildRaidLobby.RenderManage",
+        "added": true
+      },
+      {
+        "id": 57,
+        "name": "GuildRaidLobby.DrawManageRow",
+        "added": true
+      },
+      {
+        "id": 58,
+        "name": "GuildRaidLobby.IsConfirming",
+        "added": true
+      },
+      {
+        "id": 60,
+        "name": "GuildRaidLobby.Text",
+        "oldId": 55,
+        "added": false
+      },
+      {
+        "id": 65,
+        "name": "GuildRaidLobby.OnManage",
+        "added": true
+      },
+      {
+        "id": 66,
+        "name": "GuildRaidLobby.OnBackToRooms",
+        "added": true
+      },
+      {
+        "id": 67,
+        "name": "GuildRaidLobby.OnPageUp",
+        "added": true
+      },
+      {
+        "id": 68,
+        "name": "GuildRaidLobby.OnPageDown",
+        "added": true
+      },
+      {
+        "id": 69,
+        "name": "GuildRaidLobby.OnKick",
+        "added": true
+      },
+      {
+        "id": 70,
+        "name": "GuildRaidLobby.OnUnkick",
+        "added": true
+      },
+      {
+        "id": 71,
+        "name": "GuildRaidLobby.ListenKeys",
+        "oldId": 60,
+        "added": false
+      },
+      {
+        "id": 72,
+        "name": "GuildRaidLobby.StopKeys",
+        "oldId": 61,
+        "added": false
+      },
+      {
+        "id": 76,
+        "name": "GuildRaidLobby.Close",
+        "oldId": 65,
+        "added": false
+      },
+      {
+        "id": 77,
+        "name": "GuildRaidLobby.OnLobby",
+        "oldId": 66,
+        "added": false
+      },
+      {
+        "id": 80,
+        "name": "GuildRaidLobby.cinit",
+        "oldId": 69,
+        "added": false
+      },
+      {
+        "id": 82,
+        "name": "GuildRaidFund.Render",
+        "oldId": 71,
+        "added": false
+      },
+      {
+        "id": 83,
+        "name": "GuildRaidFund.Amount",
+        "oldId": 72,
+        "added": false
+      },
+      {
+        "id": 84,
+        "name": "GuildRaidFund.OnQuick",
+        "oldId": 73,
+        "added": false
+      },
+      {
+        "id": 85,
+        "name": "GuildRaidFund.OnAll",
+        "oldId": 74,
+        "added": false
+      },
+      {
+        "id": 86,
+        "name": "GuildRaidFund.OnDonate",
+        "oldId": 75,
+        "added": false
+      },
+      {
+        "id": 89,
+        "name": "GuildRaidFund.ListenKeys",
+        "oldId": 78,
+        "added": false
+      },
+      {
+        "id": 90,
+        "name": "GuildRaidFund.StopKeys",
+        "oldId": 79,
+        "added": false
+      },
+      {
+        "id": 96,
+        "name": "GuildRaidFund.Close",
+        "oldId": 85,
+        "added": false
+      },
+      {
+        "id": 97,
+        "name": "GuildRaidFund.OnFund",
+        "oldId": 86,
+        "added": false
+      },
+      {
+        "id": 99,
+        "name": "GuildRaidFund.iinit",
+        "oldId": 88,
+        "added": false
+      },
+      {
+        "id": 105,
+        "name": "GuildRaidGate.Build",
+        "oldId": 94,
+        "added": false
+      },
+      {
+        "id": 109,
+        "name": "GuildRaidGate.FindBeams",
+        "oldId": 98,
+        "added": false
+      },
+      {
+        "id": 115,
+        "name": "GuildRaidGate.Drop",
+        "oldId": 104,
+        "added": false
+      },
+      {
+        "id": 121,
+        "name": "GuildRaidGate.Animate",
+        "oldId": 110,
+        "added": false
+      },
+      {
+        "id": 123,
+        "name": "GuildRaidGate.SyncBeams",
+        "oldId": 112,
+        "added": false
+      },
+      {
+        "id": 124,
+        "name": "GuildRaidGate.RestoreBeams",
+        "oldId": 113,
+        "added": false
+      },
+      {
+        "id": 125,
+        "name": "GuildRaidGate.Emit",
+        "oldId": 114,
+        "added": false
+      },
+      {
+        "id": 126,
+        "name": "GuildRaidGate.UpdateParticles",
+        "oldId": 115,
+        "added": false
+      },
+      {
+        "id": 128,
+        "name": "GuildRaidGate.SyncPrompt",
+        "oldId": 117,
+        "added": false
+      },
+      {
+        "id": 129,
+        "name": "GuildRaidGate.ListenKeys",
+        "oldId": 118,
+        "added": false
+      },
+      {
+        "id": 130,
+        "name": "GuildRaidGate.OnKey",
+        "oldId": 119,
+        "added": false
+      },
+      {
+        "id": 138,
+        "name": "GuildRaid.ReadLobby",
+        "oldId": 127,
+        "added": false
+      },
+      {
+        "id": 139,
+        "name": "GuildRaid.StartTicker",
+        "oldId": 128,
+        "added": false
+      }
+    ],
+    "behavior": "Adds leader raid management, kick/unkick requests, paginated members and permission fields. Other compilation changes use multiname property access and string coercion. Entire library is preserved byte-for-byte; no launcher packet or gameplay edits."
+  },
+  "artwork": {
+    "verifiedAssetsPerOrigin": 73,
+    "changed": [
+      {
+        "name": "UI_4.swf",
+        "sha256": "2f264f606e7a385ebf8a3e9fabd861d8e23db3cc31baf1243060951594170ec5",
+        "previousSha256": "d474fb6dbec642734df342c3451d293a475b633450c35fbefec923aaa704b8f5",
+        "bytes": 3465698,
+        "changes": [
+          {
+            "key": "37:4742",
+            "type": 37,
+            "oldBytes": 0,
+            "newBytes": 61
+          },
+          {
+            "key": "39:1193",
+            "type": 39,
+            "oldBytes": 1382,
+            "newBytes": 1495
+          }
+        ]
+      }
+    ],
+    "behavior": "UI_4 adds an edit-text definition and own-effects menu row, moving the existing keybinding control. No ABC or existing graphics definitions are replaced."
+  },
+  "preservation": {
+    "constantPoolPrefixesUnchanged": true,
+    "rawBranchesAndExceptionBoundariesValidated": true,
+    "allNonMainTagsPreserved": true,
+    "unrelatedMainBodiesPreserved": true,
+    "priorSevenRecipesUnchanged": true,
+    "singleplayerContractIndependent": true,
+    "nativeBinaryUnchanged": true
+  },
+  "scope": "Public anonymous source and artwork review, constructor-free fixtures. No accounts or live guild actions."
+}

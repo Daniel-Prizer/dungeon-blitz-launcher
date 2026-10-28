@@ -1,0 +1,24 @@
+{
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-187f91b61155",
+  "inputHash": "1e7a5eb5e3dab774ea57a26c7211651e3a1c67d4bf1195f164c9d1915cd39c06",
+  "previousInterfaceHash": "230935959bb3ecb0f5ece33d63eca7bc013ed4f2a4fb7bd7c4e0e6590242f2f7",
+  "interfaceHash": "a8fcd1ab84f7ca0c29a706ea4817c5c4ace60750fb12f955a16f45503dc9c92d",
+  "method": "CombatState.method_884",
+  "bodyHash": "60d307a0966a70ad914220be8a2606e76ea026a42fea44ee07aa60dffe7130c8",
+  "codeHash": "87cb37efd780441f63d57d74740c162151e08fe9c994405c992d19b41de98ade",
+  "appendedMethod": [
+    null,
+    [
+      null
+    ],
+    null,
+    8,
+    [
+      [
+        12,
+        12
+      ]
+    ],
+    []
+  ]
+}

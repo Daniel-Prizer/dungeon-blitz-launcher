@@ -26,6 +26,13 @@ package {
    fund["Close"]();checks.push({name:"Guild fund close remains safe without an open modal",actual:fund["IsOpen"]()?1:0,expected:0});
   }
   private function upstreamChecks():void {
+   if(ApplicationDomain.currentDomain.hasDefinition("BalanceHooks")){
+    var balance:Class=ApplicationDomain.currentDomain.getDefinition("BalanceHooks") as Class;
+    checks.push({name:"Balance dot hook retains a missing-owner tick",actual:balance["DotTick"](null,42),expected:42});
+    checks.push({name:"Balance minion hook tolerates missing combatants",actual:balance["MinionCurse"](null,null),expected:0});
+    balance["AfterHit"](null,null);balance["DerivedStats"](null);
+    checks.push({name:"Balance hit and stat hooks tolerate absent game state",actual:1,expected:1});
+   }
    if(!ApplicationDomain.currentDomain.hasDefinition("NeoQuests"))return;
    var domain:ApplicationDomain=ApplicationDomain.currentDomain;
    var sentinel:Class=domain.getDefinition("SentinelFormSkills") as Class;

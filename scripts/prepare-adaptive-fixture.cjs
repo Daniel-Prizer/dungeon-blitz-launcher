@@ -21,6 +21,7 @@ const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
   const input = fs.readFileSync(source);
   if (hash(input) !== deployment.inputHash) throw Error('Fixture provenance mismatch');
   const recipes = [
+    'adaptive-contract-effects-oct28.json',
     'adaptive-contract-backdrop-oct19.json',
     'adaptive-contract.json',
     'adaptive-contract-oct15.json',

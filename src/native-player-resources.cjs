@@ -9,6 +9,7 @@ const { paths: audioPaths, createAudioCache } = require('./native-player-audio.c
 
 const digest = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const recipes = [
+  'adaptive-contract-effects-oct28.json',
   'adaptive-contract-backdrop-oct19.json',
   'adaptive-contract.json',
   'adaptive-contract-oct15.json',

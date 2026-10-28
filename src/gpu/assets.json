@@ -1,1 +1,519 @@
-{"format":1,"contract":"pinned-artwork-writers-v1","manifestUrl":"https://dungeonblitzr.theminesa.studio/p/cbp/masterFileList.xml","reviewedAt":"2026-10-26T15:40:50.697Z","assets":[{"name":"UI_0.swf","path":"/p/cbp/UI_0.swf","sha256":"196750e8a9457892c6ebbea4054709ac1a693bbd5da1e49519fb4b104fbd71a9","bytes":373611,"writerCalls":0},{"name":"Animation_Paladin.swf","path":"/p/caf/Animation_Paladin.swf","sha256":"fa6380c31dc1c6131680c07098a675e0b2d8dd322dae925bea5893695b0f4112","bytes":766279,"writerCalls":0},{"name":"Animation_Mage.swf","path":"/p/cbp/Animation_Mage.swf","sha256":"552f19d64fe53ae3dce1cbfd38c2a831e468e605c11f9258fd0ce0e7d839f07a","bytes":774773,"writerCalls":0},{"name":"Animation_Rogue.swf","path":"/p/cbp/Animation_Rogue.swf","sha256":"fd118c8070e02e9467da48bbeecbf3e58cf0b83d71851234188ad0a66c256d68","bytes":717362,"writerCalls":0},{"name":"Gfx_Paladin_1.swf","path":"/p/cbp/Gfx_Paladin_1.swf","sha256":"e2870f339d4700e42e972ec362b809aca32967ed0d8e819fafb80ef611a6fe4a","bytes":2434643,"writerCalls":0},{"name":"Gfx_Rogue_1.swf","path":"/p/cbp/Gfx_Rogue_1.swf","sha256":"d02af00e9adb02f654aee4ebd14abf89638efbd3fc6e12f90819c5789ee9388a","bytes":740329,"writerCalls":0},{"name":"Gfx_Mage_1.swf","path":"/p/cbp/Gfx_Mage_1.swf","sha256":"5d887f0c75bbe98fe49387d3e25d7f63554d8e8a99077ce6853c2edfd300de39","bytes":1875537,"writerCalls":0},{"name":"Utilities.swf","path":"/p/cam/Utilities.swf","sha256":"1e80ba8f9b8d432c4b4d91f1ec3a685054946a3b89f293fc2348f8c72485ce1e","bytes":131164,"writerCalls":0},{"name":"UI_Library.swf","path":"/p/caa/UI_Library.swf","sha256":"a5d620a9bb8cda84447a29eb3eae21e671d7b22c453e6f5d4ad3f85099eadc03","bytes":1207582,"writerCalls":0},{"name":"Library01.swf","path":"/p/caa/Library01.swf","sha256":"26593b38898f41af3b835c530c4bf90fb8e434a9d451a0b43618ca2a0ad53480","bytes":372991,"writerCalls":0},{"name":"SFX_1.swf","path":"/p/cbp/SFX_1.swf","sha256":"96c860a7243bc5624689307a95927f8a3bc48611fc9c32cb4dcc46b2ab72801c","bytes":5556072,"writerCalls":0},{"name":"SFX_2.swf","path":"/p/cbp/SFX_2.swf","sha256":"a3e8196803fd364994fa3539ff05ea4bafa4a4e00d103f4925af0bbfd654e92f","bytes":5368511,"writerCalls":0},{"name":"SFX_3.swf","path":"/p/cbp/SFX_3.swf","sha256":"99d2c0d5052b220ce118dcd1b2ef941c7725a9b77330bbc221ae26da35ecf510","bytes":2009027,"writerCalls":0},{"name":"UI_1.swf","path":"/p/cbp/UI_1.swf","sha256":"793c7e0b9dd900db3c634e7b8f5ab8db7d21f9c2cef27c27b0e2cee250bdcb7a","bytes":2002120,"writerCalls":0},{"name":"UI_2.swf","path":"/p/cbp/UI_2.swf","sha256":"96d3bed468b39833c76d3d095d35b633dc37041a4a447a0ec93de7862c68cfed","bytes":941803,"writerCalls":0},{"name":"UI_3.swf","path":"/p/caa/UI_3.swf","sha256":"32c003eddc227ac6d72f29ab29e137f3b77bf1d12958db89af4eb60b9bf7090d","bytes":182631,"writerCalls":0},{"name":"UI_4.swf","path":"/p/cbp/UI_4.swf","sha256":"d474fb6dbec642734df342c3451d293a475b633450c35fbefec923aaa704b8f5","bytes":3465619,"writerCalls":0},{"name":"UI_Seasonal.swf","path":"/p/cbo/UI_Seasonal.swf","sha256":"b298626d1f47f9e5c71b95b57a33fb53a76fef5e33491be54086f472a6b6e1e1","bytes":925514,"writerCalls":0},{"name":"sounds/Sound.swf","path":"/p/cbp/sounds/Sound.swf","sha256":"c6ce1057d749c22515feb2d7a813b51007acaec1b342bea20719a393cd366976","bytes":7549819,"writerCalls":0},{"name":"GlobalMap01.swf","path":"/p/cbp/GlobalMap01.swf","sha256":"a5d558a53a50a867d009972d44ce4b572c2f4d81939db0d892079bf9ed0872cb","bytes":906641,"writerCalls":0},{"name":"GlobalMap02.swf","path":"/p/caa/GlobalMap02.swf","sha256":"438a7f2f8186422e8ea22628585c52579bfca82670902be3a9fac7305c9068e3","bytes":135637,"writerCalls":0},{"name":"Animation_Abomination.swf","path":"/p/caf/Animation_Abomination.swf","sha256":"a9ef35fb63269692c95b602f4ff73b07bec94115b9c1c91b35b1e5576d92b316","bytes":400017,"writerCalls":0},{"name":"Animation_AbominationSpider.swf","path":"/p/cam/Animation_AbominationSpider.swf","sha256":"7267490296b179d2ea655e791aa8e4fc26a785be01ad93d5075a71b127784151","bytes":351223,"writerCalls":0},{"name":"Animation_AreaEffect.swf","path":"/p/caa/Animation_AreaEffect.swf","sha256":"fbb46e2872acb1f5fe85c6bc004f88dce50b2ac00b22f1643be3070835116926","bytes":63476,"writerCalls":0},{"name":"Animation_Brute.swf","path":"/p/caa/Animation_Brute.swf","sha256":"51be4c248b7977169ceccb679f4d8cf28d52f09ded2915b9aab3b4904f71747f","bytes":306337,"writerCalls":0},{"name":"Animation_Cannonball.swf","path":"/p/caa/Animation_Cannonball.swf","sha256":"5ed8906ca0ec2c41d77e5b69e597f90e78dbc6704f243a894cb487ab5a6e3c14","bytes":24349,"writerCalls":0},{"name":"Animation_Cyclops.swf","path":"/p/cam/Animation_Cyclops.swf","sha256":"e78b46c32f16f2614475014d314b2f02d09ddd06d3a5c58e1358b32b4153e0b6","bytes":891753,"writerCalls":0},{"name":"Animation_Demonhead.swf","path":"/p/caa/Animation_Demonhead.swf","sha256":"96960c13d0e4de09bf24d9f192c96923a6491cae5d3b217cc445e954cec85497","bytes":181070,"writerCalls":0},{"name":"Animation_Devourer.swf","path":"/p/cam/Animation_Devourer.swf","sha256":"107af564a6d7b2f53cb06677e5e209d0164e9bf578884f6aaebe3b8eafae875b","bytes":105330,"writerCalls":0},{"name":"Animation_DireMount.swf","path":"/p/caa/Animation_DireMount.swf","sha256":"df7a28291b80705ff96ed11b64f08428c1af7fdf3a2939f485e2b4b39389396b","bytes":406369,"writerCalls":0},{"name":"Animation_Dragon.swf","path":"/p/cam/Animation_Dragon.swf","sha256":"f0455ef498319a4ca4bbfff4226884957def594bca3867ba85b94e1da9658198","bytes":884544,"writerCalls":0},{"name":"Animation_Environmentals.swf","path":"/p/cbp/Animation_Environmentals.swf","sha256":"bbe15582ea46abb6cc6b2c0c61de358f01afd265490388b3328dce29d7c8abcc","bytes":1265134,"writerCalls":0},{"name":"Animation_Ghost.swf","path":"/p/cam/Animation_Ghost.swf","sha256":"d8b8186461a13b68cc90f58d1ffa5d5b9f1af4bc2b20a0483f73cc783a9f2797","bytes":409288,"writerCalls":0},{"name":"Animation_Goblin.swf","path":"/p/cam/Animation_Goblin.swf","sha256":"6024eb9f4b4fbad0040c10630b8ee06a267a0db7164dbd70e2d129c9f4e38522","bytes":557925,"writerCalls":0},{"name":"Animation_HorseMount.swf","path":"/p/cbp/Animation_HorseMount.swf","sha256":"9ab77ccc168373f2b6fdd40d0a1580857ad96fb7cef9666a7bc3bbdb3ae48d66","bytes":580473,"writerCalls":0},{"name":"Animation_Imp.swf","path":"/p/cam/Animation_Imp.swf","sha256":"7cd3819842d5841fd0e6af83148835fca276a2382dbc80d4d713476f3f80ee0a","bytes":138703,"writerCalls":0},{"name":"Animation_Larva.swf","path":"/p/caa/Animation_Larva.swf","sha256":"a2b6f6d992a878721b70c6eeae2053a2a1bd2086f8e26efaf4b218532e60b8c4","bytes":27002,"writerCalls":0},{"name":"Animation_Mimic.swf","path":"/p/caa/Animation_Mimic.swf","sha256":"995eddb7ea8f04a1d655c50243f2e6b4ff0eeee04e36bbb48069af0cb2bbf5d3","bytes":30096,"writerCalls":0},{"name":"Animation_Nephit.swf","path":"/p/caa/Animation_Nephit.swf","sha256":"bb047c726f3bd04c9da8ac1c099553ed8e8a5332e7ac9c28a36a6cfa46ed0125","bytes":438779,"writerCalls":0},{"name":"Animation_NPC.swf","path":"/p/cag/Animation_NPC.swf","sha256":"35582c462a54e1e0cd0283401aa9fdff7fa37b09e6ed9310e160d8a180ea9150","bytes":1225471,"writerCalls":0},{"name":"Animation_Pets.swf","path":"/p/cbp/Animation_Pets.swf","sha256":"eba57aca507666f0834c45b7d13cc028475c0edbcdbad4a22f9dc0523453f449","bytes":448953,"writerCalls":0},{"name":"Animation_Psychophage.swf","path":"/p/caa/Animation_Psychophage.swf","sha256":"5f642deb5d4cf076b0d2ad3a0a1afd2c8b729e4b3b5ce8f22d5ff05fe8e604ad","bytes":49949,"writerCalls":0},{"name":"Animation_Puck.swf","path":"/p/caa/Animation_Puck.swf","sha256":"77e735849d33ff433f0e47e1701cf240096794571f039afcffc98d9f10375730","bytes":90942,"writerCalls":0},{"name":"Animation_Raptor.swf","path":"/p/caa/Animation_Raptor.swf","sha256":"b6f8eebdfc3ad005fd198487ea83883a394e9743bc0a819373bc0d4fe964eab2","bytes":189742,"writerCalls":0},{"name":"Animation_RockHulk.swf","path":"/p/caa/Animation_RockHulk.swf","sha256":"91c6ae7281c9e47fcee399487416e85966ab5e3f979db419792fdefd50f6ae42","bytes":157369,"writerCalls":0},{"name":"Animation_SandWorm.swf","path":"/p/caa/Animation_SandWorm.swf","sha256":"5b11bf32cdb99cddfd312e66f0226c0607fd40387554c934a2d38cb82020013d","bytes":182964,"writerCalls":0},{"name":"Animation_Scorpion.swf","path":"/p/caa/Animation_Scorpion.swf","sha256":"612860051962e4789f081bea825a4473e92b08c6113c16cd6415692ef591bfb1","bytes":215624,"writerCalls":0},{"name":"Animation_ShieldTank.swf","path":"/p/caa/Animation_ShieldTank.swf","sha256":"b03d45cd8426bec0325a4d8f68313f5fc0e4b80241dcfaf2d15dfb383b323d9e","bytes":175038,"writerCalls":0},{"name":"Animation_Tentacle.swf","path":"/p/cam/Animation_Tentacle.swf","sha256":"4b73b8edc62341bf0115c259e030436e003df039db37a2553a44440f29b8317b","bytes":89223,"writerCalls":0},{"name":"Animation_Vigil.swf","path":"/p/caa/Animation_Vigil.swf","sha256":"239437942f2546334ace1aa1fe3c9d85b557720407321fbfc91fbcba2d9a04b1","bytes":58805,"writerCalls":0},{"name":"Animation_Warlock.swf","path":"/p/caa/Animation_Warlock.swf","sha256":"912b66eeb11b0a9a8c2e1859c63de32e477e4182beb376f960667055a880cdd8","bytes":158395,"writerCalls":0},{"name":"Animation_Weapon1.swf","path":"/p/caa/Animation_Weapon1.swf","sha256":"406287e82d44dc1ae7fe846fe2bfd12ca99c29977712b223a30a164b2d5576ef","bytes":39032,"writerCalls":0},{"name":"LevelsAC.swf","path":"/p/cbp/LevelsAC.swf","sha256":"10b07b7c54566759f5a15b719e10fd7d3b94ed3f2c3ca22abb9f0949b0b83470","bytes":3436701,"writerCalls":0},{"name":"LevelsBT.swf","path":"/p/cam/LevelsBT.swf","sha256":"59e62f27c41bbcc488a4180d72ee98b7dc84f428ac7d71b104d71e98dcea5e0f","bytes":3594663,"writerCalls":0},{"name":"LevelsCH.swf","path":"/p/cam/LevelsCH.swf","sha256":"ff0e777a4ef10474dcffcb912b4bbabb45dfe3535b6e43f42bf9e8b3ca7e25f9","bytes":2860275,"writerCalls":0},{"name":"LevelsEG.swf","path":"/p/cam/LevelsEG.swf","sha256":"144a58da8461e8e4245c92b9acb3eb7a45106d17eebc2313bd3f371fa8acdcac","bytes":2466548,"writerCalls":0},{"name":"LevelsHome.swf","path":"/p/cbp/LevelsHome.swf","sha256":"d874aa101a403b959b58ab739975db80b82f049930062c5d16c06fdb74c7b0ec","bytes":6662297,"writerCalls":0},{"name":"LevelsJC.swf","path":"/p/cbp/LevelsJC.swf","sha256":"3da6a2edf328a02f94184d21cde701942fe18d2b4087d1bc221cdc97a5f2fd42","bytes":5194019,"writerCalls":0},{"name":"LevelsLD.swf","path":"/p/cam/LevelsLD.swf","sha256":"617babb222c578d063b5065e4e2dd4d0241539a2b1383dfc6afd7d65e8045b27","bytes":258104,"writerCalls":0},{"name":"LevelsLI01.swf","path":"/p/cbp/LevelsLI01.swf","sha256":"bb26e279a78199ddc84aac55091216eb8d70573a790b597908304753133977e1","bytes":327616,"writerCalls":0},{"name":"LevelsLI02.swf","path":"/p/cbp/LevelsLI02.swf","sha256":"6adae3043712016c47cf2ae234701c478fd1993bde2494820d00a1cf79a100ff","bytes":475002,"writerCalls":0},{"name":"LevelsLI03.swf","path":"/p/cbp/LevelsLI03.swf","sha256":"de72e7c78c4842b421f8f6a5a5470e6902bbff0b5489311c1b112f3409325c54","bytes":653754,"writerCalls":0},{"name":"LevelsLI04.swf","path":"/p/cbp/LevelsLI04.swf","sha256":"37c8f8b1466df25800539de37d9f4d2eb2e50e69cfbf7bfd7b34dd872c8f32e3","bytes":585528,"writerCalls":0},{"name":"LevelsLI05.swf","path":"/p/cbp/LevelsLI05.swf","sha256":"9d9f4d6623f5e9c72f420e992d0ca13d13e6d87727f4310684908052ef02be92","bytes":544400,"writerCalls":0},{"name":"LevelsLI06.swf","path":"/p/cbp/LevelsLI06.swf","sha256":"718ad4f1b3d16e3983077de45e099289191eb1a54a4066e93fa9fa169eea457e","bytes":735706,"writerCalls":0},{"name":"LevelsLI07.swf","path":"/p/cbp/LevelsLI07.swf","sha256":"c1588524a408d864cd2d84bac5d4aac1bb3a7ef01f0f020c421d6e669fcbbea6","bytes":935323,"writerCalls":0},{"name":"LevelsLI08.swf","path":"/p/cbp/LevelsLI08.swf","sha256":"d184a9e7cff22ebcd8b060833d198f0b428b9f4b99e9534a1432d8c728f75bc9","bytes":371684,"writerCalls":0},{"name":"LevelsLI09.swf","path":"/p/cbp/LevelsLI09.swf","sha256":"c9ab5f5359b50ed85fb532202c31a26e1a3a377c667e2b73eb111dc57b67f4f0","bytes":205275,"writerCalls":0},{"name":"LevelsNR.swf","path":"/p/cbp/LevelsNR.swf","sha256":"e07cf3f18cc0b81cdd6d08702d360127ee677462a6ef35bec521c7ed5aa080d0","bytes":2730296,"writerCalls":0},{"name":"LevelsOMM.swf","path":"/p/cbp/LevelsOMM.swf","sha256":"311c3d7520345ddfcc79d306e0537579ff0d9f9147f665b2eb5a5879258e6303","bytes":3389251,"writerCalls":0},{"name":"LevelsSD.swf","path":"/p/cam/LevelsSD.swf","sha256":"de96e5e2b6cfbc4f56dcc089b676e5ebfe88a772b527e8a9592830e7254e650b","bytes":2551030,"writerCalls":0},{"name":"LevelsSRN.swf","path":"/p/cbp/LevelsSRN.swf","sha256":"d08d5c5f616e0383688ff99291f1b1bc4dcf60fe1ec0cf93df2b796498463c86","bytes":3322019,"writerCalls":0},{"name":"LevelsTut.swf","path":"/p/cbp/LevelsTut.swf","sha256":"898178d83d125cddda9c0a2cf6f5101f1b04ab679bb2b5a42bc2921f186f9781","bytes":247498,"writerCalls":0}]}
+{
+  "format": 1,
+  "contract": "pinned-artwork-writers-v1",
+  "manifestUrl": "https://dungeonblitzr.theminesa.studio/p/cbp/masterFileList.xml",
+  "reviewedAt": "2026-10-26T15:40:50.697Z",
+  "assets": [
+    {
+      "name": "UI_0.swf",
+      "path": "/p/cbp/UI_0.swf",
+      "sha256": "196750e8a9457892c6ebbea4054709ac1a693bbd5da1e49519fb4b104fbd71a9",
+      "bytes": 373611,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Paladin.swf",
+      "path": "/p/caf/Animation_Paladin.swf",
+      "sha256": "fa6380c31dc1c6131680c07098a675e0b2d8dd322dae925bea5893695b0f4112",
+      "bytes": 766279,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Mage.swf",
+      "path": "/p/cbp/Animation_Mage.swf",
+      "sha256": "552f19d64fe53ae3dce1cbfd38c2a831e468e605c11f9258fd0ce0e7d839f07a",
+      "bytes": 774773,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Rogue.swf",
+      "path": "/p/cbp/Animation_Rogue.swf",
+      "sha256": "fd118c8070e02e9467da48bbeecbf3e58cf0b83d71851234188ad0a66c256d68",
+      "bytes": 717362,
+      "writerCalls": 0
+    },
+    {
+      "name": "Gfx_Paladin_1.swf",
+      "path": "/p/cbp/Gfx_Paladin_1.swf",
+      "sha256": "e2870f339d4700e42e972ec362b809aca32967ed0d8e819fafb80ef611a6fe4a",
+      "bytes": 2434643,
+      "writerCalls": 0
+    },
+    {
+      "name": "Gfx_Rogue_1.swf",
+      "path": "/p/cbp/Gfx_Rogue_1.swf",
+      "sha256": "d02af00e9adb02f654aee4ebd14abf89638efbd3fc6e12f90819c5789ee9388a",
+      "bytes": 740329,
+      "writerCalls": 0
+    },
+    {
+      "name": "Gfx_Mage_1.swf",
+      "path": "/p/cbp/Gfx_Mage_1.swf",
+      "sha256": "5d887f0c75bbe98fe49387d3e25d7f63554d8e8a99077ce6853c2edfd300de39",
+      "bytes": 1875537,
+      "writerCalls": 0
+    },
+    {
+      "name": "Utilities.swf",
+      "path": "/p/cam/Utilities.swf",
+      "sha256": "1e80ba8f9b8d432c4b4d91f1ec3a685054946a3b89f293fc2348f8c72485ce1e",
+      "bytes": 131164,
+      "writerCalls": 0
+    },
+    {
+      "name": "UI_Library.swf",
+      "path": "/p/caa/UI_Library.swf",
+      "sha256": "a5d620a9bb8cda84447a29eb3eae21e671d7b22c453e6f5d4ad3f85099eadc03",
+      "bytes": 1207582,
+      "writerCalls": 0
+    },
+    {
+      "name": "Library01.swf",
+      "path": "/p/caa/Library01.swf",
+      "sha256": "26593b38898f41af3b835c530c4bf90fb8e434a9d451a0b43618ca2a0ad53480",
+      "bytes": 372991,
+      "writerCalls": 0
+    },
+    {
+      "name": "SFX_1.swf",
+      "path": "/p/cbp/SFX_1.swf",
+      "sha256": "96c860a7243bc5624689307a95927f8a3bc48611fc9c32cb4dcc46b2ab72801c",
+      "bytes": 5556072,
+      "writerCalls": 0
+    },
+    {
+      "name": "SFX_2.swf",
+      "path": "/p/cbp/SFX_2.swf",
+      "sha256": "a3e8196803fd364994fa3539ff05ea4bafa4a4e00d103f4925af0bbfd654e92f",
+      "bytes": 5368511,
+      "writerCalls": 0
+    },
+    {
+      "name": "SFX_3.swf",
+      "path": "/p/cbp/SFX_3.swf",
+      "sha256": "99d2c0d5052b220ce118dcd1b2ef941c7725a9b77330bbc221ae26da35ecf510",
+      "bytes": 2009027,
+      "writerCalls": 0
+    },
+    {
+      "name": "UI_1.swf",
+      "path": "/p/cbp/UI_1.swf",
+      "sha256": "793c7e0b9dd900db3c634e7b8f5ab8db7d21f9c2cef27c27b0e2cee250bdcb7a",
+      "bytes": 2002120,
+      "writerCalls": 0
+    },
+    {
+      "name": "UI_2.swf",
+      "path": "/p/cbp/UI_2.swf",
+      "sha256": "96d3bed468b39833c76d3d095d35b633dc37041a4a447a0ec93de7862c68cfed",
+      "bytes": 941803,
+      "writerCalls": 0
+    },
+    {
+      "name": "UI_3.swf",
+      "path": "/p/caa/UI_3.swf",
+      "sha256": "32c003eddc227ac6d72f29ab29e137f3b77bf1d12958db89af4eb60b9bf7090d",
+      "bytes": 182631,
+      "writerCalls": 0
+    },
+    {
+      "name": "UI_4.swf",
+      "path": "/p/cbp/UI_4.swf",
+      "sha256": "2f264f606e7a385ebf8a3e9fabd861d8e23db3cc31baf1243060951594170ec5",
+      "bytes": 3465698,
+      "writerCalls": 0
+    },
+    {
+      "name": "UI_Seasonal.swf",
+      "path": "/p/cbo/UI_Seasonal.swf",
+      "sha256": "b298626d1f47f9e5c71b95b57a33fb53a76fef5e33491be54086f472a6b6e1e1",
+      "bytes": 925514,
+      "writerCalls": 0
+    },
+    {
+      "name": "sounds/Sound.swf",
+      "path": "/p/cbp/sounds/Sound.swf",
+      "sha256": "c6ce1057d749c22515feb2d7a813b51007acaec1b342bea20719a393cd366976",
+      "bytes": 7549819,
+      "writerCalls": 0
+    },
+    {
+      "name": "GlobalMap01.swf",
+      "path": "/p/cbp/GlobalMap01.swf",
+      "sha256": "a5d558a53a50a867d009972d44ce4b572c2f4d81939db0d892079bf9ed0872cb",
+      "bytes": 906641,
+      "writerCalls": 0
+    },
+    {
+      "name": "GlobalMap02.swf",
+      "path": "/p/caa/GlobalMap02.swf",
+      "sha256": "438a7f2f8186422e8ea22628585c52579bfca82670902be3a9fac7305c9068e3",
+      "bytes": 135637,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Abomination.swf",
+      "path": "/p/caf/Animation_Abomination.swf",
+      "sha256": "a9ef35fb63269692c95b602f4ff73b07bec94115b9c1c91b35b1e5576d92b316",
+      "bytes": 400017,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_AbominationSpider.swf",
+      "path": "/p/cam/Animation_AbominationSpider.swf",
+      "sha256": "7267490296b179d2ea655e791aa8e4fc26a785be01ad93d5075a71b127784151",
+      "bytes": 351223,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_AreaEffect.swf",
+      "path": "/p/caa/Animation_AreaEffect.swf",
+      "sha256": "fbb46e2872acb1f5fe85c6bc004f88dce50b2ac00b22f1643be3070835116926",
+      "bytes": 63476,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Brute.swf",
+      "path": "/p/caa/Animation_Brute.swf",
+      "sha256": "51be4c248b7977169ceccb679f4d8cf28d52f09ded2915b9aab3b4904f71747f",
+      "bytes": 306337,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Cannonball.swf",
+      "path": "/p/caa/Animation_Cannonball.swf",
+      "sha256": "5ed8906ca0ec2c41d77e5b69e597f90e78dbc6704f243a894cb487ab5a6e3c14",
+      "bytes": 24349,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Cyclops.swf",
+      "path": "/p/cam/Animation_Cyclops.swf",
+      "sha256": "e78b46c32f16f2614475014d314b2f02d09ddd06d3a5c58e1358b32b4153e0b6",
+      "bytes": 891753,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Demonhead.swf",
+      "path": "/p/caa/Animation_Demonhead.swf",
+      "sha256": "96960c13d0e4de09bf24d9f192c96923a6491cae5d3b217cc445e954cec85497",
+      "bytes": 181070,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Devourer.swf",
+      "path": "/p/cam/Animation_Devourer.swf",
+      "sha256": "107af564a6d7b2f53cb06677e5e209d0164e9bf578884f6aaebe3b8eafae875b",
+      "bytes": 105330,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_DireMount.swf",
+      "path": "/p/caa/Animation_DireMount.swf",
+      "sha256": "df7a28291b80705ff96ed11b64f08428c1af7fdf3a2939f485e2b4b39389396b",
+      "bytes": 406369,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Dragon.swf",
+      "path": "/p/cam/Animation_Dragon.swf",
+      "sha256": "f0455ef498319a4ca4bbfff4226884957def594bca3867ba85b94e1da9658198",
+      "bytes": 884544,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Environmentals.swf",
+      "path": "/p/cbp/Animation_Environmentals.swf",
+      "sha256": "bbe15582ea46abb6cc6b2c0c61de358f01afd265490388b3328dce29d7c8abcc",
+      "bytes": 1265134,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Ghost.swf",
+      "path": "/p/cam/Animation_Ghost.swf",
+      "sha256": "d8b8186461a13b68cc90f58d1ffa5d5b9f1af4bc2b20a0483f73cc783a9f2797",
+      "bytes": 409288,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Goblin.swf",
+      "path": "/p/cam/Animation_Goblin.swf",
+      "sha256": "6024eb9f4b4fbad0040c10630b8ee06a267a0db7164dbd70e2d129c9f4e38522",
+      "bytes": 557925,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_HorseMount.swf",
+      "path": "/p/cbp/Animation_HorseMount.swf",
+      "sha256": "9ab77ccc168373f2b6fdd40d0a1580857ad96fb7cef9666a7bc3bbdb3ae48d66",
+      "bytes": 580473,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Imp.swf",
+      "path": "/p/cam/Animation_Imp.swf",
+      "sha256": "7cd3819842d5841fd0e6af83148835fca276a2382dbc80d4d713476f3f80ee0a",
+      "bytes": 138703,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Larva.swf",
+      "path": "/p/caa/Animation_Larva.swf",
+      "sha256": "a2b6f6d992a878721b70c6eeae2053a2a1bd2086f8e26efaf4b218532e60b8c4",
+      "bytes": 27002,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Mimic.swf",
+      "path": "/p/caa/Animation_Mimic.swf",
+      "sha256": "995eddb7ea8f04a1d655c50243f2e6b4ff0eeee04e36bbb48069af0cb2bbf5d3",
+      "bytes": 30096,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Nephit.swf",
+      "path": "/p/caa/Animation_Nephit.swf",
+      "sha256": "bb047c726f3bd04c9da8ac1c099553ed8e8a5332e7ac9c28a36a6cfa46ed0125",
+      "bytes": 438779,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_NPC.swf",
+      "path": "/p/cag/Animation_NPC.swf",
+      "sha256": "35582c462a54e1e0cd0283401aa9fdff7fa37b09e6ed9310e160d8a180ea9150",
+      "bytes": 1225471,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Pets.swf",
+      "path": "/p/cbp/Animation_Pets.swf",
+      "sha256": "eba57aca507666f0834c45b7d13cc028475c0edbcdbad4a22f9dc0523453f449",
+      "bytes": 448953,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Psychophage.swf",
+      "path": "/p/caa/Animation_Psychophage.swf",
+      "sha256": "5f642deb5d4cf076b0d2ad3a0a1afd2c8b729e4b3b5ce8f22d5ff05fe8e604ad",
+      "bytes": 49949,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Puck.swf",
+      "path": "/p/caa/Animation_Puck.swf",
+      "sha256": "77e735849d33ff433f0e47e1701cf240096794571f039afcffc98d9f10375730",
+      "bytes": 90942,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Raptor.swf",
+      "path": "/p/caa/Animation_Raptor.swf",
+      "sha256": "b6f8eebdfc3ad005fd198487ea83883a394e9743bc0a819373bc0d4fe964eab2",
+      "bytes": 189742,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_RockHulk.swf",
+      "path": "/p/caa/Animation_RockHulk.swf",
+      "sha256": "91c6ae7281c9e47fcee399487416e85966ab5e3f979db419792fdefd50f6ae42",
+      "bytes": 157369,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_SandWorm.swf",
+      "path": "/p/caa/Animation_SandWorm.swf",
+      "sha256": "5b11bf32cdb99cddfd312e66f0226c0607fd40387554c934a2d38cb82020013d",
+      "bytes": 182964,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Scorpion.swf",
+      "path": "/p/caa/Animation_Scorpion.swf",
+      "sha256": "612860051962e4789f081bea825a4473e92b08c6113c16cd6415692ef591bfb1",
+      "bytes": 215624,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_ShieldTank.swf",
+      "path": "/p/caa/Animation_ShieldTank.swf",
+      "sha256": "b03d45cd8426bec0325a4d8f68313f5fc0e4b80241dcfaf2d15dfb383b323d9e",
+      "bytes": 175038,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Tentacle.swf",
+      "path": "/p/cam/Animation_Tentacle.swf",
+      "sha256": "4b73b8edc62341bf0115c259e030436e003df039db37a2553a44440f29b8317b",
+      "bytes": 89223,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Vigil.swf",
+      "path": "/p/caa/Animation_Vigil.swf",
+      "sha256": "239437942f2546334ace1aa1fe3c9d85b557720407321fbfc91fbcba2d9a04b1",
+      "bytes": 58805,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Warlock.swf",
+      "path": "/p/caa/Animation_Warlock.swf",
+      "sha256": "912b66eeb11b0a9a8c2e1859c63de32e477e4182beb376f960667055a880cdd8",
+      "bytes": 158395,
+      "writerCalls": 0
+    },
+    {
+      "name": "Animation_Weapon1.swf",
+      "path": "/p/caa/Animation_Weapon1.swf",
+      "sha256": "406287e82d44dc1ae7fe846fe2bfd12ca99c29977712b223a30a164b2d5576ef",
+      "bytes": 39032,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsAC.swf",
+      "path": "/p/cbp/LevelsAC.swf",
+      "sha256": "10b07b7c54566759f5a15b719e10fd7d3b94ed3f2c3ca22abb9f0949b0b83470",
+      "bytes": 3436701,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsBT.swf",
+      "path": "/p/cam/LevelsBT.swf",
+      "sha256": "59e62f27c41bbcc488a4180d72ee98b7dc84f428ac7d71b104d71e98dcea5e0f",
+      "bytes": 3594663,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsCH.swf",
+      "path": "/p/cam/LevelsCH.swf",
+      "sha256": "ff0e777a4ef10474dcffcb912b4bbabb45dfe3535b6e43f42bf9e8b3ca7e25f9",
+      "bytes": 2860275,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsEG.swf",
+      "path": "/p/cam/LevelsEG.swf",
+      "sha256": "144a58da8461e8e4245c92b9acb3eb7a45106d17eebc2313bd3f371fa8acdcac",
+      "bytes": 2466548,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsHome.swf",
+      "path": "/p/cbp/LevelsHome.swf",
+      "sha256": "d874aa101a403b959b58ab739975db80b82f049930062c5d16c06fdb74c7b0ec",
+      "bytes": 6662297,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsJC.swf",
+      "path": "/p/cbp/LevelsJC.swf",
+      "sha256": "3da6a2edf328a02f94184d21cde701942fe18d2b4087d1bc221cdc97a5f2fd42",
+      "bytes": 5194019,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLD.swf",
+      "path": "/p/cam/LevelsLD.swf",
+      "sha256": "617babb222c578d063b5065e4e2dd4d0241539a2b1383dfc6afd7d65e8045b27",
+      "bytes": 258104,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI01.swf",
+      "path": "/p/cbp/LevelsLI01.swf",
+      "sha256": "bb26e279a78199ddc84aac55091216eb8d70573a790b597908304753133977e1",
+      "bytes": 327616,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI02.swf",
+      "path": "/p/cbp/LevelsLI02.swf",
+      "sha256": "6adae3043712016c47cf2ae234701c478fd1993bde2494820d00a1cf79a100ff",
+      "bytes": 475002,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI03.swf",
+      "path": "/p/cbp/LevelsLI03.swf",
+      "sha256": "de72e7c78c4842b421f8f6a5a5470e6902bbff0b5489311c1b112f3409325c54",
+      "bytes": 653754,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI04.swf",
+      "path": "/p/cbp/LevelsLI04.swf",
+      "sha256": "37c8f8b1466df25800539de37d9f4d2eb2e50e69cfbf7bfd7b34dd872c8f32e3",
+      "bytes": 585528,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI05.swf",
+      "path": "/p/cbp/LevelsLI05.swf",
+      "sha256": "9d9f4d6623f5e9c72f420e992d0ca13d13e6d87727f4310684908052ef02be92",
+      "bytes": 544400,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI06.swf",
+      "path": "/p/cbp/LevelsLI06.swf",
+      "sha256": "718ad4f1b3d16e3983077de45e099289191eb1a54a4066e93fa9fa169eea457e",
+      "bytes": 735706,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI07.swf",
+      "path": "/p/cbp/LevelsLI07.swf",
+      "sha256": "c1588524a408d864cd2d84bac5d4aac1bb3a7ef01f0f020c421d6e669fcbbea6",
+      "bytes": 935323,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI08.swf",
+      "path": "/p/cbp/LevelsLI08.swf",
+      "sha256": "d184a9e7cff22ebcd8b060833d198f0b428b9f4b99e9534a1432d8c728f75bc9",
+      "bytes": 371684,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsLI09.swf",
+      "path": "/p/cbp/LevelsLI09.swf",
+      "sha256": "c9ab5f5359b50ed85fb532202c31a26e1a3a377c667e2b73eb111dc57b67f4f0",
+      "bytes": 205275,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsNR.swf",
+      "path": "/p/cbp/LevelsNR.swf",
+      "sha256": "e07cf3f18cc0b81cdd6d08702d360127ee677462a6ef35bec521c7ed5aa080d0",
+      "bytes": 2730296,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsOMM.swf",
+      "path": "/p/cbp/LevelsOMM.swf",
+      "sha256": "311c3d7520345ddfcc79d306e0537579ff0d9f9147f665b2eb5a5879258e6303",
+      "bytes": 3389251,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsSD.swf",
+      "path": "/p/cam/LevelsSD.swf",
+      "sha256": "de96e5e2b6cfbc4f56dcc089b676e5ebfe88a772b527e8a9592830e7254e650b",
+      "bytes": 2551030,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsSRN.swf",
+      "path": "/p/cbp/LevelsSRN.swf",
+      "sha256": "d08d5c5f616e0383688ff99291f1b1bc4dcf60fe1ec0cf93df2b796498463c86",
+      "bytes": 3322019,
+      "writerCalls": 0
+    },
+    {
+      "name": "LevelsTut.swf",
+      "path": "/p/cbp/LevelsTut.swf",
+      "sha256": "898178d83d125cddda9c0a2cf6f5101f1b04ab679bb2b5a42bc2921f186f9781",
+      "bytes": 247498,
+      "writerCalls": 0
+    }
+  ]
+}

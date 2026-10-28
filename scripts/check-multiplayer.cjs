@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, '..'),
   runtimeRoot = path.resolve(process.argv[2] || root),
   hash = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const recipes = [
+  'adaptive-contract-effects-oct28',
   'adaptive-contract-backdrop-oct19',
   'adaptive-contract',
   'adaptive-contract-oct15',

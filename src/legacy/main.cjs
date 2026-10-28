@@ -10,6 +10,7 @@ const { canonicalGameAddress } = require('./game-address.cjs');
 const { classifyLink } = require('./links.cjs');
 const adaptiveContract = [];
 for (const name of [
+  'adaptive-contract-effects-oct28.json',
   'adaptive-contract-backdrop-oct19.json',
   'adaptive-contract.json',
   'adaptive-contract-oct15.json',

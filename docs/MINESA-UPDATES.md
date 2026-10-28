@@ -2,9 +2,9 @@
 
 ## Deployment status
 
-On 28 October, both official origins served **swf-5b067d77b6db**, 1,029,070 bytes, SHA-256 `0b80841584e16000033ba2bd5e372b50c781f2ae7585afadb05faa3f6b45a75d`. The existing Original contract and separately qualified High FPS admission accept it.
+On 28 October, both official origins served **swf-8f3bc094ac10**, 1,034,258 bytes, SHA-256 `de2316024db93cfd91dac032f76fdf61d9708c98887254bf6d756f2279814709`. The existing Original contract and separately qualified High FPS admission accept it.
 
-All 73 SWF assets match the reviewed inventory: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Existing level method bodies are unchanged. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
+All 73 SWF assets match the reviewed inventory, including the new own-effects menu in UI_4: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Existing level method bodies are unchanged. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `77e8786d5a623b3f8c7ccc025a43cc3eb839a43f940196ec05fc9a91ac7b6710`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `a3bd72505464b9618a3443c133154976a797d1b34168604ce5ae5470803c4aff`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. That deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
@@ -73,3 +73,7 @@ The 0.32.4 compatibility patch qualifies the October 25 guild raid, Neo quest, m
 The 0.33.0 update retains October 26 combat, loot-command and guild changes. A new exact `TakeDamage` envelope reapplies the three existing sound-owner wrappers while preserving the group-damage floater, branches and exception ranges. Other changed game methods and every upstream helper remain untouched. Autorun now permits the map without changing native movement handlers. Six earlier native admissions retain the same game code with only the updated launcher input helper. See [the October 26 review](../research/native-player/deployments/2026-10-26.json).
 
 The 0.33.1 patch qualifies the October 27 combat, crafting and guild changes and October 28 enemy-armor adjustment. All changed game methods and both guild libraries remain byte-identical to upstream after adaptation. Refresh now uses an intercepted new-window request, preserving Flash's click gesture without navigating away or changing rendering detail. Eight earlier native admissions change only the launcher input helper. Native clocks and artwork pins are unchanged. See the [October 27](../research/native-player/deployments/2026-10-27.json) and [October 28](../research/native-player/deployments/2026-10-28.json) reviews.
+
+The 0.33.3 patch supports the October 28 own-effects option and updated guild raid screens. A separate complete interface contract preserves the new checkbox, effect guards and closure. The existing sound-owner wrapper remains around its original call; previous contracts and singleplayer are unchanged. The UI_4 update adds the menu row without changing its ABC. See the [effects update review](../research/native-player/deployments/2026-10-28-effects.json).
+
+The same patch also qualifies the later October 28 balance deployment. Its nine changed main methods and complete BalanceHooks tag remain upstream bytes; the effects contract needs no further change. See the [balance update review](../research/native-player/deployments/2026-10-28-balance.json).

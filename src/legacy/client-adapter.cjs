@@ -18,7 +18,7 @@ function localAddress(address) {
 // Local contracts cannot enable a different adapter on a multiplayer origin.
 // Every recipe keeps its complete pool/interface/body/binding guards.
 function adaptClient(bytes, address, { multiplayer, singleplayer, audioDeltas = [] }) {
-  const contracts = Array.isArray(multiplayer) ? multiplayer.slice(0, 7) : [multiplayer];
+  const contracts = Array.isArray(multiplayer) ? multiplayer.slice(0, 8) : [multiplayer];
   const adaptive =
     contracts.map((recipe) => patchAdaptiveClient(bytes, recipe)).find(Boolean) ||
     (localAddress(address) && patchAdaptiveClient(bytes, singleplayer));
