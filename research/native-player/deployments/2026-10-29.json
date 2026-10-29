@@ -1,0 +1,154 @@
+{
+  "version": "0.33.4",
+  "reviewedAtUtc": "2026-10-29T19:33:54.136Z",
+  "sourceSha256": "20df086bdbbaa99db63fb9717c613ace95603d006dcb25222d8cdb0c8a907752",
+  "enhancedSha256": "4e172ad796890cd62d8f3a9184c80fcc9f051d66d7a671e9c5950237b0c3b679",
+  "previousSourceSha256": "de2316024db93cfd91dac032f76fdf61d9708c98887254bf6d756f2279814709",
+  "revision": "swf-8e1764923b84",
+  "sourceBytes": 1036328,
+  "main": {
+    "methods": 3777,
+    "unchangedBodies": 3772,
+    "changes": [
+      {
+        "id": 1421,
+        "name": "class_80.OnRefreshScreen",
+        "insertedInstructions": 3,
+        "bodySha256": "068c9c54362cc497031a46e14aa33dd42102b25a204b6bd981947ecadf319d00"
+      },
+      {
+        "id": 1426,
+        "name": "class_80.method_1850",
+        "insertedInstructions": 5,
+        "bodySha256": "92d37c947d8c936cdcb4adb50389f82a987d575f60d016979dc83e15e2e72d0f"
+      },
+      {
+        "id": 2140,
+        "name": "class_124.OnRefreshScreen",
+        "insertedInstructions": 3,
+        "bodySha256": "1931bca21f327ed9edc01cf9f14f01b8b01e85013c0b1c294f3919bea665df9f"
+      },
+      {
+        "id": 2145,
+        "name": "class_124.method_1275",
+        "insertedInstructions": 5,
+        "bodySha256": "0f561f8b45e23087ceb5fdec665affdb854259aa15a4fede9612e3a8009a1a3e"
+      },
+      {
+        "id": 3546,
+        "name": "LinkUpdater.method_1203",
+        "insertedInstructions": 3,
+        "bodySha256": "e9184964fc149810581742d23472e5b2ef8f67718f77f55c6b680a7a0505e110"
+      }
+    ],
+    "behavior": "Five native invitation/settings methods call the new InviteOption helper. Removing the three- or five-instruction prefixes and reversing branch relocation reproduces each complete preceding method.",
+    "launcherEdits": "None. Every changed body remains byte-identical to upstream."
+  },
+  "helpers": [
+    {
+      "name": "GuildHall",
+      "previousMethods": 213,
+      "currentMethods": 213,
+      "normalizedUnchanged": 211,
+      "changes": [
+        {
+          "id": 15,
+          "name": "GuildNet.cinit",
+          "previousId": 15,
+          "namespaceOnly": false
+        },
+        {
+          "id": 172,
+          "name": "GuildDirectoryView.Sync",
+          "previousId": 172,
+          "namespaceOnly": false
+        }
+      ]
+    },
+    {
+      "name": "LootPick",
+      "previousMethods": 7,
+      "currentMethods": 8,
+      "normalizedUnchanged": 4,
+      "changes": [
+        {
+          "id": 1,
+          "name": "LootPick.Run",
+          "previousId": 1,
+          "namespaceOnly": false
+        },
+        {
+          "id": 3,
+          "name": "LootPick.IsDead",
+          "added": true
+        },
+        {
+          "id": 5,
+          "name": "LootPick.PickAll",
+          "previousId": 4,
+          "namespaceOnly": false
+        },
+        {
+          "id": 7,
+          "name": "LootPick.cinit",
+          "previousId": 6,
+          "namespaceOnly": false
+        }
+      ]
+    },
+    {
+      "name": "TouchBridge",
+      "previousMethods": 16,
+      "currentMethods": 18,
+      "normalizedUnchanged": 13,
+      "changes": [
+        {
+          "id": 1,
+          "name": "TouchBridge.Attach",
+          "previousId": 1,
+          "namespaceOnly": false
+        },
+        {
+          "id": 2,
+          "name": "TouchBridge.ChatOpen",
+          "added": true
+        },
+        {
+          "id": 3,
+          "name": "TouchBridge.EndChat",
+          "added": true
+        },
+        {
+          "id": 5,
+          "name": "TouchBridge.State",
+          "previousId": 3,
+          "namespaceOnly": false
+        },
+        {
+          "id": 17,
+          "name": "TouchBridge.cinit",
+          "previousId": 15,
+          "namespaceOnly": false
+        }
+      ]
+    }
+  ],
+  "behavior": {
+    "InviteOption": "Persists the native stranger-invitation preference through the original game SharedObject, with guarded null-state and Error handling.",
+    "GuildHall": "Directory sync renders only when becoming visible. Other changed encodings retain the same normalized instructions; the source digest changes.",
+    "LootPick": "Rejects /pick while the player is dead and skips drops whose existing pickup-delay field is positive. Original selection and flags are retained.",
+    "TouchBridge": "Adds a chat-open field and guarded end-chat callback while retaining the previous input, slot, cursor and game-retention behavior."
+  },
+  "preservation": {
+    "mainInterfaceUnchanged": true,
+    "constantPoolPrefixesUnchanged": true,
+    "rawBranchesAndExceptionRangesValidated": true,
+    "allChangedMainBodiesPreserved": true,
+    "allNonMainTagsPreserved": true,
+    "all73ArtworkFilesUnchanged": true,
+    "allCompiledPresentationContractsUnchanged": true,
+    "nativeBinaryAndClocksUnchanged": true,
+    "singleplayerContractIndependent": true
+  },
+  "scope": "Anonymous public bytecode/artwork review and constructor-free fixtures. No login, saved user state, guild action or gameplay modification."
+}

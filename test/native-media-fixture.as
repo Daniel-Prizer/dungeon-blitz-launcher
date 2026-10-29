@@ -26,6 +26,15 @@ package {
    fund["Close"]();checks.push({name:"Guild fund close remains safe without an open modal",actual:fund["IsOpen"]()?1:0,expected:0});
   }
   private function upstreamChecks():void {
+   if(ApplicationDomain.currentDomain.hasDefinition("InviteOption")){
+    var invite:Class=ApplicationDomain.currentDomain.getDefinition("InviteOption") as Class;
+    checks.push({name:"Invite option rejects an absent options screen",actual:invite["ToggleFromOptions"](null)?1:0,expected:0});
+    checks.push({name:"Invite option rejects an absent invitation screen",actual:invite["ToggleFromDialog"](null)?1:0,expected:0});
+    invite["LoadForOptions"](null);invite["LoadForDialog"](null);invite["LoadForLink"](null);
+    checks.push({name:"Invite preference loading tolerates absent game state",actual:1,expected:1});
+    var touch:Class=ApplicationDomain.currentDomain.getDefinition("TouchBridge") as Class;
+    checks.push({name:"Touch chat closure rejects an absent chat session",actual:touch["EndChat"]()?1:0,expected:0});
+   }
    if(ApplicationDomain.currentDomain.hasDefinition("BalanceHooks")){
     var balance:Class=ApplicationDomain.currentDomain.getDefinition("BalanceHooks") as Class;
     checks.push({name:"Balance dot hook retains a missing-owner tick",actual:balance["DotTick"](null,42),expected:42});
