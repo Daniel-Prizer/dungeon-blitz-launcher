@@ -2,7 +2,7 @@
   "format": 1,
   "contract": "pinned-artwork-writers-v1",
   "manifestUrl": "https://dungeonblitzr.theminesa.studio/p/cbp/masterFileList.xml",
-  "reviewedAt": "2026-10-26T15:40:50.697Z",
+  "reviewedAt": "2026-10-30T22:54:45.402Z",
   "assets": [
     {
       "name": "UI_0.swf",
@@ -406,8 +406,8 @@
     {
       "name": "LevelsJC.swf",
       "path": "/p/cbp/LevelsJC.swf",
-      "sha256": "3da6a2edf328a02f94184d21cde701942fe18d2b4087d1bc221cdc97a5f2fd42",
-      "bytes": 5194019,
+      "sha256": "068e1a0c646ba82e6aeabc24f08d4552aa27948ad1f353b0c5db413636f702ac",
+      "bytes": 5194307,
       "writerCalls": 0
     },
     {

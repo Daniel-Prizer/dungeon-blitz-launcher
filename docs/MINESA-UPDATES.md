@@ -2,9 +2,9 @@
 
 ## Deployment status
 
-On 29 October, both official origins served **swf-8e1764923b84**, 1,036,328 bytes, SHA-256 `20df086bdbbaa99db63fb9717c613ace95603d006dcb25222d8cdb0c8a907752`. The existing Original contract and separately qualified High FPS admission accept it.
+On 30 October, both official origins served **swf-8e1764923b84**, 1,036,328 bytes, SHA-256 `20df086bdbbaa99db63fb9717c613ace95603d006dcb25222d8cdb0c8a907752`. The existing Original contract and separately qualified High FPS admission accept it.
 
-All 73 SWF assets match the reviewed inventory, including the new own-effects menu in UI_4: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Existing level method bodies are unchanged. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
+All 73 SWF assets match the reviewed inventory, including the new own-effects menu in UI_4: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Those artwork changes preserved the existing level methods. The October 30 LevelsJC script update is reviewed below. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -79,3 +79,5 @@ The 0.33.3 patch supports the October 28 own-effects option and updated guild ra
 The same patch also qualifies the later October 28 balance deployment. Its nine changed main methods and complete BalanceHooks tag remain upstream bytes; the effects contract needs no further change. See the [balance update review](../research/native-player/deployments/2026-10-28-balance.json).
 
 The 0.33.4 patch qualifies the October 29 invitation persistence, guild-directory redraw, dead-player loot restriction and touch-chat updates. All five changed main bodies and all helper tags remain upstream bytes. The eight existing presentation recipes and native renderer are unchanged. See the [October 29 review](../research/native-player/deployments/2026-10-29.json).
+
+The 0.33.5 patch qualifies the updated LevelsJC library. The Davan Longcut room now resumes from the server’s saved phase. Raw review accounts for two changed methods and three additions; the other 2,367 normalized methods and all artwork tags are unchanged. The complete upstream library is retained. Main-client hooks, native rendering and singleplayer remain unchanged. See the [October 30 review](../research/native-player/deployments/2026-10-30.json).

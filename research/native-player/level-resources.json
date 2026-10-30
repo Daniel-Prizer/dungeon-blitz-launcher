@@ -1,5 +1,5 @@
 {
-  "checkedAtUtc": "2026-10-26T16:03:04.579Z",
+  "checkedAtUtc": "2026-10-30T22:54:45.403Z",
   "origin": "https://dungeonblitzr.theminesa.studio/",
   "inventory": "src/native-player-admission.json#levels",
   "hashes": "src/gpu/assets.json",
@@ -472,9 +472,27 @@
           }
         ]
       }
+    },
+    {
+      "name": "LevelsJC.swf",
+      "oldHash": "3da6a2edf328a02f94184d21cde701942fe18d2b4087d1bc221cdc97a5f2fd42",
+      "newHash": "068e1a0c646ba82e6aeabc24f08d4552aa27948ad1f353b0c5db413636f702ac",
+      "bytes": 5194307,
+      "tags": 2801,
+      "differences": [
+        {
+          "tag": 2797,
+          "type": 82,
+          "normalizedMethodsUnchanged": 2367,
+          "existingMethodsChanged": 2,
+          "newMethods": 3,
+          "behavior": "The Davan Longcut room waits briefly for a server authority snapshot, resumes the appropriate intro/wave/boss/completed phase, and restores the last-guy trigger when transitioning to its boss intro. Snapshots accept the RoF: prefix and advance serverStage monotonically.",
+          "review": "deployments/2026-10-30.json"
+        }
+      ]
     }
   ],
-  "review": "Prior dialogue and home-map corrections are retained. October 26 adds reviewed door/glow artwork in five level libraries. Existing raw level method bodies remain unchanged; a simple MovieClip definition and exact binding renames are recorded in the deployment review.",
+  "review": "Prior dialogue and home-map corrections are retained. October 26 adds reviewed door/glow artwork in five level libraries without changing existing method bodies. October 30 updates the LevelsJC boss-room authority script; its two changed methods, three additions and unchanged artwork are recorded in deployments/2026-10-30.json.",
   "origins": [
     "https://dungeonblitzr.theminesa.studio",
     "https://dungeonblitz.theminesa.studio"

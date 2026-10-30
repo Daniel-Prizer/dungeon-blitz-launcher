@@ -1,0 +1,41 @@
+{
+  "version": "0.33.5",
+  "reviewedAtUtc": "2026-10-30T22:54:45.403Z",
+  "sourceSha256": "20df086bdbbaa99db63fb9717c613ace95603d006dcb25222d8cdb0c8a907752",
+  "enhancedSha256": "4e172ad796890cd62d8f3a9184c80fcc9f051d66d7a671e9c5950237b0c3b679",
+  "sourceUnchanged": true,
+  "assetsCheckedPerOrigin": 73,
+  "unchangedAssets": 72,
+  "changedAsset": {
+    "name": "LevelsJC.swf",
+    "oldSha256": "3da6a2edf328a02f94184d21cde701942fe18d2b4087d1bc221cdc97a5f2fd42",
+    "sha256": "068e1a0c646ba82e6aeabc24f08d4552aa27948ad1f353b0c5db413636f702ac",
+    "bytes": 5194307,
+    "tags": 2801,
+    "unchangedNonAbcTags": 2800,
+    "abcTag": 2797,
+    "oldMethods": 2369,
+    "newMethods": 2372,
+    "normalizedUnchangedMethods": 2367,
+    "changedMethods": [
+      "a_Room_JCMission11_09.UpdateIntro",
+      "a_Room_JCMission11_09.UpdateChooseWave"
+    ],
+    "addedMethods": [
+      "a_Room_JCMission11_09.UpdateIntroScene",
+      "a_Room_JCMission11_09.ResumeFromServerStage",
+      "a_Room_JCMission11_09.ApplyServerAuthoritySnapshot"
+    ],
+    "newField": "serverStage:int = -1",
+    "behavior": "The Davan Longcut room waits briefly for a server authority snapshot, resumes the appropriate intro/wave/boss/completed phase, and restores the last-guy trigger when transitioning to its boss intro. Snapshots accept the RoF: prefix and advance serverStage monotonically.",
+    "rawReview": {
+      "branchesAndExceptionRangesValid": true,
+      "classIndexOperandsResolvedByQualifiedName": true,
+      "allOtherClassContractsUnchanged": true,
+      "unchangedInitRoomAfterDebugNormalization": true
+    },
+    "preservation": "The complete downloaded level library is served unchanged. Main-client presentation recipes, native binary/clocks and all other assets are unchanged."
+  },
+  "singleplayer": "Separate bundled client and level resources retain their original contract and rendering path.",
+  "scope": "Anonymous source/artwork review and owned synthetic fixtures. No server edits, account login or game-session actions."
+}

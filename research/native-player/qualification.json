@@ -1,6 +1,6 @@
 {
-  "version": "0.33.4",
-  "checkedAtUtc": "2026-10-29T19:46:06.883Z",
+  "version": "0.33.5",
+  "checkedAtUtc": "2026-10-30T23:16:22.868Z",
   "nativeSha256": "032e3640907d021f91b9764bd7fc83d4c6e22d9b94d84ed34b4c102a3998b5a3",
   "patchSha256": "c01ea9936d96552991d0acfa8c4e368500baedbc38246adbf7403dd216e796ec",
   "clientSha256": "20df086bdbbaa99db63fb9717c613ace95603d006dcb25222d8cdb0c8a907752",
@@ -149,23 +149,23 @@
       900
     ],
     "widescreen": false,
-    "completedGpuPerSecond": 120.04004753669606,
-    "wallMs": 39428,
-    "nativeSteps": 480.0000000000116,
-    "elapsedMs": 20000,
+    "completedGpuPerSecond": 120.09510148743442,
+    "wallMs": 39210,
+    "nativeSteps": 480.09600000001154,
+    "elapsedMs": 20003,
     "error": "",
     "level": "LevelsHome.swf",
-    "time": 37763,
+    "time": 37929,
     "width": 1248,
     "timerTicks": 200,
     "nativeTarget": 24,
     "room": "a_Room_Main",
-    "nativeElapsed": 20000,
-    "frames": 2400,
-    "drawMs": 2724,
-    "distinctTimes": 2400,
+    "nativeElapsed": 20004,
+    "frames": 2401,
+    "drawMs": 2850,
+    "distinctTimes": 2401,
     "target": 120,
-    "fps": 120,
+    "fps": 120.03199520071989,
     "height": 724
   },
   "automaticTimeline": {
@@ -188,57 +188,57 @@
     "runs": [
       {
         "completedRenderSamples": [
-          40.779802012288194,
-          39.85160458002535,
-          82.8358276731346,
-          68.88395808421134,
-          84.68858873458606,
-          82.91704978339669,
-          84.87353842774266,
-          84.10162449133186,
-          87.34755741985241,
-          37.44042915717517,
-          77.45718008198546,
-          78.19677833232602,
-          88.67460852402111,
-          120.14218480052426,
-          119.93501920659388,
-          120.01123939970972,
-          120.95232059522138,
-          119.92178701051175,
-          119.97854783564698,
-          120.02078640991739,
-          119.14386790837082,
-          119.95399764190432,
-          119.9847019505013
+          45.761322669353454,
+          55.929791332939764,
+          86.96662221039564,
+          61.04802924161215,
+          90.2865108480235,
+          80.65884505386683,
+          82.49549057782227,
+          79.89982160367332,
+          77.92137338886464,
+          36.1894680111085,
+          74.31187942768756,
+          77.34419854057448,
+          93.3100653766054,
+          120.99748325234836,
+          118.9636566029078,
+          120.01294156083874,
+          119.97261025307921,
+          120.03753901220017,
+          119.85755375487467,
+          120.17786323759162,
+          119.90861576106593,
+          120.9547750096239,
+          120.04993680511798
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
       },
       {
         "completedRenderSamples": [
-          41.9338168480317,
-          76.66814061166994,
-          80.7771439375906,
-          73.66934252301968,
-          84.54763632659817,
-          85.08186342189866,
-          79.90118620302272,
-          85.86292842106862,
-          55.5358809538274,
-          76.14473472509427,
-          80.2249467890708,
-          90.60804770722808,
-          120.92533653422038,
-          119.15899961253467,
-          119.93617809392468,
-          120.05629747370791,
-          119.9689760228005,
-          120.05663101050872,
-          119.9570811408533,
-          119.94344666489751,
-          119.89486904458155,
-          120.12094292756181
+          41.021340212764024,
+          82.37004215460578,
+          78.67587114605249,
+          74.71840873300792,
+          85.95656614712587,
+          80.96656702841936,
+          79.4623497950517,
+          86.45122491448782,
+          49.789286498560564,
+          69.05546623833862,
+          73.47135887859672,
+          74.71240333597673,
+          121.21065199209708,
+          119.99307808524763,
+          119.9942642741677,
+          120.20313146892364,
+          119.89970389768959,
+          119.99876401273066,
+          120.085953754403,
+          120.00424081102238,
+          119.97103899118753,
+          120.9657183154294
         ],
         "emptyMemoryStorage": true,
         "tcpDenied": true
@@ -286,20 +286,20 @@
       "bitmapWidth": 1110,
       "centeredCamera": true,
       "frameCounter": {
-        "fps": 119.98656150511144,
+        "fps": 119.99181675643078,
         "height": 64,
-        "highFPS": 122.03163020169744,
-        "lowFPS": 119.98656150511144,
+        "highFPS": 121.07558788648667,
+        "lowFPS": 119.99181675643078,
         "mouseEnabled": false,
         "rangeSamples": 3,
         "rangeSeconds": 30,
-        "sampleFrames": 217,
-        "sampleMs": 1000,
+        "sampleFrames": 215,
+        "sampleMs": 1003,
         "selectable": false,
         "shown": true,
         "source": "completed-game-renders",
-        "text": "120 FPS\nLow 120\nHigh 122",
-        "totalFrames": 521,
+        "text": "120 FPS\nLow 120\nHigh 121",
+        "totalFrames": 527,
         "updates": 3,
         "visible": true,
         "width": 76,
@@ -890,66 +890,70 @@
   },
   "performanceComparison": {
     "scope": "Compatibility qualification with the unchanged native renderer; no optimization or authenticated combat claim.",
-    "priorVersion": "0.33.3"
+    "priorVersion": "0.33.4"
   },
   "sessionControlsReview": "session-controls.json",
-  "deploymentReview": "deployments/2026-10-29.json",
+  "deploymentReview": "deployments/2026-10-30.json",
   "resourceReview": "level-resources.json",
   "audioCursorReview": "audio-cursor-review.json",
   "evidence": {
     "unit": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\unit-0334.log"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\unit-0335.log"
+    },
+    "currentArt": {
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\currentArt-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-current-art-ju6Ggv"
     },
     "settings": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\settings-0334.log",
-      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-settings-rszhbD"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\settings-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-settings-Fqyvso"
     },
     "controls": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\controls-0334.log",
-      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\refresh-controls-keaq47"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\controls-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\refresh-controls-5nczdp"
     },
     "media": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\media-0334.log",
-      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-media-HudqaU"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\media-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-media-pGhpps"
     },
     "autorun": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\autorun-0334.log",
-      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-autorun-UtyG4Z"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\autorun-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-autorun-pfNczT"
     },
     "primary": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\primary-0334.log",
-      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-anonymous-VdrBp2"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\primary-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-anonymous-EwTxZh"
     },
     "secondary": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\secondary-0334.log",
-      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-anonymous-4mGEtr"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\secondary-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\native-anonymous-AUM0nU"
     },
     "render120": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\render120-0334.log",
-      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\ruffle-world-rate-RQTzkq"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\render120-0335.log",
+      "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\ruffle-world-rate-ONFWd0"
     },
     "singleplayer": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\singleplayer-0334.log"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\singleplayer-0335.log"
     },
     "originalMultiplayer": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\originalMultiplayer-0334-final.log",
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\originalMultiplayer-0335.log",
       "out": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\local-world-native-boPDFO"
     },
     "cameraTransition": {
-      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t\\artifacts\\cameraTransition-0334-final.log"
+      "log": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr\\artifacts\\cameraTransition-0335.log"
     }
   },
   "scope": "Anonymous public startup, raw source review and owned fixtures on inactive desktops. No accounts, live guild transactions, human desktop, global input or endpoint capture. Retained-world performance, physical scanout and live combat are not verified by these tests.",
   "packaging": {
     "status": "passed",
-    "checkedAtUtc": "2026-10-29T19:45:58.621Z",
+    "checkedAtUtc": "2026-10-30T23:15:53.794Z",
     "signedFiles": 443,
     "nativeAndSingleplayer": true,
     "integrityPositiveAndNegative": true,
     "updater": true,
     "installer": true,
-    "previousUpdater": "0.33.3",
-    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.4-Vx210t"
+    "previousUpdater": "0.33.4",
+    "stage": "C:\\Users\\Daniel\\Downloads\\BlitzBrowser\\artifacts\\release-staging-0.33.5-hcs8Rr"
   },
   "homeArtwork": {
     "wallMs": 40316,
@@ -1115,5 +1119,10 @@
     "settingsPreserved": true,
     "scope": "Actual Flash button click, host pipe and shell process replacement; synthetic remembered character and Play callback. Empty fixture profiles on an inactive desktop, no accounts or global input."
   },
-  "additionalDeploymentReview": "deployments/2026-10-28-effects.json"
+  "additionalDeploymentReview": "deployments/2026-10-29.json",
+  "currentLevel": {
+    "name": "LevelsJC.swf",
+    "snapshotMonotonic": true,
+    "visualEvidenceInspected": true
+  }
 }
