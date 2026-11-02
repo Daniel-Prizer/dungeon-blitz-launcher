@@ -2,9 +2,9 @@
 
 ## Deployment status
 
-On 30 October, both official origins served **swf-8e1764923b84**, 1,036,328 bytes, SHA-256 `20df086bdbbaa99db63fb9717c613ace95603d006dcb25222d8cdb0c8a907752`. The existing Original contract and separately qualified High FPS admission accept it.
+On 2 November, both official origins served **swf-cc10b079fd88**, 1,137,065 bytes, SHA-256 `329e340ad27e6f0222c2dc1da84bc45501374ef90be77ae75e8eff8bf9e558af`. The reviewed damage envelope restores the complete Original presentation contract and separately qualified High FPS admission.
 
-All 73 SWF assets match the reviewed inventory, including the new own-effects menu in UI_4: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Those artwork changes preserved the existing level methods. The October 30 LevelsJC script update is reviewed below. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
+All 73 SWF assets match the reviewed inventory, including the current Mystic gear libraries and UI_4 artwork: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Those artwork changes preserved the existing level methods. The November 2 LevelsJC and LevelsSD script updates are reviewed below. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `4e172ad796890cd62d8f3a9184c80fcc9f051d66d7a671e9c5950237b0c3b679`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `15e0e8c319f889ab66bf8d213302dc737c95b9ff9a6e1057120337fda5d7b927`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. That deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
@@ -81,3 +81,5 @@ The same patch also qualifies the later October 28 balance deployment. Its nine 
 The 0.33.4 patch qualifies the October 29 invitation persistence, guild-directory redraw, dead-player loot restriction and touch-chat updates. All five changed main bodies and all helper tags remain upstream bytes. The eight existing presentation recipes and native renderer are unchanged. See the [October 29 review](../research/native-player/deployments/2026-10-29.json).
 
 The 0.33.5 patch qualifies the updated LevelsJC library. The Davan Longcut room now resumes from the server’s saved phase. Raw review accounts for two changed methods and three additions; the other 2,367 normalized methods and all artwork tags are unchanged. The complete upstream library is retained. Main-client hooks, native rendering and singleplayer remain unchanged. See the [October 30 review](../research/native-player/deployments/2026-10-30.json).
+
+The 0.33.6 patch supports the November 2 client and six artwork updates. Its exact damage envelope retains the new incoming-damage hook and reapplies the three existing sound-owner wrappers. All other upstream methods and helper tags are preserved. The reviewed level libraries retain their server-authority phase snapshots and shared encounter randomness. Native rendering and the separate singleplayer contract are unchanged. See the [November 2 review](../research/native-player/deployments/2026-11-02.json).

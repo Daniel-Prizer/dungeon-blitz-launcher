@@ -2,7 +2,7 @@
   "format": 1,
   "contract": "pinned-artwork-writers-v1",
   "manifestUrl": "https://dungeonblitzr.theminesa.studio/p/cbp/masterFileList.xml",
-  "reviewedAt": "2026-10-30T22:54:45.402Z",
+  "reviewedAt": "2026-11-02T20:00:09.427Z",
   "assets": [
     {
       "name": "UI_0.swf",
@@ -35,22 +35,22 @@
     {
       "name": "Gfx_Paladin_1.swf",
       "path": "/p/cbp/Gfx_Paladin_1.swf",
-      "sha256": "e2870f339d4700e42e972ec362b809aca32967ed0d8e819fafb80ef611a6fe4a",
-      "bytes": 2434643,
+      "sha256": "5a986db2304e8e2b7583e67dfdb94408b3db49ad46d975c86eab4a09bfafbbd4",
+      "bytes": 2438738,
       "writerCalls": 0
     },
     {
       "name": "Gfx_Rogue_1.swf",
       "path": "/p/cbp/Gfx_Rogue_1.swf",
-      "sha256": "d02af00e9adb02f654aee4ebd14abf89638efbd3fc6e12f90819c5789ee9388a",
-      "bytes": 740329,
+      "sha256": "8f96cb2bea56a1b2f982445ef71a742e390feb6c1b25e09fffce4ffd10c142b8",
+      "bytes": 747135,
       "writerCalls": 0
     },
     {
       "name": "Gfx_Mage_1.swf",
       "path": "/p/cbp/Gfx_Mage_1.swf",
-      "sha256": "5d887f0c75bbe98fe49387d3e25d7f63554d8e8a99077ce6853c2edfd300de39",
-      "bytes": 1875537,
+      "sha256": "71b2f4b025793bf9f2ed201a62ab0967a5aa2690a60bb8a36c7089ed382c50da",
+      "bytes": 1900177,
       "writerCalls": 0
     },
     {
@@ -119,8 +119,8 @@
     {
       "name": "UI_4.swf",
       "path": "/p/cbp/UI_4.swf",
-      "sha256": "2f264f606e7a385ebf8a3e9fabd861d8e23db3cc31baf1243060951594170ec5",
-      "bytes": 3465698,
+      "sha256": "fe36b6a0f455c6b02bf42d71c16ba4cda7a9be7d3f9d5ffafef10947edfd79f1",
+      "bytes": 3464060,
       "writerCalls": 0
     },
     {
@@ -406,8 +406,8 @@
     {
       "name": "LevelsJC.swf",
       "path": "/p/cbp/LevelsJC.swf",
-      "sha256": "068e1a0c646ba82e6aeabc24f08d4552aa27948ad1f353b0c5db413636f702ac",
-      "bytes": 5194307,
+      "sha256": "cc3345fe4579237572fbe405a8aba865a97142fedae3e93b4b86fd134d4eaa3a",
+      "bytes": 5195785,
       "writerCalls": 0
     },
     {
@@ -497,8 +497,8 @@
     {
       "name": "LevelsSD.swf",
       "path": "/p/cam/LevelsSD.swf",
-      "sha256": "de96e5e2b6cfbc4f56dcc089b676e5ebfe88a772b527e8a9592830e7254e650b",
-      "bytes": 2551030,
+      "sha256": "c271dc903608b53c5ffdac093f2f86dc90a6be58fbefbfc0c2c81222e4083ad5",
+      "bytes": 2551912,
       "writerCalls": 0
     },
     {

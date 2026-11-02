@@ -109,7 +109,11 @@ async function run(config, suite) {
   }
   const files = new Map([['/fixture.swf', path.join(config.out, 'fixture.swf')]]);
   for (const name of config.assets) {
-    if (!/^(UI_[A-Za-z0-9_]+|Levels[A-Za-z0-9]+|GlobalMap01|sounds\/Sound)\.swf$/.test(name))
+    if (
+      !/^(UI_[A-Za-z0-9_]+|Gfx_(?:Mage|Paladin|Rogue)_1|Levels[A-Za-z0-9]+|GlobalMap01|sounds\/Sound)\.swf$/.test(
+        name
+      )
+    )
       throw Error('Unexpected fixture asset');
     files.set(
       '/assets/' + name,

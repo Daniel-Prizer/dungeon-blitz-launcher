@@ -1,5 +1,5 @@
 {
-  "checkedAtUtc": "2026-10-30T22:54:45.403Z",
+  "checkedAtUtc": "2026-11-02T20:02:05.989Z",
   "origin": "https://dungeonblitzr.theminesa.studio/",
   "inventory": "src/native-player-admission.json#levels",
   "hashes": "src/gpu/assets.json",
@@ -490,6 +490,22 @@
           "review": "deployments/2026-10-30.json"
         }
       ]
+    },
+    {
+      "name": "LevelsJC.swf",
+      "oldHash": "068e1a0c646ba82e6aeabc24f08d4552aa27948ad1f353b0c5db413636f702ac",
+      "newHash": "cc3345fe4579237572fbe405a8aba865a97142fedae3e93b4b86fd134d4eaa3a",
+      "bytes": 5195785,
+      "review": "deployments/2026-11-02.json",
+      "behavior": "Class gear libraries add Mystic bindings, palettes and artwork. UI_4 artwork changes retain its ABC. LevelsJC and LevelsSD retain server-authority phase snapshots, shared randomness and encounter resumption."
+    },
+    {
+      "name": "LevelsSD.swf",
+      "oldHash": "de96e5e2b6cfbc4f56dcc089b676e5ebfe88a772b527e8a9592830e7254e650b",
+      "newHash": "c271dc903608b53c5ffdac093f2f86dc90a6be58fbefbfc0c2c81222e4083ad5",
+      "bytes": 2551912,
+      "review": "deployments/2026-11-02.json",
+      "behavior": "Class gear libraries add Mystic bindings, palettes and artwork. UI_4 artwork changes retain its ABC. LevelsJC and LevelsSD retain server-authority phase snapshots, shared randomness and encounter resumption."
     }
   ],
   "review": "Prior dialogue and home-map corrections are retained. October 26 adds reviewed door/glow artwork in five level libraries without changing existing method bodies. October 30 updates the LevelsJC boss-room authority script; its two changed methods, three additions and unchanged artwork are recorded in deployments/2026-10-30.json.",

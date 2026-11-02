@@ -1,0 +1,287 @@
+{
+  "version": "0.33.6",
+  "reviewedAtUtc": "2026-11-02T20:02:05.989Z",
+  "revision": "swf-cc10b079fd88",
+  "sourceSha256": "329e340ad27e6f0222c2dc1da84bc45501374ef90be77ae75e8eff8bf9e558af",
+  "enhancedSha256": "15e0e8c319f889ab66bf8d213302dc737c95b9ff9a6e1057120337fda5d7b927",
+  "main": {
+    "methods": 3777,
+    "unchanged": 3754,
+    "changed": [
+      {
+        "id": 290,
+        "name": "Game.method_668",
+        "bodySha256": "31e040f2e0d35015f9282a11da8b01957cd9da4d05006b551bbb6eefcd14375a"
+      },
+      {
+        "id": 408,
+        "name": "Game.method_532",
+        "bodySha256": "f190760fce4964a6919437049109c4d9c2a2eb272404478b8025379477c00562"
+      },
+      {
+        "id": 449,
+        "name": "GearType.iinit",
+        "bodySha256": "67f33d13b20fd3d985499f8192d8db7243744497dc465146b7606353ea52fb33"
+      },
+      {
+        "id": 757,
+        "name": "Entity.TakeDamage",
+        "bodySha256": "0211ae1bd1a9fd550f1ac141cdcfe88bdf4713edb880cad2a954f38e017eb32b"
+      },
+      {
+        "id": 804,
+        "name": "Entity.method_1770",
+        "bodySha256": "d1e39e10c1a986de8d66711a399cc05a641ce199ccc8db2a46e6601e618947b7"
+      },
+      {
+        "id": 857,
+        "name": "SuperAnimInstance.method_1392",
+        "bodySha256": "05db7cfd989f7099d2f0bd36ff10c0707b9000ae351353a9a900b50aaa13e309"
+      },
+      {
+        "id": 865,
+        "name": "SuperAnimInstance.method_1712",
+        "bodySha256": "cee9a18fee5d1e74778c4f1d4256361398c51f6aba1f7046d6fcf6f6d0725757"
+      },
+      {
+        "id": 932,
+        "name": "class_46.ShowNotification",
+        "bodySha256": "44be1833e80d82b1e8e20c73badf237db2fa4ff6919ee0e5ddbdf70c0f373b4f"
+      },
+      {
+        "id": 1188,
+        "name": "Level.method_735",
+        "bodySha256": "397e125c201be3f3e6ff8e96929ea99ff97fd2c99e7d24620b562ebf12f5f053"
+      },
+      {
+        "id": 1299,
+        "name": "class_75.OnRefreshScreen",
+        "bodySha256": "49f08e2e340e339e423a763be88ba3f6aa5d8c3d0e49ef19c58d8eb64c12806b"
+      },
+      {
+        "id": 1362,
+        "name": "class_75.method_1748",
+        "bodySha256": "ea4627f2937bd89bf11b6a1897d5fd35adc6ac0d6498f9d9e47256ae7ebd95bf"
+      },
+      {
+        "id": 2251,
+        "name": "class_131.OpenLockbox",
+        "bodySha256": "6783bb701f4c6e47b6a439a71683dc77e6a5632448a5802b0475e3417e6dd748"
+      },
+      {
+        "id": 2849,
+        "name": "ScreenArmory.method_1488",
+        "bodySha256": "8f6cb2418302e176c70e8114f20b84a9dc0d5f56e49a1549bb8a1c55e86fb969"
+      },
+      {
+        "id": 2926,
+        "name": "ScreenArmory.method_564",
+        "bodySha256": "1a1f5139afdea6ec5a0c0b2882d0d4d32ace7d15745007c88bde19f87857fe34"
+      },
+      {
+        "id": 2961,
+        "name": "ScreenArmory.method_1229",
+        "bodySha256": "429ae043597b6323e4a564adf1c62d6abd95b272f71a43c99f6314aea7324c79"
+      },
+      {
+        "id": 2962,
+        "name": "ScreenArmory.method_1818",
+        "bodySha256": "0e297f3dac8b1b64a3c3931829582d9bb15a666dfec7f43892969ccf18e0da22"
+      },
+      {
+        "id": 3339,
+        "name": "CombatState.method_1393",
+        "bodySha256": "950be4df2340cc838579d31f623e68a26b704387d62b525a5f6faf0c049df489"
+      },
+      {
+        "id": 3371,
+        "name": "class_68.method_1415",
+        "bodySha256": "3f5f8ebcb80687866269127effcd106142a679a262d1dea6333338b580dca74f"
+      },
+      {
+        "id": 3400,
+        "name": "LinkUpdater.method_1081",
+        "bodySha256": "7f6f1f1c735c2c0231d655f481fcdf7b370646fbc12938c0810cdd8db0411130"
+      },
+      {
+        "id": 3512,
+        "name": "LinkUpdater.method_1092",
+        "bodySha256": "aa3833558260d48054c4b3c1d192838692f83fbd6feed21a85a324eadeb65501"
+      },
+      {
+        "id": 3519,
+        "name": "LinkUpdater.method_1072",
+        "bodySha256": "a6744e2084d0489597926d843f1c203692f90855e6c10eee74defdb8f8bae094"
+      },
+      {
+        "id": 3654,
+        "name": "class_127.method_1881",
+        "bodySha256": "8d2a337574476b17ddfc405171f3c116b82929899097852fc5e29ec8c2eaa1c9"
+      },
+      {
+        "id": 3656,
+        "name": "class_127.method_1984",
+        "bodySha256": "d97a4dc549a249a6227db7851da210eb525d120fae298af7ce2160ac40345650"
+      }
+    ],
+    "behavior": "Upstream additions cover Mystic gear/exchange/visuals, forge soul XP, coffer opening, incoming/reported damage and Miasma bonuses, and server correction of entity state.",
+    "preservation": {
+      "atUtc": "2026-11-02T20:01:28.967Z",
+      "mainInterfaceUnchanged": true,
+      "mainMethods": 3777,
+      "changedMainMethods": 23,
+      "unchangedMainMethods": 3754,
+      "constantPoolPrefixesUnchanged": true,
+      "allNonMainTagsPreserved": true,
+      "allOtherMainBodiesPreserved": true,
+      "newDamagePrefixPreserved": true,
+      "soundCallsWrapped": 3,
+      "wrapperInstructions": 15,
+      "rawBranchesAndExceptionTablesValidated": true,
+      "interactionBranchesRetargetIntoNewExchangeHandler": true
+    }
+  },
+  "helpers": [
+    {
+      "name": "MysticExchange",
+      "previousMethods": 0,
+      "methods": 36,
+      "sha256": "17b53be70de408b1a5671b9812c63e2a168868213b93e75f838f81e05a6f3d71"
+    },
+    {
+      "name": "DyeRegions",
+      "previousMethods": 9,
+      "methods": 9,
+      "sha256": "d75790b713809d5e98010cfcaba585fbc2ae3f25d4828be08e3accf19f86181f"
+    },
+    {
+      "name": "ForgeSoulXp",
+      "previousMethods": 0,
+      "methods": 7,
+      "sha256": "34d9b4395c299680720fd0a7fd238423aa25b5a7c0f3fbe3806543f396381e6f"
+    },
+    {
+      "name": "ChatChannels",
+      "previousMethods": 21,
+      "methods": 21,
+      "sha256": "9057589b081d6f138c6d593167fc9cae9ba66342358a2896f65a72a57624ef40"
+    },
+    {
+      "name": "CofferKeys",
+      "previousMethods": 10,
+      "methods": 11,
+      "sha256": "cb261daf260895f58f49feb26c290993c773439b78faf9b71baec3a6fcc55357"
+    },
+    {
+      "name": "BalanceHooks",
+      "previousMethods": 12,
+      "methods": 22,
+      "sha256": "ca8c0565c1a6877fa55e756d06c7e162a1caced3a9edd5022bc9bef98540cbf5"
+    },
+    {
+      "name": "MysticGlow",
+      "previousMethods": 0,
+      "methods": 184,
+      "sha256": "e5360895309cec13f22cac3b0e6befe552941ef2fab1e56fda54db4720090c0f"
+    }
+  ],
+  "assets": {
+    "checkedPerOrigin": 73,
+    "unchanged": 67,
+    "changed": [
+      {
+        "name": "Gfx_Mage_1.swf",
+        "path": "/p/cbp/Gfx_Mage_1.swf",
+        "sha256": "71b2f4b025793bf9f2ed201a62ab0967a5aa2690a60bb8a36c7089ed382c50da",
+        "bytes": 1900177,
+        "oldSha256": "5d887f0c75bbe98fe49387d3e25d7f63554d8e8a99077ce6853c2edfd300de39",
+        "rawReview": {
+          "name": "Gfx_Mage_1.swf",
+          "oldMethods": 4456,
+          "newMethods": 4456,
+          "normalizedUnchanged": 4426,
+          "changedOld": 30,
+          "changedNew": 30,
+          "rawBranchesAndExceptionsValid": true
+        }
+      },
+      {
+        "name": "Gfx_Paladin_1.swf",
+        "path": "/p/cbp/Gfx_Paladin_1.swf",
+        "sha256": "5a986db2304e8e2b7583e67dfdb94408b3db49ad46d975c86eab4a09bfafbbd4",
+        "bytes": 2438738,
+        "oldSha256": "e2870f339d4700e42e972ec362b809aca32967ed0d8e819fafb80ef611a6fe4a",
+        "rawReview": {
+          "name": "Gfx_Paladin_1.swf",
+          "oldMethods": 8417,
+          "newMethods": 8417,
+          "normalizedUnchanged": 8413,
+          "changedOld": 4,
+          "changedNew": 4,
+          "rawBranchesAndExceptionsValid": true
+        }
+      },
+      {
+        "name": "Gfx_Rogue_1.swf",
+        "path": "/p/cbp/Gfx_Rogue_1.swf",
+        "sha256": "8f96cb2bea56a1b2f982445ef71a742e390feb6c1b25e09fffce4ffd10c142b8",
+        "bytes": 747135,
+        "oldSha256": "d02af00e9adb02f654aee4ebd14abf89638efbd3fc6e12f90819c5789ee9388a",
+        "rawReview": {
+          "name": "Gfx_Rogue_1.swf",
+          "oldMethods": 2480,
+          "newMethods": 2480,
+          "normalizedUnchanged": 2458,
+          "changedOld": 22,
+          "changedNew": 22,
+          "rawBranchesAndExceptionsValid": true
+        }
+      },
+      {
+        "name": "LevelsJC.swf",
+        "path": "/p/cbp/LevelsJC.swf",
+        "sha256": "cc3345fe4579237572fbe405a8aba865a97142fedae3e93b4b86fd134d4eaa3a",
+        "bytes": 5195785,
+        "oldSha256": "068e1a0c646ba82e6aeabc24f08d4552aa27948ad1f353b0c5db413636f702ac",
+        "rawReview": {
+          "name": "LevelsJC.swf",
+          "oldMethods": 2372,
+          "newMethods": 2389,
+          "normalizedUnchanged": 2336,
+          "changedOld": 36,
+          "changedNew": 53,
+          "rawBranchesAndExceptionsValid": true
+        }
+      },
+      {
+        "name": "LevelsSD.swf",
+        "path": "/p/cam/LevelsSD.swf",
+        "sha256": "c271dc903608b53c5ffdac093f2f86dc90a6be58fbefbfc0c2c81222e4083ad5",
+        "bytes": 2551912,
+        "oldSha256": "de96e5e2b6cfbc4f56dcc089b676e5ebfe88a772b527e8a9592830e7254e650b",
+        "rawReview": {
+          "name": "LevelsSD.swf",
+          "oldMethods": 1553,
+          "newMethods": 1562,
+          "normalizedUnchanged": 1547,
+          "changedOld": 6,
+          "changedNew": 15,
+          "rawBranchesAndExceptionsValid": true
+        }
+      },
+      {
+        "name": "UI_4.swf",
+        "path": "/p/cbp/UI_4.swf",
+        "sha256": "fe36b6a0f455c6b02bf42d71c16ba4cda7a9be7d3f9d5ffafef10947edfd79f1",
+        "bytes": 3464060,
+        "oldSha256": "2f264f606e7a385ebf8a3e9fabd861d8e23db3cc31baf1243060951594170ec5",
+        "rawReview": {
+          "abcUnchanged": true
+        }
+      }
+    ],
+    "behavior": "Class gear libraries add Mystic bindings, palettes and artwork. UI_4 artwork changes retain its ABC. LevelsJC and LevelsSD retain server-authority phase snapshots, shared randomness and encounter resumption."
+  },
+  "repair": "Reapply only the existing three sound-owner wrappers to a new exact TakeDamage envelope in the current effects contract. The incoming-damage prefix, all remaining instructions, branches and exception tables survive. Existing recipes and the independent singleplayer contract remain intact.",
+  "scope": "Anonymous public downloads and owned inactive-desktop fixtures. No account access, gameplay transactions, server changes or installed-client changes."
+}
