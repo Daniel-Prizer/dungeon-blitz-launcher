@@ -1,0 +1,53 @@
+{
+  "version": "0.33.7",
+  "reviewedAtUtc": "2026-11-03T20:49:13.374Z",
+  "revision": "swf-086bc3e265ed",
+  "sourceSha256": "b5462215bec7816ef974c2167ff8abf8e69c188cd77f0528bc3586b23339db34",
+  "enhancedSha256": "49882f1ae7a33d28db29693e881cb947bbd03bb1d829827a1355bf5042a26745",
+  "main": {
+    "methods": 3777,
+    "unchanged": 3776,
+    "changed": [
+      {
+        "id": 3358,
+        "name": "CombatState.method_139",
+        "bodySha256": "1d63a8eadebd578a08a4d856bbb4babf730cf5ff67bc9cfc7f1035d885fb3169"
+      }
+    ],
+    "behavior": "CombatState.method_139 now checks actual floor-collision results and returns the input point when neither ray finds a floor.",
+    "preservation": {
+      "atUtc": "2026-11-03T20:49:13.353Z",
+      "mainMethods": 3777,
+      "unchangedFromPrevious": 3776,
+      "changedUpstreamMethods": 1,
+      "mainInterfaceAndPoolsUnchanged": true,
+      "allUpstreamHelperTagsPreservedByteExactly": true,
+      "unhookedMainBodiesPreservedByteExactly": 3745,
+      "combatFloorCorrectionPreservedByteExactly": true,
+      "existingPresentationRecipeUnchanged": true,
+      "rawBranchesAndExceptionBoundariesValidated": true
+    }
+  },
+  "helpers": [
+    {
+      "name": "GuildRaid",
+      "previousMethods": 143,
+      "methods": 143,
+      "sha256": "5d13b2db89d55aa6ce856acb05e97a15f4e6a7143c6be6b2930577e3e24e5b6c"
+    },
+    {
+      "name": "HallowsEveLock",
+      "previousMethods": 40,
+      "methods": 47,
+      "sha256": "1190700a782a1d9469f82ef84569e38082c6d78ceed2f7cfa1b2cf4ddff83939"
+    }
+  ],
+  "helperBehavior": "GuildRaid retains its disabled gate, explicit String/DisplayObject conversions and statically resolved native members. GreenKnightBadge retains server-supplied news banners, banner icon visibility and tooltip/listener cleanup.",
+  "assets": {
+    "checkedPerOrigin": 73,
+    "unchanged": 73,
+    "changed": []
+  },
+  "repair": "Qualify the reviewed client through the unchanged complete Original presentation recipe. Preserve the changed combat method and both helper tags byte exactly, then separately qualify native High FPS admission. No new hooks or relaxed validation.",
+  "scope": "Anonymous public downloads and owned inactive-desktop fixtures; no account access or gameplay transactions."
+}

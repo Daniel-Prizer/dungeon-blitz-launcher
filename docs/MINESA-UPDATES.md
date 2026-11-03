@@ -2,7 +2,7 @@
 
 ## Deployment status
 
-On 2 November, both official origins served **swf-cc10b079fd88**, 1,137,065 bytes, SHA-256 `329e340ad27e6f0222c2dc1da84bc45501374ef90be77ae75e8eff8bf9e558af`. The reviewed damage envelope restores the complete Original presentation contract and separately qualified High FPS admission.
+On 3 November, both official origins served **swf-086bc3e265ed**, 1,140,253 bytes, SHA-256 `b5462215bec7816ef974c2167ff8abf8e69c188cd77f0528bc3586b23339db34`. The unchanged complete Original presentation contract accepts this client; native High FPS admission is qualified separately.
 
 All 73 SWF assets match the reviewed inventory, including the current Mystic gear libraries and UI_4 artwork: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Those artwork changes preserved the existing level methods. The November 2 LevelsJC and LevelsSD script updates are reviewed below. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `15e0e8c319f889ab66bf8d213302dc737c95b9ff9a6e1057120337fda5d7b927`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `49882f1ae7a33d28db29693e881cb947bbd03bb1d829827a1355bf5042a26745`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. That deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
@@ -83,3 +83,5 @@ The 0.33.4 patch qualifies the October 29 invitation persistence, guild-director
 The 0.33.5 patch qualifies the updated LevelsJC library. The Davan Longcut room now resumes from the server’s saved phase. Raw review accounts for two changed methods and three additions; the other 2,367 normalized methods and all artwork tags are unchanged. The complete upstream library is retained. Main-client hooks, native rendering and singleplayer remain unchanged. See the [October 30 review](../research/native-player/deployments/2026-10-30.json).
 
 The 0.33.6 patch supports the November 2 client and six artwork updates. Its exact damage envelope retains the new incoming-damage hook and reapplies the three existing sound-owner wrappers. All other upstream methods and helper tags are preserved. The reviewed level libraries retain their server-authority phase snapshots and shared encounter randomness. Native rendering and the separate singleplayer contract are unchanged. See the [November 2 review](../research/native-player/deployments/2026-11-02.json).
+
+The 0.33.7 patch supports the November 3 client. It preserves the combat floor-ray correction, disabled guild raid gate, explicit UI conversions and updated news-banner behavior. All 73 artwork files and existing presentation recipes are unchanged. The changed combat method and complete upstream helpers remain byte-identical after adaptation. See the [November 3 review](../research/native-player/deployments/2026-11-03.json).

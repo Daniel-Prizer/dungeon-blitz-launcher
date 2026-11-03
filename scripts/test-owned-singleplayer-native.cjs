@@ -192,7 +192,7 @@ async function run(config) {
       result.testClientHash,
       fallbackHash ||
         (multiplayer
-          ? '329e340ad27e6f0222c2dc1da84bc45501374ef90be77ae75e8eff8bf9e558af'
+          ? 'b5462215bec7816ef974c2167ff8abf8e69c188cd77f0528bc3586b23339db34'
           : require('../src/legacy/client-singleplayer.json').inputHash)
     );
     assert(result.clientIntegration && result.audioIntegration);
