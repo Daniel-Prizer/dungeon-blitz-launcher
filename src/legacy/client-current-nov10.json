@@ -1,0 +1,18 @@
+{
+  "inputHash": "27b6c770382783fa634d5a236c8fb632fde7a819c85ca58c9630320e0a5e22e7",
+  "url": "https://dungeonblitzr.theminesa.studio/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp&clientrev=swf-22fa3fe7e30f",
+  "methods": [
+    {
+      "name": "Entity.TakeDamage",
+      "bodyHash": "bdb69ecc7a184d69bff67b7abfb9177720c393db6950e4be5ec3a12a5e822283",
+      "codeHash": "e3ffd466160e27e4e225ce20023c552c7b726aac29d8290be3e7c1033dec5a28",
+      "references": 12
+    },
+    {
+      "name": "class_119.OnCreateScreen",
+      "bodyHash": "bdf566fbb109b6ca63d8e58df1dcf5ec64fbe08206800d09f41e7f26d7ca7f66",
+      "codeHash": "bc55cc8f493d168d3ad24a3dfe42889ad6287f43395b14711e5eae4ed8be3428",
+      "references": 0
+    }
+  ]
+}

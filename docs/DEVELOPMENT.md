@@ -11,14 +11,26 @@ The runtime, downloaded game assets, test profiles and releases are excluded fro
 
 ## Build
 
+The canonical launcher checkout is `D:/AI/projects/dungeon-blitz/storage/BlitzBrowser`.
+The server source is `D:/AI/projects/dungeon-blitz/source`; old Downloads/LocalAI
+junctions support transitional callers. Run current maintenance from the canonical
+launcher checkout. The installed user launcher stays managed by its installer
+and signed updater under AppData.
+
 ```powershell
+Set-Location D:/AI/projects/dungeon-blitz/storage/BlitzBrowser
 npm ci
 npm run prepare:game
-node scripts/prepare-owned-singleplayer.cjs C:\path\to\reviewed-server-repository
+node scripts/prepare-owned-singleplayer.cjs
 npm start
 ```
 
-The server importer reads immutable Git objects at its pinned commit, not the server checkout's working tree. It excludes accounts, saves and environment files. Inspect the pin in the importer before updating it.
+The server importer and source artwork fixtures share `scripts/owned-source.cjs`.
+It defaults to the canonical server source; `BLITZ_SOURCE_ROOT` selects another
+checkout, and an explicit importer source argument takes precedence. They read
+immutable Git objects at the unchanged reviewed commit, not working-tree artwork,
+accounts, saves or environment files. Inspect the shared pin before changing it.
+Do not rebuild or alter retained signed stages or manifests just to update paths.
 
 Before large builds or test batches, run `npm run storage:check`. It reserves 20 GiB of free space, caps active artifacts plus test tools at 64 GiB, and allows at most 32 GiB of lossless cold staging archives in `artifacts/archived-stages`. Retained canonical releases are counted separately. A failed check stops the build.
 

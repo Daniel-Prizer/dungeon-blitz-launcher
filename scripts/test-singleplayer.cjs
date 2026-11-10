@@ -2,6 +2,7 @@
 const fs = require('node:fs'),
   path = require('node:path'),
   { execFileSync } = require('node:child_process');
+const assets = require('./owned-source.cjs').fixtureAssets();
 const root = path.resolve(__dirname, '..');
 execFileSync(process.execPath, [path.join(__dirname, 'prepare-legacy.cjs')], {
   stdio: 'inherit',
@@ -28,19 +29,8 @@ for (const [source, args] of [
     ],
     { stdio: 'inherit', windowsHide: true }
   );
-const assets = path.resolve(root, '../db r/dungeon-blitz-r/src/client/content/localhost/p'),
-  target = path.join(root, '.test-tools/singleplayer-assets');
+const target = path.join(root, '.test-tools/singleplayer-assets');
 fs.mkdirSync(target, { recursive: true });
-const find = (dir, name) => {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const file = path.join(dir, entry.name);
-    if (entry.isFile() && entry.name === name) return file;
-    if (entry.isDirectory()) {
-      const child = find(file, name);
-      if (child) return child;
-    }
-  }
-};
 for (const name of [
   'UI_0',
   'UI_0_1',
@@ -56,9 +46,7 @@ for (const name of [
   'LevelsBT',
   'GlobalMap01',
 ]) {
-  const file = find(assets, name + '.swf');
-  if (!file) throw Error('Missing original local asset ' + name);
-  fs.copyFileSync(file, path.join(target, name + '.swf'));
+  fs.writeFileSync(path.join(target, name + '.swf'), assets.read(name + '.swf'));
 }
 const env = {
   ...process.env,

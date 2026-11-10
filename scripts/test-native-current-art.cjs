@@ -9,14 +9,25 @@ const root = process.cwd(),
 if (!stub || !runtime || !assetDirectory || path.basename(runtime) !== 'ruffle_desktop.exe')
   throw Error('Pass an offline stub, independent native runtime and reviewed artwork folder');
 require('../research/gpu/background.cjs').lowerSelf();
-const assets = [
-    'GlobalMap01.swf',
-    'LevelsAC.swf',
-    'LevelsCH.swf',
-    'LevelsNR.swf',
-    'LevelsOMM.swf',
-    'LevelsSRN.swf',
-  ],
+const updated = process.argv.includes('--nov10');
+const assets = updated
+    ? [
+        'Gfx_Paladin_1.swf',
+        'Gfx_Rogue_1.swf',
+        'LevelsJC.swf',
+        'LevelsLD.swf',
+        'LevelsLI05.swf',
+        'LevelsOMM.swf',
+        'UI_4.swf',
+      ]
+    : [
+        'GlobalMap01.swf',
+        'LevelsAC.swf',
+        'LevelsCH.swf',
+        'LevelsNR.swf',
+        'LevelsOMM.swf',
+        'LevelsSRN.swf',
+      ],
   known = require('../src/gpu/assets.json').assets;
 for (const name of assets) {
   const bytes = fs.readFileSync(path.join(assetDirectory, name));
@@ -25,10 +36,14 @@ for (const name of assets) {
     known.find((a) => a.name === name).sha256
   );
 }
+const fixtureAssets = updated ? [...assets, 'Utilities.swf'] : assets;
 const out = fs.mkdtempSync(path.join(root, 'artifacts/native-current-art-')),
   scripts = path.join(out, 'as');
 fs.mkdirSync(scripts);
-fs.copyFileSync('test/current-art-fixture.as', path.join(scripts, 'DungeonBlitz.as'));
+fs.copyFileSync(
+  updated ? 'test/current-compatibility-art.as' : 'test/current-art-fixture.as',
+  path.join(scripts, 'DungeonBlitz.as')
+);
 execFileSync(
   'java',
   [
@@ -47,14 +62,14 @@ require('./native-player-fixture.cjs').privateRun(
     root,
     out,
     assetDirectory,
-    assets,
+    assets: fixtureAssets,
     runtime,
     hosted: true,
     production: true,
     frameRate: 120,
     capture: true,
   },
-  async ({ rpc, delay }) => {
+  async ({ rpc, delay, config }) => {
     const assert = require('node:assert/strict');
     let state;
     for (let i = 0; i < 150; i++) {
@@ -64,7 +79,10 @@ require('./native-player-fixture.cjs').privateRun(
       await delay(100);
     }
     assert(state?.ready, 'Current artwork did not load');
-    assert.equal(state.records.length, 6);
+    assert.equal(
+      state.records.length,
+      config.assets.filter((name) => name !== 'Utilities.swf').length
+    );
     await delay(250);
     assert.equal(await rpc('BlitzFixtureCapture', [1]), true);
     return state;

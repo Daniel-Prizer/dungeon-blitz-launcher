@@ -10,6 +10,13 @@ node scripts/test-modern-ui.cjs
 
 Unit tests cover settings, input policy, links, adapters, scene/resource validation, updater safety and local-server lifecycle. UI tests cover draft/Save/Discard behavior, keyboard navigation and Settings at 800×600 and 1440×900.
 
+Run from `D:/AI/projects/dungeon-blitz/storage/BlitzBrowser`. Launcher/singleplayer
+artwork fixtures use the reviewed Git blobs from `D:/AI/projects/dungeon-blitz/source`
+through `scripts/owned-source.cjs`; `BLITZ_SOURCE_ROOT` can select another checkout
+containing the same pinned commit. They do not depend on sibling Downloads paths
+or dirty working-tree assets. Source-resolution checks alone must not execute
+the native test entry points, which also prepare runtimes or launch game hosts.
+
 Native tests require the imported runtime and reviewed fixtures. Use the guarded inactive desktop, not the input desktop. Run camera, transition, native input/display, fullscreen and backdrop suites when those paths change. Inspect owned screenshots before claiming a visual pass. Test controls and counter-rate overrides must stay in disposable fixtures.
 
 ## Independent fixtures
@@ -40,6 +47,8 @@ Additional native fixtures:
 - `test-native-player-settings.cjs <stub.swf> <ruffle_desktop.exe>`: all cursor styles and exact pixels/hotspots, native text cursor, live Save, three Game replacements, raster density/cap changes, tutorial width and restored widescreen.
 - `test-native-autorun.cjs <stub.swf> <ruffle_desktop.exe>`: both directions, rebound movement, map open/close, stage deactivation, paired release and typing/forge/leave guards. Uses the original key manager/release with a synthetic held-command sink.
 - `test-native-current-art.cjs <stub.swf> <ruffle_desktop.exe> <reviewed-art-folder>`: six October 26 map/room assets, exact hashes, native display construction and an owned GPU capture.
+- Add `--nov10` to the current-art test for the seven changed November libraries. It loads Utilities/LevelsOMM prerequisites before constructing exported symbols; internal timeline classes are not public symbol names.
+- `test-current-native-startup.cjs <ruffle_desktop.exe> [official-origin]`: current production resource admission, all 73 assets, anonymous title startup, completed 120-cap render samples, audio commands and resize/captures. Uses an authenticated loopback broker, empty memory storage and denied game TCP.
 - `test-native-game-cursor.cjs <stub.swf> <ruffle_desktop.exe>`: all 16 current game cursors through the original registration method, copied RGBA/hotspots, animation, disposed source bitmaps, invalid dimensions, unregister and text fallback. OS cursor application stays in dry-run mode.
 - `test-refresh-controls.cjs <stub.swf> <ruffle_desktop.exe>`: cached/list character selection, mismatch/missing/duplicate cancellation, manual input, dead/alive/typing/hidden/cooldown and held Enter. Only fixture authentication/packet callbacks are stubbed.
 - `test-refresh-launcher.cjs <refresh-fixture.swf> <independent-host.exe>`: click the actual Flash refresh button, replace the game through the real launcher, select the same synthetic character and preserve fullscreen, resolution, zoom and saved settings. The isolated host must be `LocalWorldCompatibilityFixture.exe`; no production profile is used.

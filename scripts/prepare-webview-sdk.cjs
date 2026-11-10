@@ -33,7 +33,7 @@ module.exports = async () => {
     throw Error('Cached WebView2 SDK verification failed');
   const packageDir = path.join(folder, 'package');
   execFileSync(
-    'pwsh.exe',
+    path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'),
     [
       '-NoProfile',
       '-NonInteractive',

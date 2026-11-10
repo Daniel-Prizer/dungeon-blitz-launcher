@@ -70,6 +70,10 @@ async function build() {
         ?.split('=')[1],
     })
   );
+  if (process.argv.includes('--build-only')) {
+    console.log(config);
+    return;
+  }
   launchPrivate(config);
 }
 function launchPrivate(config) {
@@ -192,7 +196,7 @@ async function run(config) {
       result.testClientHash,
       fallbackHash ||
         (multiplayer
-          ? 'b5462215bec7816ef974c2167ff8abf8e69c188cd77f0528bc3586b23339db34'
+          ? require('../src/legacy/client-current-nov10.json').inputHash
           : require('../src/legacy/client-singleplayer.json').inputHash)
     );
     assert(result.clientIntegration && result.audioIntegration);

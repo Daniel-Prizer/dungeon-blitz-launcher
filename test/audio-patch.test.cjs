@@ -3,6 +3,7 @@ const test = require('node:test'),
   fs = require('node:fs'),
   path = require('node:path'),
   zlib = require('node:zlib');
+const digest = (bytes) => require('node:crypto').createHash('sha256').update(bytes).digest('hex');
 const { patchAudio } = require('../src/legacy/audio-patch.cjs'),
   { patchClient } = require('../src/legacy/client-patch.cjs'),
   { makeDelta } = require('../scripts/audio-delta.cjs');
@@ -61,10 +62,14 @@ for (const suffix of ['latest', 'oct11'])
         ),
         audio = patchAudio(presentation, adapter);
       assert(audio);
-      assert.deepEqual(
-        zlib.inflateSync(audio.subarray(8)),
-        zlib.inflateSync(
-          fs.readFileSync(path.join(root, '.test-tools/audio-' + suffix + '/audio.swf')).subarray(8)
+      assert.equal(
+        digest(zlib.inflateSync(audio.subarray(8))),
+        digest(
+          zlib.inflateSync(
+            fs
+              .readFileSync(path.join(root, '.test-tools/audio-' + suffix + '/audio.swf'))
+              .subarray(8)
+          )
         )
       );
       const body = zlib.inflateSync(audio.subarray(8));
@@ -93,9 +98,9 @@ test(
     assert(presentation);
     const audio = patchAudio(presentation, JSON.parse(fs.readFileSync(currentDelta)));
     assert(audio);
-    assert.deepEqual(
-      zlib.inflateSync(audio.subarray(8)),
-      zlib.inflateSync(fs.readFileSync(currentCompiled).subarray(8))
+    assert.equal(
+      digest(zlib.inflateSync(audio.subarray(8))),
+      digest(zlib.inflateSync(fs.readFileSync(currentCompiled).subarray(8)))
     );
     const body = zlib.inflateSync(audio.subarray(8));
     assert(!body.includes(Buffer.from('BlitzTransitionFixtureControl')));
@@ -119,9 +124,9 @@ test(
     assert(presentation);
     const audio = patchAudio(presentation, JSON.parse(fs.readFileSync(delta)));
     assert(audio);
-    assert.deepEqual(
-      zlib.inflateSync(audio.subarray(8)),
-      zlib.inflateSync(fs.readFileSync(compiled).subarray(8))
+    assert.equal(
+      digest(zlib.inflateSync(audio.subarray(8))),
+      digest(zlib.inflateSync(fs.readFileSync(compiled).subarray(8)))
     );
     const body = zlib.inflateSync(audio.subarray(8));
     assert(!body.includes(Buffer.from('BlitzTransitionFixtureControl')));

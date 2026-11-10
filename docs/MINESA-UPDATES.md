@@ -2,9 +2,9 @@
 
 ## Deployment status
 
-On 3 November, both official origins served **swf-086bc3e265ed**, 1,140,253 bytes, SHA-256 `b5462215bec7816ef974c2167ff8abf8e69c188cd77f0528bc3586b23339db34`. The unchanged complete Original presentation contract accepts this client; native High FPS admission is qualified separately.
+On 10 November, both official origins served **swf-22fa3fe7e30f**, 1,178,201 bytes, SHA-256 `27b6c770382783fa634d5a236c8fb632fde7a819c85ca58c9630320e0a5e22e7`. Patch 0.33.8 adds two exact reviewed presentation/audio envelopes for this client; native High FPS admission is qualified separately.
 
-All 73 SWF assets match the reviewed inventory, including the current Mystic gear libraries and UI_4 artwork: 52 master-list assets and 21 level libraries. The October 26 map adds five placements; five level libraries add door and glow artwork. Those artwork changes preserved the existing level methods. The November 2 LevelsJC and LevelsSD script updates are reviewed below. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
+All 73 SWF assets were checked on both origins: 52 master-list assets and 21 level libraries. Seven changed since 0.33.7: Gfx_Paladin_1, Gfx_Rogue_1, LevelsJC, LevelsLD, LevelsLI05, LevelsOMM and UI_4. Their current AS3 structures and representative native artwork were reviewed; the original library bytes are retained without launcher edits. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `49882f1ae7a33d28db29693e881cb947bbd03bb1d829827a1355bf5042a26745`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `5447a4dc24896bc29512cc40f7ac3f6eb1f884955d2aece930d5a8d67b92dbe8`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. That deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 
@@ -85,3 +85,12 @@ The 0.33.5 patch qualifies the updated LevelsJC library. The Davan Longcut room 
 The 0.33.6 patch supports the November 2 client and six artwork updates. Its exact damage envelope retains the new incoming-damage hook and reapplies the three existing sound-owner wrappers. All other upstream methods and helper tags are preserved. The reviewed level libraries retain their server-authority phase snapshots and shared encounter randomness. Native rendering and the separate singleplayer contract are unchanged. See the [November 2 review](../research/native-player/deployments/2026-11-02.json).
 
 The 0.33.7 patch supports the November 3 client. It preserves the combat floor-ray correction, disabled guild raid gate, explicit UI conversions and updated news-banner behavior. All 73 artwork files and existing presentation recipes are unchanged. The changed combat method and complete upstream helpers remain byte-identical after adaptation. See the [November 3 review](../research/native-player/deployments/2026-11-03.json).
+
+The 0.33.8 patch supports the November 10 client. It preserves the upstream
+DisciplinePassives.Damaged call, all three SoulthiefPassivePays conditions and
+MapTeleport.Page selection. The existing three damage sound-owner wrappers and
+1152-pixel map panel width are reapplied as separately pinned variants. The other
+3,745 unhooked main bodies and all 54 upstream non-main tags remain byte-identical;
+previous envelopes and the independent singleplayer contract remain supported.
+Both official title clients passed anonymous native startup, completed-render
+120-cap, resize and audio checks. See the [November 10 review](../research/native-player/deployments/2026-11-10.json).

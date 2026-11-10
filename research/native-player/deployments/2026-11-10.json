@@ -1,0 +1,76 @@
+{
+  "version": "0.33.8",
+  "revision": "swf-22fa3fe7e30f",
+  "sourceSha256": "27b6c770382783fa634d5a236c8fb632fde7a819c85ca58c9630320e0a5e22e7",
+  "sourceBytes": 1178201,
+  "enhancedSha256": "5447a4dc24896bc29512cc40f7ac3f6eb1f884955d2aece930d5a8d67b92dbe8",
+  "nativeSha256": "032e3640907d021f91b9764bd7fc83d4c6e22d9b94d84ed34b4c102a3998b5a3",
+  "patchSha256": "c01ea9936d96552991d0acfa8c4e368500baedbc38246adbf7403dd216e796ec",
+  "main": {
+    "methods": 3777,
+    "interfaceAndReviewedPoolPrefixesUnchanged": true,
+    "dependencyGuardsPassed": 18,
+    "previousEditedEnvelopesAccepted": 30,
+    "newExactVariants": [
+      {
+        "name": "Entity.TakeDamage",
+        "id": 757,
+        "bodySha256": "bdb69ecc7a184d69bff67b7abfb9177720c393db6950e4be5ec3a12a5e822283",
+        "codeSha256": "e3ffd466160e27e4e225ce20023c552c7b726aac29d8290be3e7c1033dec5a28",
+        "change": "Retain upstream DisciplinePassives.Damaged and all three BalanceHooks.SoulthiefPassivePays checks. Reapply only three existing sound-owner wrappers with relocation-aware branch/exception handling."
+      },
+      {
+        "name": "class_119.OnCreateScreen",
+        "id": 2036,
+        "bodySha256": "bdf566fbb109b6ca63d8e58df1dcf5ec64fbe08206800d09f41e7f26d7ca7f66",
+        "codeSha256": "bc55cc8f493d168d3ad24a3dfe42889ad6287f43395b14711e5eae4ed8be3428",
+        "change": "Retain upstream MapTeleport.Page call. Replace the same six-byte world-width expression at its newly reviewed offset 1157 with the existing authored 1152-pixel map width; branch/exception addresses unchanged."
+      }
+    ],
+    "unhookedBodiesPreservedByteExactly": 3745,
+    "upstreamNonMainTagsPreservedByteExactly": 54,
+    "unknownDamageAndMapEnvelopeNegativeControls": true,
+    "singleplayerContractUnchanged": true
+  },
+  "assets": {
+    "checkedAtUtc": "2026-11-10T20:38:37.822Z",
+    "checkedPerOrigin": 73,
+    "masterNamesUnchanged": true,
+    "originsAgree": true,
+    "changed": ["Gfx_Paladin_1.swf", "Gfx_Rogue_1.swf", "LevelsJC.swf", "LevelsLD.swf", "LevelsLI05.swf", "LevelsOMM.swf", "UI_4.swf"],
+    "review": "Current AS3 classes, method decoding, exception counts and exported symbols inspected with pinned JPEXS. Unmodified library bytes are pinned after representative native construction. Complete old binaries for six changed libraries were not retained locally, so exact historical instruction equivalence is not claimed. LevelsLI05/LevelsOMM need shared library definitions in standalone fixtures.",
+    "nativeRepresentativeArtwork": "passed; owned scene-1.png viewed",
+    "scope": "Representative exported symbols, not all rooms, animation states or live dungeon behavior."
+  },
+  "qualification": {
+    "status": "passed",
+    "anonymousOrigins": 2,
+    "steadyCompletedTitleRenderRange": [119.16183339048506, 120.87205692774198],
+    "targetCap": 120,
+    "all73ProductionResourcesAndBroker": true,
+    "resizeAndAudioCommands": true,
+    "settingsAndAutorun": true,
+    "unitTests": 119,
+    "unitFailures": 0,
+    "unitSkipped": 0,
+    "packagingSourceFusesAndIntegrity": true,
+    "cameraMapAndTransitionTerrain": true,
+    "packagedSingleplayerAndIntegrityNegativeControl": true,
+    "packagedUpdaterAndSyntheticInstaller": true,
+    "previousSignedUpdater": "0.33.7",
+    "signedFiles": 443,
+    "scope": "Actual current title clients on both official origins, memory storage, denied TCP, no login. Synthetic helpers/artwork on task-owned inactive desktops. No live gameplay, saved authentication, global input or physical scanout claim."
+  },
+  "evidence": {
+    "review": "artifacts/manual-compatibility-20261110-resumption",
+    "stage": "artifacts/release-staging-0.33.8-7DYcPW",
+    "nativeStartup": ["current-native-startup-VWvxbv", "current-native-startup-83E2ib"],
+    "artwork": "native-current-art-EPaPZp",
+    "settings": "native-settings-lzDl1U",
+    "autorun": "native-autorun-VNXD9q",
+    "packagedResources": "packaged-native-resources-XUWfoi",
+    "cameraTransition": "controller-suites-7hoDnc",
+    "packagedSingleplayer": "packaged-local-world-9i8Yzk",
+    "failedAttempts": "Retained in ignored artifacts. Early generated-contract failures were resolved by complete staging preparation; audio assertions now compare hashes. Initial art-fixture internal-symbol and missing-library attempts are not product passes."
+  }
+}

@@ -5,6 +5,7 @@ const path = require('node:path'),
   http = require('node:http');
 const { execFileSync } = require('node:child_process');
 const { LIVE, validSettings } = require('../src/policy.cjs');
+const { fixtureAssets } = require('./owned-source.cjs');
 const root = path.resolve(__dirname, '..'),
   out = path.join(root, 'docs/launcher-tests');
 fs.mkdirSync(out, { recursive: true });
@@ -19,6 +20,7 @@ async function until(fn, message) {
   throw new Error(message);
 }
 (async () => {
+  const uiAsset = fixtureAssets().read('UI_0.swf');
   if (privateDesktop)
     execFileSync(path.join(root, '.test-tools/PrivateDesktop.exe'), ['--check'], {
       windowsHide: true,
@@ -39,11 +41,7 @@ async function until(fn, message) {
     }
     if (req.url === '/assets/UI_0.swf') {
       res.setHeader('Content-Type', 'application/x-shockwave-flash');
-      res.end(
-        fs.readFileSync(
-          path.resolve(root, '../db r/dungeon-blitz-r/src/client/content/localhost/p/cbp/UI_0.swf')
-        )
-      );
+      res.end(uiAsset);
       return;
     }
     if (req.url === '/shortcut-probe.swf') {

@@ -110,7 +110,7 @@ async function run(config, suite) {
   const files = new Map([['/fixture.swf', path.join(config.out, 'fixture.swf')]]);
   for (const name of config.assets) {
     if (
-      !/^(UI_[A-Za-z0-9_]+|Gfx_(?:Mage|Paladin|Rogue)_1|Levels[A-Za-z0-9]+|GlobalMap01|sounds\/Sound)\.swf$/.test(
+      !/^(UI_[A-Za-z0-9_]+|Gfx_(?:Mage|Paladin|Rogue)_1|Levels[A-Za-z0-9]+|GlobalMap01|Utilities|sounds\/Sound)\.swf$/.test(
         name
       )
     )

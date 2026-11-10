@@ -2,7 +2,7 @@
   "format": 1,
   "contract": "pinned-artwork-writers-v1",
   "manifestUrl": "https://dungeonblitzr.theminesa.studio/p/cbp/masterFileList.xml",
-  "reviewedAt": "2026-11-02T20:00:09.427Z",
+  "reviewedAt": "2026-11-10T20:38:37.822Z",
   "assets": [
     {
       "name": "UI_0.swf",
@@ -35,15 +35,15 @@
     {
       "name": "Gfx_Paladin_1.swf",
       "path": "/p/cbp/Gfx_Paladin_1.swf",
-      "sha256": "5a986db2304e8e2b7583e67dfdb94408b3db49ad46d975c86eab4a09bfafbbd4",
-      "bytes": 2438738,
+      "sha256": "2d7d18a154f6f5a9c44dcf87cda4ddc4b444eda13e7e9e529ce3ffaa7b8b8bb2",
+      "bytes": 2438692,
       "writerCalls": 0
     },
     {
       "name": "Gfx_Rogue_1.swf",
       "path": "/p/cbp/Gfx_Rogue_1.swf",
-      "sha256": "8f96cb2bea56a1b2f982445ef71a742e390feb6c1b25e09fffce4ffd10c142b8",
-      "bytes": 747135,
+      "sha256": "a06de2c02ea11ecdf07131602ce59fcad302037f43f7ac0b6784b387180484bb",
+      "bytes": 748602,
       "writerCalls": 0
     },
     {
@@ -119,8 +119,8 @@
     {
       "name": "UI_4.swf",
       "path": "/p/cbp/UI_4.swf",
-      "sha256": "fe36b6a0f455c6b02bf42d71c16ba4cda7a9be7d3f9d5ffafef10947edfd79f1",
-      "bytes": 3464060,
+      "sha256": "e197b5381f11e03572d2b2dd3bca60e597021091ff0dc9604ed82706322980a4",
+      "bytes": 3465828,
       "writerCalls": 0
     },
     {
@@ -406,15 +406,15 @@
     {
       "name": "LevelsJC.swf",
       "path": "/p/cbp/LevelsJC.swf",
-      "sha256": "cc3345fe4579237572fbe405a8aba865a97142fedae3e93b4b86fd134d4eaa3a",
-      "bytes": 5195785,
+      "sha256": "abda432994e66ea4bc7de2ac2dcd529ac9fb696100571da52bfbd9a92fe76e5a",
+      "bytes": 5195851,
       "writerCalls": 0
     },
     {
       "name": "LevelsLD.swf",
       "path": "/p/cam/LevelsLD.swf",
-      "sha256": "617babb222c578d063b5065e4e2dd4d0241539a2b1383dfc6afd7d65e8045b27",
-      "bytes": 258104,
+      "sha256": "0318f797291bfbbc2e192895bdb5a96a856237754067a3ade25f4b292a236c3d",
+      "bytes": 258116,
       "writerCalls": 0
     },
     {
@@ -448,8 +448,8 @@
     {
       "name": "LevelsLI05.swf",
       "path": "/p/cbp/LevelsLI05.swf",
-      "sha256": "9d9f4d6623f5e9c72f420e992d0ca13d13e6d87727f4310684908052ef02be92",
-      "bytes": 544400,
+      "sha256": "a9c0e8bf36ad2169070182cc878878dde59c06c3d320311e427ca69e804e7c6c",
+      "bytes": 544471,
       "writerCalls": 0
     },
     {
@@ -490,8 +490,8 @@
     {
       "name": "LevelsOMM.swf",
       "path": "/p/cbp/LevelsOMM.swf",
-      "sha256": "311c3d7520345ddfcc79d306e0537579ff0d9f9147f665b2eb5a5879258e6303",
-      "bytes": 3389251,
+      "sha256": "a17b812e1a2db9643bb851c32a63a20ca48ba0ba034c7b3904d835c9e0a1ad17",
+      "bytes": 3391004,
       "writerCalls": 0
     },
     {

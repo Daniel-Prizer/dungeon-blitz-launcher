@@ -5,10 +5,10 @@ const fs = require('node:fs'),
   path = require('node:path'),
   crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
+const { commit, sourceRoot } = require('./owned-source.cjs');
 const root = path.resolve(__dirname, '..');
-const commit = 'a409ee06a3231a67acc22f4d953c77d5b92e17b9';
 function prepare(source) {
-  source = path.resolve(source);
+  source = sourceRoot(source);
   const git = (args) =>
     execFileSync('git', args, { cwd: source, maxBuffer: 250 * 1024 * 1024, windowsHide: true });
   if (
@@ -131,6 +131,5 @@ function prepare(source) {
   );
   console.log(JSON.stringify({ output, commit, files: entries.length }));
 }
-if (require.main === module)
-  prepare(process.argv[2] || 'C:/Users/Daniel/Downloads/db r/dungeon-blitz-r');
+if (require.main === module) prepare(process.argv[2]);
 module.exports = { prepare, commit };
