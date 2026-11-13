@@ -2,7 +2,7 @@
   "format": 1,
   "contract": "pinned-artwork-writers-v1",
   "manifestUrl": "https://dungeonblitzr.theminesa.studio/p/cbp/masterFileList.xml",
-  "reviewedAt": "2026-11-10T20:38:37.822Z",
+  "reviewedAt": "2026-11-13",
   "assets": [
     {
       "name": "UI_0.swf",
@@ -119,8 +119,8 @@
     {
       "name": "UI_4.swf",
       "path": "/p/cbp/UI_4.swf",
-      "sha256": "e197b5381f11e03572d2b2dd3bca60e597021091ff0dc9604ed82706322980a4",
-      "bytes": 3465828,
+      "sha256": "75290eed64ea56bc4326684bc227559d994b0551d3031f2ecf8b6c4f7a2a37f9",
+      "bytes": 3465821,
       "writerCalls": 0
     },
     {
@@ -371,8 +371,8 @@
     {
       "name": "LevelsAC.swf",
       "path": "/p/cbp/LevelsAC.swf",
-      "sha256": "10b07b7c54566759f5a15b719e10fd7d3b94ed3f2c3ca22abb9f0949b0b83470",
-      "bytes": 3436701,
+      "sha256": "80f8f8f590cecc5db370274f844fbe2454b51001abe86ead227d4dd1afd2ec4f",
+      "bytes": 3439462,
       "writerCalls": 0
     },
     {
@@ -462,7 +462,7 @@
     {
       "name": "LevelsLI07.swf",
       "path": "/p/cbp/LevelsLI07.swf",
-      "sha256": "c1588524a408d864cd2d84bac5d4aac1bb3a7ef01f0f020c421d6e669fcbbea6",
+      "sha256": "ad903488125f225d8a863d20993df0e2af13f0a9c991c8b5d3b17d1f76bafb30",
       "bytes": 935323,
       "writerCalls": 0
     },
@@ -483,8 +483,8 @@
     {
       "name": "LevelsNR.swf",
       "path": "/p/cbp/LevelsNR.swf",
-      "sha256": "e07cf3f18cc0b81cdd6d08702d360127ee677462a6ef35bec521c7ed5aa080d0",
-      "bytes": 2730296,
+      "sha256": "ce97c7616469a0f4dcdf38e1bc3c037c8cb2b4dc58976911bd7ddc59e76156cd",
+      "bytes": 2730561,
       "writerCalls": 0
     },
     {

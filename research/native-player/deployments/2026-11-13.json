@@ -1,0 +1,38 @@
+{
+  "version": "0.33.9",
+  "revision": "swf-83273b93a571",
+  "sourceSha256": "e7bd3d3adf3dacad9f238bdb7ad0bcd23c20e221fc5277f40d83ea7b0651e36d",
+  "enhancedSha256": "1649d1717d914713be2b17c04e736b744e3d85926236c29b12f4a3511e18dcaf",
+  "repair": "Separate exact interface and string-prefix recipe; all 32 existing hook replacements and 18 dependency guards are reused unchanged. Previous recipes remain strict.",
+  "upstreamPreservation": {
+    "unhookedMainBodies": 3746,
+    "otherTags": 55,
+    "byteExact": true,
+    "review": "Raw instructions/exceptions compared for Buff.method_1095, CombatState.method_1192, LinkUpdater.method_1081, talent screen callbacks and own-effects closure relocation. New lastSeenText and class_56 interface retained. String 1485 now describes all debuffs. No game method changes introduced by this patch."
+  },
+  "artwork": {
+    "checkedPerOrigin": 73,
+    "originsAgree": true,
+    "changed": ["LevelsAC.swf", "LevelsLI07.swf", "LevelsNR.swf", "UI_4.swf"],
+    "review": "Current AS3 bodies decoded and exception counts inspected with pinned JPEXS; original libraries are retained without edits."
+  },
+  "verification": {
+    "existingTests": 119,
+    "newRegressionTests": 1,
+    "unitFailures": 0,
+    "currentNativeTitle": true,
+    "resizeAndAudio": true,
+    "completedRenderCap": 120,
+    "packageIntegrityAndFuses": true,
+    "changedArtworkNativeConstruction": true,
+    "signedFiles": 444,
+    "scope": "Public anonymous client, disposable profile on separate inactive desktop, denied game TCP, no account login or live combat. Unchanged native runtime and presentation patches."
+  },
+  "evidence": "artifacts/minimal-repair-20261113",
+  "nativeEvidence": {
+    "stage": "artifacts/release-staging-0.33.9-kQ7i2b",
+    "startup": "current-native-startup-eG5y6s",
+    "artwork": "native-current-art-Rtztwp",
+    "limits": "Representative exported artwork construction only. Initial standalone fixture selected an internal/nonexported LevelsLI07 class and omitted shared definitions; failures retained, corrected fixture uses exported a_Room_Throne_R04 with shared prerequisites. No product code was changed for fixture failures."
+  }
+}

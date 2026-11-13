@@ -2,9 +2,9 @@
 
 ## Deployment status
 
-On 10 November, both official origins served **swf-22fa3fe7e30f**, 1,178,201 bytes, SHA-256 `27b6c770382783fa634d5a236c8fb632fde7a819c85ca58c9630320e0a5e22e7`. Patch 0.33.8 adds two exact reviewed presentation/audio envelopes for this client; native High FPS admission is qualified separately.
+On 13 November, both official origins served **swf-83273b93a571**, 1,186,159 bytes, SHA-256 `e7bd3d3adf3dacad9f238bdb7ad0bcd23c20e221fc5277f40d83ea7b0651e36d`. Patch 0.33.9 adds a separately guarded interface/string variant using the existing 32 feature hooks unchanged.
 
-All 73 SWF assets were checked on both origins: 52 master-list assets and 21 level libraries. Seven changed since 0.33.7: Gfx_Paladin_1, Gfx_Rogue_1, LevelsJC, LevelsLD, LevelsLI05, LevelsOMM and UI_4. Their current AS3 structures and representative native artwork were reviewed; the original library bytes are retained without launcher edits. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
+All 73 SWF assets were checked on both origins: 52 master-list assets and 21 level libraries. Four changed since 0.33.8: LevelsAC, LevelsLI07, LevelsNR and UI_4. Their original bytes are retained without launcher edits. Exact layouts and reusable recipes live in src/legacy. The local-client contract remains restricted to the selected loopback origin. Deployment evidence is not permission to accept future hashes. The retained-world GPU adapter is research only.
 
 The current upstream door-trigger correction, graphics recovery catches, map recovery and unrelated game methods must remain intact. The launcher does not change dungeon rejoining, loot awards, simulation or server behavior.
 
@@ -50,7 +50,7 @@ Historical review notes remain in Git at the corresponding release tags.
 
 ## High FPS admission
 
-The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `5447a4dc24896bc29512cc40f7ac3f6eb1f884955d2aece930d5a8d67b92dbe8`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
+The native player is qualified separately for this deployment. The complete Original contract produces enhanced SHA-256 `1649d1717d914713be2b17c04e736b744e3d85926236c29b12f4a3511e18dcaf`. Admission verifies both client hashes and every listed artwork hash on both official origins. Public MP3s use a separate exact-name allowlist and bounded format-checked cache.
 
 The 0.31.2 compatibility update preserves Minesa's TouchBridge retention cleanup and new ScreenRepaint helper. That deployment prepends a three-instruction UI repaint call and adds its helper tag; the other 3,775 main method bodies and existing non-main tags are byte-identical to the preceding client. Review covered raw instructions, branches and both helper Error catches. The complete adapter retains the helper and its call. See the [deployment review](../research/native-player/deployments/2026-10-22.json).
 

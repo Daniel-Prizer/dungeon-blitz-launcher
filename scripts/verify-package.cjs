@@ -172,6 +172,10 @@ const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file))
     ),
     hash(path.join(root, 'runtime/game/resources/adaptive-contract-effects-oct28.json'))
   );
+  assert.equal(
+    hash(path.join(output, 'resources/runtime/game/resources/adaptive-contract-nov13.json')),
+    hash(path.join(root, 'runtime/game/resources/adaptive-contract-nov13.json'))
+  );
   assert.deepEqual(
     asar.extractFile(legacy, 'crosshair.js'),
     fs.readFileSync(path.join(root, 'src/crosshair.js'))
